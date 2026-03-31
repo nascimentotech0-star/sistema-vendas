@@ -1,0 +1,304 @@
+{% extends "base.html" %}
+{% block title %}{% if client %}Editar{% else %}Novo{% endif %} Cliente — Nascimento Tech{% endblock %}
+{% block page_title %}{% if client %}Editar Cliente{% else %}Novo Cliente{% endif %}{% endblock %}
+{% block content %}
+
+<div class="row g-4">
+
+  <!-- Coluna esquerda: formulário -->
+  <div class="col-12 col-lg-7 order-2 order-lg-1">
+    <div class="card">
+      <div class="card-header d-flex align-items-center gap-2">
+        <i class="bi bi-person-plus-fill" style="color:var(--accent3);"></i>
+        <span class="fw-semibold">{% if client %}Editar Cliente{% else %}Novo Cliente{% endif %}</span>
+      </div>
+      <div class="card-body">
+        <form method="POST" enctype="multipart/form-data">
+
+          <!-- DADOS DO CLIENTE -->
+          <h6 class="mb-3" style="color:var(--text-muted);font-size:.75rem;text-transform:uppercase;letter-spacing:.06em;">
+            <i class="bi bi-person-fill me-1" style="color:var(--accent3);"></i> Dados do Cliente
+          </h6>
+
+          <div class="mb-3">
+            <label class="form-label">Nome Completo <span class="text-danger">*</span></label>
+            <input type="text" name="name" class="form-control" required autofocus
+                   value="{{ client.name if client else '' }}" placeholder="Nome do cliente">
+          </div>
+
+          <div class="row g-3 mb-3">
+            <div class="col-6">
+              <label class="form-label">
+                <i class="bi bi-whatsapp me-1" style="color:#25d366;"></i>WhatsApp
+              </label>
+              <input type="text" name="whatsapp" class="form-control"
+                     placeholder="(00) 00000-0000"
+                     value="{{ client.whatsapp if client else '' }}">
+            </div>
+            <div class="col-6">
+              <label class="form-label">Telefone</label>
+              <input type="text" name="phone" class="form-control"
+                     placeholder="(00) 0000-0000"
+                     value="{{ client.phone if client else '' }}">
+            </div>
+          </div>
+
+          <div class="row g-3 mb-3">
+            <div class="col-8">
+              <label class="form-label">Cidade</label>
+              <input type="text" name="city" class="form-control"
+                     value="{{ client.city if client else '' }}">
+            </div>
+            <div class="col-4">
+              <label class="form-label">Estado</label>
+              <input type="text" name="state" class="form-control" maxlength="2" placeholder="SP"
+                     value="{{ client.state if client else '' }}">
+            </div>
+          </div>
+
+          <div class="mb-4">
+            <label class="form-label">Observações</label>
+            <textarea name="notes" class="form-control" rows="2"
+                      placeholder="Anotações sobre o cliente...">{{ client.notes if client else '' }}</textarea>
+          </div>
+
+          {% if not client %}
+          <!-- VENDA -->
+          <div style="border-top:1px solid var(--border);padding-top:20px;margin-bottom:20px;">
+            <h6 class="mb-3" style="color:var(--text-muted);font-size:.75rem;text-transform:uppercase;letter-spacing:.06em;">
+              <i class="bi bi-cart-plus-fill me-1" style="color:var(--accent);"></i> Registrar Venda
+            </h6>
+
+            {% if is_overtime %}
+            <div class="alert mb-3" style="background:rgba(245,158,11,.1);border-left:3px solid #fcd34d;padding:10px 14px;border-radius:6px;">
+              <small style="color:#fcd34d;"><i class="bi bi-moon-stars-fill me-1"></i>Hora extra — comissão de 20%</small>
+            </div>
+            {% endif %}
+
+            <!-- Seleção rápida de preços -->
+            <div id="quickPrices" class="mb-3" style="display:none;">
+              <label class="form-label" style="font-size:.8rem;">Seleção rápida de plano</label>
+              <div id="priceButtons" class="d-flex flex-wrap gap-2"></div>
+            </div>
+
+            <div class="row g-3 mb-3">
+              <div class="col-6">
+                <label class="form-label">Valor Base (R$)</label>
+                <input type="number" name="amount" id="inputAmount" step="0.01" min="0"
+                       class="form-control" placeholder="0,00" oninput="calcComissao()">
+              </div>
+              <div class="col-6">
+                <label class="form-label">Forma de Pagamento</label>
+                <select name="payment_method" class="form-select">
+                  <option value="">— Selecionar —</option>
+                  {% for key, label in payment_methods.items() %}
+                    <option value="{{ key }}">{{ label }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+            </div>
+
+            <!-- Ajuste de valor + Telas -->
+            <div class="row g-3 mb-3">
+              <div class="col-6">
+                <label class="form-label">
+                  Ajuste de Valor (R$)
+                  <span style="font-size:.72rem;color:var(--text-muted);">desconto (−) / acréscimo (+)</span>
+                </label>
+                <input type="number" name="adjustment" id="inputAdjustment" step="0.01"
+                       class="form-control" placeholder="0,00" value="0" oninput="calcComissao()">
+              </div>
+              <div class="col-6">
+                <label class="form-label">
+                  Qtd. Telas
+                  <span id="screensHint" style="font-size:.72rem;color:var(--text-muted);"></span>
+                </label>
+                <input type="number" name="screens" id="inputScreens" min="1" value="1"
+                       class="form-control" placeholder="1">
+              </div>
+            </div>
+
+            <!-- Valor final + Preview comissão -->
+            <div id="comissaoPreview" class="mb-3 p-3 rounded" style="display:none;background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.2);">
+              <div class="d-flex justify-content-between align-items-center mb-1">
+                <span class="small" style="color:var(--text-muted);">
+                  <i class="bi bi-cash-stack me-1"></i> Valor Final
+                </span>
+                <span id="valorFinal" class="fw-bold" style="color:#e0e0f0;font-size:1rem;">R$ 0,00</span>
+              </div>
+              <div class="d-flex justify-content-between align-items-center">
+                <span class="small" style="color:var(--text-muted);">
+                  <i class="bi bi-percent me-1"></i> Comissão ({{ commission_rate|int }}%)
+                </span>
+                <span id="comissaoVal" class="fw-bold" style="color:#6ee7b7;font-size:1.1rem;">R$ 0,00</span>
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Descrição da Venda</label>
+              <input type="text" name="description" class="form-control"
+                     placeholder="Ex: Plano mensal, produto X...">
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">
+                <i class="bi bi-image me-1" style="color:var(--accent2);"></i>
+                Comprovante de Pagamento <span class="text-danger">*</span>
+              </label>
+              <input type="file" name="comprovante" id="comprovanteSale" class="form-control"
+                     accept="image/*,.pdf" required>
+              <small style="color:#fca5a5;"><i class="bi bi-exclamation-circle me-1"></i>Obrigatório — a venda só é válida com comprovante anexado.</small>
+            </div>
+          </div>
+          {% endif %}
+
+          <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-primary px-4">
+              <i class="bi bi-check-lg me-1"></i>
+              {% if client %}Salvar{% else %}Cadastrar{% endif %}
+            </button>
+            <a href="{{ url_for('attendant.dashboard') }}" class="btn btn-sm"
+               style="background:rgba(255,255,255,.08);color:var(--text);border:1px solid var(--border);">
+              Cancelar
+            </a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Coluna direita: stats + chart (somente no cadastro novo) -->
+  {% if not client %}
+  <div class="col-12 col-lg-5 order-1 order-lg-2">
+
+    <div class="row g-3 mb-3">
+      <div class="col-6">
+        <div class="card stat-card stat-card-purple h-100">
+          <div class="card-body text-center py-3">
+            <p class="mb-1" style="font-size:.65rem;color:var(--text-muted);text-transform:uppercase;">Clientes Hoje</p>
+            <h3 class="fw-bold mb-0" style="color:#a78bfa;">{{ clients_today }}</h3>
+          </div>
+        </div>
+      </div>
+      <div class="col-6">
+        <div class="card stat-card stat-card-green h-100">
+          <div class="card-body text-center py-3">
+            <p class="mb-1" style="font-size:.65rem;color:var(--text-muted);text-transform:uppercase;">Vendas Hoje</p>
+            <h3 class="fw-bold mb-0" style="color:#6ee7b7;">{{ sales_today }}</h3>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header d-flex align-items-center gap-2">
+        <i class="bi bi-bar-chart-fill" style="color:var(--accent);"></i>
+        <span class="fw-semibold" style="font-size:.85rem;">Suas Vendas — 7 dias</span>
+      </div>
+      <div class="card-body" style="position:relative;height:190px;">
+        <canvas id="chartWeek"></canvas>
+      </div>
+    </div>
+
+    <div class="mt-3 p-3 rounded" style="background:rgba(124,58,237,.08);border:1px solid rgba(124,58,237,.2);">
+      <p class="mb-0 small" style="color:var(--text-muted);">
+        <i class="bi bi-lightbulb-fill me-1" style="color:#a78bfa;"></i>
+        Preencha o valor e selecione a forma de pagamento para registrar a venda junto com o cliente.
+        O valor em branco apenas cadastra o cliente.
+      </p>
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+{% if not client %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+<script>
+  // Carrega preços rápidos
+  fetch('{{ url_for("attendant.api_prices") }}')
+    .then(r => r.json())
+    .then(items => {
+      if (!items.length) return;
+      document.getElementById('quickPrices').style.display = 'block';
+      const box = document.getElementById('priceButtons');
+      items.forEach(item => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        // Monta label: período + telas + valor
+        let label = `<span style="font-weight:700;">${item.period_label || item.name}</span>`;
+        label += ` <span style="opacity:.75;font-size:.82em;">${item.screens}x tela${item.screens > 1 ? 's' : ''}</span>`;
+        label += ` <span style="color:#6ee7b7;font-weight:600;">R$ ${item.price.toLocaleString('pt-BR',{minimumFractionDigits:2})}</span>`;
+        btn.innerHTML = label;
+        btn.style.cssText = 'background:rgba(124,58,237,.15);color:#a78bfa;border:1px solid rgba(124,58,237,.3);border-radius:8px;padding:6px 14px;cursor:pointer;font-size:.82rem;transition:background .15s;white-space:nowrap;';
+        btn.onmouseover = () => btn.style.background = 'rgba(124,58,237,.3)';
+        btn.onmouseout  = () => btn.style.background = 'rgba(124,58,237,.15)';
+        btn.onclick = () => {
+          // Preenche valor base, zera ajuste, define telas
+          document.getElementById('inputAmount').value = item.price.toFixed(2);
+          document.getElementById('inputAdjustment').value = '0';
+          document.getElementById('inputScreens').value = item.screens || 1;
+          document.getElementById('screensHint').textContent = `(padrão: ${item.screens || 1})`;
+          const desc = document.querySelector('[name=description]');
+          if (desc && !desc.value) desc.value = item.name + (item.description ? ' — ' + item.description : '');
+          calcComissao();
+        };
+        box.appendChild(btn);
+      });
+    }).catch(() => {});
+
+  // Preview de comissão e valor final
+  const rate = {{ commission_rate }};
+  function calcComissao() {
+    const base = parseFloat(document.getElementById('inputAmount').value) || 0;
+    const adj  = parseFloat(document.getElementById('inputAdjustment').value) || 0;
+    const final = base + adj;
+    const preview = document.getElementById('comissaoPreview');
+    if (base > 0) {
+      document.getElementById('valorFinal').textContent =
+        'R$ ' + final.toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
+      document.getElementById('comissaoVal').textContent =
+        'R$ ' + (final * rate / 100).toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
+      preview.style.display = 'block';
+    } else {
+      preview.style.display = 'none';
+    }
+  }
+
+  // Gráfico 7 dias
+  (function(){
+    const grid = 'rgba(255,255,255,.06)';
+    Chart.defaults.color = '#7b7b9e';
+    Chart.defaults.font.family = "'Segoe UI', system-ui, sans-serif";
+    Chart.defaults.font.size = 11;
+    const ctx = document.getElementById('chartWeek').getContext('2d');
+    const g = ctx.createLinearGradient(0,0,0,170);
+    g.addColorStop(0,'rgba(124,58,237,.75)');
+    g.addColorStop(1,'rgba(124,58,237,.05)');
+    new Chart(ctx, {
+      type:'bar',
+      data:{
+        labels: {{ chart_labels|tojson }},
+        datasets:[{
+          label:'R$ Vendido',
+          data: {{ chart_vals|tojson }},
+          backgroundColor: g,
+          borderRadius: 8,
+          borderSkipped: false
+        }]
+      },
+      options:{
+        responsive:true, maintainAspectRatio:false,
+        plugins:{legend:{display:false}},
+        scales:{
+          x:{grid:{color:grid}},
+          y:{grid:{color:grid}, ticks:{callback:v=>'R$'+v.toLocaleString('pt-BR')}}
+        }
+      }
+    });
+  })();
+</script>
+{% endif %}
+{% endblock %}

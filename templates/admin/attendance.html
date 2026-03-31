@@ -1,0 +1,322 @@
+{% extends "base.html" %}
+{% block title %}Ponto — Nascimento Tech{% endblock %}
+{% block page_title %}Controle de Ponto{% endblock %}
+{% block content %}
+
+<!-- Filtros -->
+<div class="card mb-4">
+  <div class="card-body py-2">
+    <form method="GET" class="d-flex flex-wrap gap-2 align-items-center">
+      <div class="d-flex align-items-center gap-2">
+        <label class="form-label mb-0 small">Data:</label>
+        <input type="date" name="date" class="form-control form-control-sm" style="width:160px;"
+               value="{{ att_date.strftime('%Y-%m-%d') }}">
+      </div>
+      <div class="d-flex align-items-center gap-2">
+        <label class="form-label mb-0 small">Atendente:</label>
+        <select name="attendant" class="form-select form-select-sm" style="width:180px;">
+          <option value="">Todos</option>
+          {% for a in attendants_list %}
+            <option value="{{ a.id }}" {% if attendant_filter == a.id %}selected{% endif %}>{{ a.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <button type="submit" class="btn btn-sm btn-primary">Filtrar</button>
+    </form>
+  </div>
+</div>
+
+<!-- Banco de horas -->
+{% set has_bank = bank_hours.values()|select('greaterthan', 0)|list %}
+{% if has_bank %}
+<div class="card mb-4" style="border-left:4px solid #f9a8d4 !important;">
+  <div class="card-header d-flex align-items-center gap-2">
+    <i class="bi bi-piggy-bank-fill" style="color:#f9a8d4;"></i>
+    <span class="fw-semibold">Banco de Horas Acumulado</span>
+    <small class="ms-auto" style="color:var(--text-muted);font-size:.72rem;">tempo excedente nas pausas</small>
+  </div>
+  <div class="card-body">
+    <div class="row g-2">
+      {% for a in attendants_list %}
+        {% if bank_hours[a.id] > 0 %}
+        <div class="col-auto">
+          <div class="d-flex align-items-center gap-2 px-3 py-2"
+               style="background:rgba(236,72,153,.1);border:1px solid rgba(236,72,153,.2);border-radius:10px;">
+            <i class="bi bi-person-fill" style="color:#f9a8d4;"></i>
+            <span style="font-size:.875rem;">{{ a.name }}</span>
+            <span class="fw-bold" style="color:#f9a8d4;">
+              {% set h = bank_hours[a.id] // 60 %}
+              {% set m = bank_hours[a.id] % 60 %}
+              {% if h %}{{ h }}h{% endif %}{{ m }}min
+            </span>
+          </div>
+        </div>
+        {% endif %}
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<!-- Resumo Salarial do Mês -->
+{% if salary_summaries %}
+<div class="card mb-4" style="border-left:4px solid rgba(124,58,237,.5) !important;">
+  <div class="card-header d-flex align-items-center gap-2">
+    <i class="bi bi-wallet2-fill" style="color:#a78bfa;"></i>
+    <span class="fw-semibold">Resumo Salarial — {{ att_date.strftime('%m/%Y') }}</span>
+    <small class="ms-auto" style="color:var(--text-muted);font-size:.72rem;">desconto calculado sobre horas em falta</small>
+  </div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead>
+          <tr>
+            <th>Atendente</th>
+            <th>Salário Base</th>
+            <th>Valor/hora</th>
+            <th>Dias Trabalhados</th>
+            <th>Horas Trabalhadas</th>
+            <th>Déficit</th>
+            <th>Desconto</th>
+            <th style="color:#6ee7b7;">Salário Previsto</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for a in attendants_list %}
+            {% if a.id in salary_summaries %}
+            {% set s = salary_summaries[a.id] %}
+            <tr>
+              <td class="fw-semibold">{{ a.name }}</td>
+              <td style="color:#a78bfa;font-weight:600;">R$ {{ "%.2f"|format(a.monthly_salary) }}</td>
+              <td style="color:var(--text-muted);font-size:.85rem;">R$ {{ "%.2f"|format(a.hourly_rate) }}</td>
+              <td>{{ s.days_worked }}d</td>
+              <td>{{ s.worked_h }}</td>
+              <td>
+                {% if s.deficit_minutes > 0 %}
+                  <span style="color:#fca5a5;font-weight:600;">
+                    <i class="bi bi-exclamation-circle me-1"></i>{{ s.deficit_h }}
+                  </span>
+                {% else %}
+                  <span style="color:#6ee7b7;">—</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if s.deduction > 0 %}
+                  <span style="color:#fca5a5;font-weight:700;">− R$ {{ "%.2f"|format(s.deduction) }}</span>
+                {% else %}
+                  <span style="color:#6ee7b7;">R$ 0,00</span>
+                {% endif %}
+              </td>
+              <td>
+                <span style="font-weight:700;color:{% if s.deduction > 0 %}#fcd34d{% else %}#6ee7b7{% endif %};">
+                  R$ {{ "%.2f"|format(s.net_salary) }}
+                </span>
+              </td>
+            </tr>
+            {% endif %}
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<!-- Ausentes no dia (sem filtro de atendente) -->
+{% if absent_today and not attendant_filter %}
+<div class="card mb-4" style="border-left:4px solid rgba(239,68,68,.5) !important;">
+  <div class="card-header d-flex align-items-center gap-2">
+    <i class="bi bi-person-x-fill" style="color:#fca5a5;"></i>
+    <span class="fw-semibold">Sem Registro de Ponto — {{ att_date.strftime('%d/%m/%Y') }}</span>
+    <span class="badge ms-1" style="background:rgba(239,68,68,.15);color:#fca5a5;">{{ absent_today|length }}</span>
+  </div>
+  <div class="card-body">
+    <div class="d-flex flex-wrap gap-2">
+      {% for a in absent_today %}
+      <div class="d-flex align-items-center gap-2 px-3 py-2"
+           style="background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:10px;">
+        <i class="bi bi-person-fill" style="color:#fca5a5;"></i>
+        <span style="font-size:.875rem;">{{ a.name }}</span>
+        {% if a.id in absences_today %}
+          {% set ab = absences_today[a.id] %}
+          <span class="badge" style="background:rgba(251,191,36,.2);color:#fcd34d;font-size:.7rem;">
+            {{ ab.type_label }}
+          </span>
+          <form method="POST" action="{{ url_for('admin.delete_absence', id=ab.id) }}" class="d-inline">
+            <button type="submit" class="btn btn-sm py-0 px-1" title="Remover falta"
+                    style="background:transparent;border:none;color:#fca5a5;font-size:.8rem;"
+                    onclick="return confirm('Remover registro de falta?')">
+              <i class="bi bi-x-circle"></i>
+            </button>
+          </form>
+        {% else %}
+          <button class="btn btn-sm py-0 px-2"
+                  style="background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.3);color:#fca5a5;font-size:.7rem;"
+                  onclick="openAbsenceModal({{ a.id }}, '{{ a.name|e }}', '{{ att_date.strftime('%Y-%m-%d') }}')">
+            <i class="bi bi-plus"></i> Registrar falta
+          </button>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<!-- Modal: Registrar Falta -->
+<div class="modal fade" id="modalAbsence" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered modal-sm">
+    <div class="modal-content" style="background:#1a1a35;border:1px solid rgba(239,68,68,.3);">
+      <form method="POST" action="{{ url_for('admin.register_absence') }}">
+        <input type="hidden" name="user_id" id="absUserId">
+        <input type="hidden" name="absence_date" id="absDate">
+        <input type="hidden" name="month_str" value="{{ att_date.strftime('%Y-%m') }}">
+        <div class="modal-header" style="border-color:rgba(239,68,68,.2);">
+          <h5 class="modal-title" style="font-size:.9rem;color:#fca5a5;">
+            <i class="bi bi-person-x-fill me-2"></i>Registrar Falta — <span id="absName"></span>
+          </h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label small">Tipo de Falta</label>
+            <select name="type" class="form-select form-select-sm">
+              <option value="unjustified">Falta Injustificada (desconta salário)</option>
+              <option value="justified">Falta Justificada (sem desconto)</option>
+              <option value="vacation">Folga / Férias (sem desconto)</option>
+            </select>
+          </div>
+          <div class="mb-2">
+            <label class="form-label small">Observação (opcional)</label>
+            <input type="text" name="notes" class="form-control form-control-sm" placeholder="Motivo, atestado, etc.">
+          </div>
+        </div>
+        <div class="modal-footer" style="border-color:rgba(239,68,68,.2);">
+          <button type="button" class="btn btn-sm" data-bs-dismiss="modal"
+                  style="background:rgba(255,255,255,.08);color:var(--text);border:1px solid var(--border);">Cancelar</button>
+          <button type="submit" class="btn btn-sm px-4"
+                  style="background:rgba(239,68,68,.3);border:1px solid rgba(239,68,68,.5);color:#fca5a5;font-weight:600;">
+            Confirmar Falta
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Registros do dia -->
+<div class="card">
+  <div class="card-header d-flex align-items-center gap-2">
+    <i class="bi bi-calendar2-check" style="color:var(--accent);"></i>
+    <span class="fw-semibold">Registros — {{ att_date.strftime('%d/%m/%Y') }}</span>
+    <span class="badge ms-1" style="background:rgba(255,255,255,.1);color:var(--text-muted);">{{ records|length }}</span>
+  </div>
+  <div class="card-body p-0">
+    {% if records %}
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead>
+          <tr>
+            <th>Atendente</th>
+            <th>Entrada</th>
+            <th>Saída</th>
+            <th>Duração</th>
+            <th>Pausas</th>
+            <th>Tempo Pausa</th>
+            <th>Excedente</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in records %}
+          <tr>
+            <td class="fw-semibold">{{ r.user.name }}</td>
+            <td>{{ r.check_in.strftime('%H:%M') }}</td>
+            <td>{{ r.check_out.strftime('%H:%M') if r.check_out else '—' }}</td>
+            <td>{{ r.duration }}</td>
+            <td>
+              {% if r.breaks %}
+                <span class="badge" style="background:rgba(245,158,11,.15);color:#fcd34d;">
+                  {{ r.breaks|length }} pausa(s)
+                </span>
+              {% else %}
+                <span style="color:var(--text-muted);">—</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if r.total_break_minutes > 0 %}
+                <span style="color:#fcd34d;">{{ r.total_break_minutes }}min</span>
+              {% else %}
+                <span style="color:var(--text-muted);">—</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if r.total_extra_minutes > 0 %}
+                <span style="color:#f9a8d4;font-weight:600;">+{{ r.total_extra_minutes }}min</span>
+              {% else %}
+                <span style="color:var(--text-muted);">—</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if r.active_break %}
+                <span class="badge" style="background:rgba(245,158,11,.2);color:#fcd34d;">
+                  <i class="bi bi-pause-fill me-1"></i>Em pausa
+                  {% if r.active_break.is_overdue %}
+                    <i class="bi bi-exclamation-triangle-fill ms-1"></i>
+                  {% endif %}
+                </span>
+              {% elif not r.check_out %}
+                <span class="badge" style="background:rgba(16,185,129,.2);color:#6ee7b7;">
+                  <i class="bi bi-circle-fill me-1" style="font-size:.5rem;"></i>Online
+                </span>
+              {% else %}
+                <span class="badge" style="background:rgba(255,255,255,.08);color:var(--text-muted);">Encerrado</span>
+              {% endif %}
+            </td>
+          </tr>
+          <!-- Detalhes das pausas -->
+          {% if r.breaks %}
+          <tr style="border-top:none;">
+            <td colspan="8" style="padding-top:0;padding-bottom:10px;padding-left:24px;">
+              <div class="d-flex flex-wrap gap-2">
+                {% for b in r.breaks %}
+                <span class="small px-2 py-1"
+                      style="background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:8px;color:var(--text-muted);">
+                  <i class="bi bi-pause-circle me-1"
+                     style="color:{% if b.extra_minutes %}#f9a8d4{% else %}#fcd34d{% endif %};"></i>
+                  {{ b.started_at.strftime('%H:%M') }}
+                  {% if b.ended_at %}→ {{ b.ended_at.strftime('%H:%M') }}{% else %}→ em andamento{% endif %}
+                  ({{ b.duration_str }})
+                  {% if b.extra_minutes %}
+                    <strong style="color:#f9a8d4;">+{{ b.extra_minutes }}min</strong>
+                  {% endif %}
+                </span>
+                {% endfor %}
+              </div>
+            </td>
+          </tr>
+          {% endif %}
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+      <div class="text-center py-5">
+        <i class="bi bi-calendar-x" style="font-size:2.5rem;color:var(--text-muted);"></i>
+        <p class="mt-2" style="color:var(--text-muted);">Nenhum registro para esta data.</p>
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+{% endblock %}
+{% block scripts %}
+<script>
+function openAbsenceModal(userId, name, absDate) {
+  document.getElementById('absUserId').value = userId;
+  document.getElementById('absName').textContent = name;
+  document.getElementById('absDate').value = absDate;
+  new bootstrap.Modal(document.getElementById('modalAbsence')).show();
+}
+</script>
+{% endblock %}

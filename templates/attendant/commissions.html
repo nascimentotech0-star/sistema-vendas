@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block title %}Minhas Comissões — Nascimento Tech{% endblock %}
+{% block page_title %}Minhas Comissões{% endblock %}
+{% block content %}
+
+<!-- Totais -->
+<div class="row g-3 mb-4">
+  <div class="col-4">
+    <div class="card stat-card stat-card-purple h-100">
+      <div class="card-body text-center py-3">
+        <p class="mb-1" style="font-size:.68rem;color:var(--text-muted);text-transform:uppercase;">Total Ganho</p>
+        <h4 class="fw-bold mb-0" style="color:#a78bfa;">R$ {{ "%.2f"|format(total_earned) }}</h4>
+      </div>
+    </div>
+  </div>
+  <div class="col-4">
+    <div class="card stat-card stat-card-green h-100">
+      <div class="card-body text-center py-3">
+        <p class="mb-1" style="font-size:.68rem;color:var(--text-muted);text-transform:uppercase;">Total Recebido</p>
+        <h4 class="fw-bold mb-0" style="color:#6ee7b7;">R$ {{ "%.2f"|format(total_paid) }}</h4>
+      </div>
+    </div>
+  </div>
+  <div class="col-4">
+    <div class="card stat-card {% if total_balance > 0 %}stat-card-yellow{% else %}stat-card-green{% endif %} h-100">
+      <div class="card-body text-center py-3">
+        <p class="mb-1" style="font-size:.68rem;color:var(--text-muted);text-transform:uppercase;">A Receber</p>
+        <h4 class="fw-bold mb-0" style="color:{% if total_balance > 0 %}#fcd34d{% else %}#6ee7b7{% endif %};">
+          R$ {{ "%.2f"|format(total_balance) }}
+        </h4>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Tabela por mês -->
+<div class="card">
+  <div class="card-header d-flex align-items-center gap-2">
+    <i class="bi bi-cash-coin" style="color:var(--accent3);"></i>
+    <span class="fw-semibold">Histórico por Mês</span>
+  </div>
+  <div class="card-body p-0">
+    {% if data %}
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead>
+          <tr>
+            <th>Mês</th><th>Vendas</th>
+            <th>Comissão Gerada</th><th>Recebido</th><th>Saldo</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in data %}
+          <tr>
+            <td class="fw-semibold">{{ row.label }}</td>
+            <td style="color:var(--text-muted);">{{ row.sales }}</td>
+            <td style="color:#a78bfa;font-weight:600;">R$ {{ "%.2f"|format(row.earned) }}</td>
+            <td style="color:#6ee7b7;font-weight:600;">R$ {{ "%.2f"|format(row.paid) }}</td>
+            <td>
+              {% if row.balance > 0 %}
+                <span class="badge px-2 py-1" style="background:rgba(245,158,11,.2);color:#fcd34d;">
+                  R$ {{ "%.2f"|format(row.balance) }} pendente
+                </span>
+              {% else %}
+                <span class="badge px-2 py-1" style="background:rgba(16,185,129,.15);color:#6ee7b7;">
+                  <i class="bi bi-check-lg me-1"></i>Quitado
+                </span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+      <div class="text-center py-5">
+        <i class="bi bi-cash-coin" style="font-size:2.5rem;color:var(--text-muted);"></i>
+        <p class="mt-2" style="color:var(--text-muted);">Nenhuma comissão registrada ainda.</p>
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+{% endblock %}

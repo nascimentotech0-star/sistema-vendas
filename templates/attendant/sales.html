@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block title %}Minhas Vendas — VendasPRO{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h4 class="fw-bold mb-0"><i class="bi bi-cart3 me-2 text-primary"></i>Minhas Vendas</h4>
+  <a href="{{ url_for('attendant.new_sale') }}" class="btn btn-primary">
+    <i class="bi bi-plus-lg me-1"></i> Nova Venda
+  </a>
+</div>
+
+<div class="card border-0 shadow-sm">
+  <div class="card-body p-0">
+    {% if sales.items %}
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead class="table-light">
+          <tr><th>Cliente</th><th>Valor</th><th>Pagamento</th><th>Comissão</th><th>Comprovante</th><th>Data</th></tr>
+        </thead>
+        <tbody>
+          {% for s in sales.items %}
+          <tr>
+            <td>
+              {{ s.client_display }}
+              {% if s.is_overtime %}
+                <span class="badge bg-warning text-dark ms-1">Hora Extra</span>
+              {% endif %}
+            </td>
+            <td class="fw-semibold">R$ {{ "%.2f"|format(s.amount) }}</td>
+            <td><span class="badge bg-secondary">{{ s.payment_display }}</span></td>
+            <td class="text-success fw-semibold">
+              R$ {{ "%.2f"|format(s.commission_amount) }}
+              <small class="text-muted">({{ s.commission_rate|int }}%)</small>
+            </td>
+            <td>
+              {% if s.comprovante_filename %}
+                <a href="{{ url_for('static', filename='uploads/' + s.comprovante_filename) }}" target="_blank" class="btn btn-sm btn-outline-info py-0">
+                  <i class="bi bi-file-image"></i> Ver
+                </a>
+              {% else %}
+                <span class="text-muted">—</span>
+              {% endif %}
+            </td>
+            <td class="text-muted small">{{ s.created_at.strftime('%d/%m/%Y %H:%M') }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    {% if sales.pages > 1 %}
+    <div class="d-flex justify-content-center py-3">
+      <nav>
+        <ul class="pagination pagination-sm mb-0">
+          {% if sales.has_prev %}
+          <li class="page-item"><a class="page-link" href="?page={{ sales.prev_num }}">Anterior</a></li>
+          {% endif %}
+          <li class="page-item active"><span class="page-link">{{ sales.page }} / {{ sales.pages }}</span></li>
+          {% if sales.has_next %}
+          <li class="page-item"><a class="page-link" href="?page={{ sales.next_num }}">Próxima</a></li>
+          {% endif %}
+        </ul>
+      </nav>
+    </div>
+    {% endif %}
+    {% else %}
+      <p class="text-center text-muted py-5">
+        Nenhuma venda registrada ainda.
+        <br><a href="{{ url_for('attendant.new_sale') }}">Registrar primeira venda</a>
+      </p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

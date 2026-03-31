@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+{% block title %}Tabela de Preços — Nascimento Tech{% endblock %}
+{% block page_title %}Tabela de Preços{% endblock %}
+{% block content %}
+
+<div class="row g-4">
+
+  <!-- Formulário de novo item -->
+  <div class="col-12 col-lg-4">
+    <div class="card">
+      <div class="card-header d-flex align-items-center gap-2">
+        <i class="bi bi-plus-circle-fill" style="color:var(--accent3);"></i>
+        <span class="fw-semibold">Novo Item</span>
+      </div>
+      <div class="card-body">
+        <form method="POST">
+          <div class="mb-3">
+            <label class="form-label">Nome do Plano/Produto <span class="text-danger">*</span></label>
+            <input type="text" name="name" class="form-control"
+                   placeholder="Ex: Plano Mensal, Netflix..." required autofocus>
+          </div>
+          <div class="row g-3 mb-3">
+            <div class="col-7">
+              <label class="form-label">Valor (R$) <span class="text-danger">*</span></label>
+              <input type="number" name="price" step="0.01" min="0.01"
+                     class="form-control" placeholder="0,00" required>
+            </div>
+            <div class="col-5">
+              <label class="form-label">Telas</label>
+              <input type="number" name="screens" min="1" value="1"
+                     class="form-control" placeholder="1">
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Período</label>
+            <input type="text" name="period_label" class="form-control"
+                   placeholder="Ex: 15 dias, 1 mês, 3 meses...">
+          </div>
+          <div class="mb-4">
+            <label class="form-label">Descrição</label>
+            <input type="text" name="description" class="form-control"
+                   placeholder="Detalhes opcionais...">
+          </div>
+          <button type="submit" class="btn btn-primary w-100">
+            <i class="bi bi-plus-lg me-1"></i> Adicionar
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <div class="mt-3 p-3 rounded" style="background:rgba(124,58,237,.08);border:1px solid rgba(124,58,237,.2);">
+      <p class="mb-0 small" style="color:var(--text-muted);">
+        <i class="bi bi-lightbulb-fill me-1" style="color:#a78bfa;"></i>
+        Itens ativos aparecem como botões de seleção rápida no formulário de cadastro de clientes.
+      </p>
+    </div>
+  </div>
+
+  <!-- Lista de itens -->
+  <div class="col-12 col-lg-8">
+    <div class="card">
+      <div class="card-header d-flex align-items-center gap-2">
+        <i class="bi bi-tags-fill" style="color:var(--accent2);"></i>
+        <span class="fw-semibold">Itens Cadastrados</span>
+        <span class="badge ms-1" style="background:rgba(255,255,255,.1);color:var(--text-muted);">{{ items|length }}</span>
+      </div>
+      <div class="card-body p-0">
+        {% if items %}
+        <div class="table-responsive">
+          <table class="table table-hover mb-0">
+            <thead>
+              <tr><th>Nome</th><th>Período</th><th>Telas</th><th>Valor</th><th>Status</th><th></th></tr>
+            </thead>
+            <tbody>
+              {% for item in items %}
+              <tr>
+                <td class="fw-semibold">{{ item.name }}</td>
+                <td style="color:var(--text-muted);font-size:.85rem;">{{ item.period_label or '—' }}</td>
+                <td style="text-align:center;">
+                  <span style="background:rgba(124,58,237,.15);color:#a78bfa;border-radius:6px;padding:2px 8px;font-size:.8rem;font-weight:600;">
+                    {{ item.screens or 1 }}x
+                  </span>
+                </td>
+                <td style="color:#6ee7b7;font-weight:600;">R$ {{ "%.2f"|format(item.price) }}</td>
+                <td>
+                  {% if item.is_active %}
+                    <span class="badge" style="background:rgba(16,185,129,.2);color:#6ee7b7;">Ativo</span>
+                  {% else %}
+                    <span class="badge" style="background:rgba(255,255,255,.08);color:var(--text-muted);">Inativo</span>
+                  {% endif %}
+                </td>
+                <td>
+                  <div class="d-flex gap-1">
+                    <form method="POST" action="{{ url_for('admin.toggle_price_item', id=item.id) }}">
+                      <button class="btn btn-sm py-0 px-2"
+                              style="background:rgba(245,158,11,.15);color:#fcd34d;border:1px solid rgba(245,158,11,.3);font-size:.75rem;"
+                              title="{% if item.is_active %}Desativar{% else %}Ativar{% endif %}">
+                        <i class="bi bi-{% if item.is_active %}eye-slash{% else %}eye{% endif %}"></i>
+                      </button>
+                    </form>
+                    <form method="POST" action="{{ url_for('admin.delete_price_item', id=item.id) }}"
+                          onsubmit="return confirm('Excluir item?')">
+                      <button class="btn btn-sm py-0 px-2"
+                              style="background:rgba(239,68,68,.15);color:#fca5a5;border:1px solid rgba(239,68,68,.3);font-size:.75rem;"
+                              title="Excluir">
+                        <i class="bi bi-trash3"></i>
+                      </button>
+                    </form>
+                  </div>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+          <div class="text-center py-5">
+            <i class="bi bi-tags" style="font-size:2.5rem;color:var(--text-muted);"></i>
+            <p class="mt-2" style="color:var(--text-muted);">Nenhum item cadastrado ainda.</p>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

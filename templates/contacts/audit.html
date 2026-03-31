@@ -1,0 +1,212 @@
+{% extends "base.html" %}
+{% block title %}Auditoria de Atendimentos{% endblock %}
+{% block page_title %}Auditoria de Atendimentos{% endblock %}
+{% block content %}
+
+<!-- Filtros -->
+<div class="card mb-4">
+  <div class="card-body py-3">
+    <form method="GET" class="row g-2 align-items-end">
+      <div class="col-6 col-sm-4 col-md-2">
+        <label class="form-label form-label-sm mb-1">De</label>
+        <input type="date" name="from" class="form-control form-control-sm" value="{{ date_from }}">
+      </div>
+      <div class="col-6 col-sm-4 col-md-2">
+        <label class="form-label form-label-sm mb-1">Até</label>
+        <input type="date" name="to" class="form-control form-control-sm" value="{{ date_to }}">
+      </div>
+      <div class="col-6 col-sm-4 col-md-2">
+        <label class="form-label form-label-sm mb-1">Atendente</label>
+        <select name="attendant" class="form-select form-select-sm">
+          <option value="0">Todos</option>
+          {% for a in attendants %}
+          <option value="{{ a.id }}" {% if att_filter == a.id %}selected{% endif %}>{{ a.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-6 col-sm-4 col-md-2">
+        <label class="form-label form-label-sm mb-1">Assunto</label>
+        <select name="tag" class="form-select form-select-sm">
+          <option value="">Todos</option>
+          {% for key, (label, icon, bg, color) in contact_tags.items() %}
+          <option value="{{ key }}" {% if tag_filter == key %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-6 col-sm-4 col-md-2">
+        <label class="form-label form-label-sm mb-1">Tipo</label>
+        <select name="type" class="form-select form-select-sm">
+          <option value="">Todos</option>
+          <option value="manual" {% if type_filter == 'manual' %}selected{% endif %}>Manual</option>
+          <option value="view"   {% if type_filter == 'view'   %}selected{% endif %}>Visualização</option>
+        </select>
+      </div>
+      <div class="col-6 col-sm-4 col-md-2">
+        <button type="submit" class="btn btn-primary btn-sm w-100">
+          <i class="bi bi-search me-1"></i>Filtrar
+        </button>
+      </div>
+      <div class="col-auto d-flex align-items-end">
+        <a href="{{ url_for('exports.audit', **request.args) }}"
+           class="btn btn-sm"
+           style="background:rgba(16,185,129,.15);color:#6ee7b7;border:1px solid rgba(16,185,129,.3);white-space:nowrap;">
+          <i class="bi bi-file-earmark-spreadsheet me-1"></i>Exportar CSV
+        </a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Totais rápidos -->
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-3">
+    <div class="card text-center py-3">
+      <div class="fw-bold" style="font-size:1.6rem;color:var(--accent2);">{{ total_manual }}</div>
+      <div style="font-size:.8rem;color:var(--text-muted);">Contatos Manuais</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card text-center py-3">
+      <div class="fw-bold" style="font-size:1.6rem;color:var(--text-muted);">{{ total_views }}</div>
+      <div style="font-size:.8rem;color:var(--text-muted);">Visualizações</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card text-center py-3">
+      <div class="fw-bold" style="font-size:1.6rem;color:var(--accent);">{{ records|length }}</div>
+      <div style="font-size:.8rem;color:var(--text-muted);">Total de Registros</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card text-center py-3">
+      <div class="fw-bold" style="font-size:1.6rem;color:#fcd34d;">{{ att_stats|length }}</div>
+      <div style="font-size:.8rem;color:var(--text-muted);">Atendentes Ativos</div>
+    </div>
+  </div>
+</div>
+
+<!-- Cards por atendente -->
+{% if att_stats %}
+<div class="row g-3 mb-4">
+  {% for att_id, s in att_stats.items() %}
+  <div class="col-12 col-md-6 col-lg-4">
+    <div class="card h-100">
+      <div class="card-body">
+        <div class="d-flex align-items-center gap-2 mb-3">
+          <div class="stat-icon stat-icon-purple" style="width:36px;height:36px;font-size:.85rem;flex-shrink:0;">
+            <i class="bi bi-person-fill"></i>
+          </div>
+          <span class="fw-semibold">{{ s.name }}</span>
+        </div>
+        <div class="d-flex gap-3 mb-3">
+          <div class="text-center flex-fill">
+            <div class="fw-bold" style="font-size:1.3rem;color:var(--accent2);">{{ s.manual }}</div>
+            <div style="font-size:.72rem;color:var(--text-muted);">Contatos</div>
+          </div>
+          <div class="text-center flex-fill" style="border-left:1px solid var(--border);">
+            <div class="fw-bold" style="font-size:1.3rem;color:var(--text-muted);">{{ s.view }}</div>
+            <div style="font-size:.72rem;color:var(--text-muted);">Visualizações</div>
+          </div>
+        </div>
+        {% if s.tags %}
+        <div class="d-flex flex-wrap gap-1">
+          {% for tag_key, cnt in (s.tags.items() | sort(attribute=1, reverse=True)) %}
+            {% if tag_key in contact_tags %}
+              {% set label, icon, bg, color = contact_tags[tag_key] %}
+              <span class="badge" style="background:{{ bg }};color:{{ color }};font-size:.68rem;border-radius:20px;">
+                <i class="bi {{ icon }} me-1"></i>{{ label }} ×{{ cnt }}
+              </span>
+            {% endif %}
+          {% endfor %}
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<!-- Timeline completa -->
+<div class="card">
+  <div class="card-header d-flex align-items-center gap-2">
+    <i class="bi bi-list-ul" style="color:var(--accent);"></i>
+    <span class="fw-semibold">Registros Detalhados</span>
+    <span class="badge ms-auto" style="background:rgba(255,255,255,.08);color:var(--text-muted);">{{ records|length }}</span>
+  </div>
+  <div class="card-body p-0">
+    {% if records %}
+    <div class="table-responsive">
+      <table class="table table-hover mb-0" style="font-size:.85rem;">
+        <thead>
+          <tr style="border-bottom:1px solid var(--border);">
+            <th class="px-3 py-2">Data/Hora</th>
+            <th class="px-3 py-2">Atendente</th>
+            <th class="px-3 py-2">Cliente</th>
+            <th class="px-3 py-2">Tipo</th>
+            <th class="px-3 py-2">Canal</th>
+            <th class="px-3 py-2">Assunto</th>
+            <th class="px-3 py-2">Observação</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in records %}
+          <tr {% if r.event_type == 'view' %}style="opacity:.55;"{% endif %}>
+            <td class="px-3 py-2 text-nowrap" style="color:var(--text-muted);">
+              {{ r.contacted_at.strftime('%d/%m/%Y %H:%M') }}
+            </td>
+            <td class="px-3 py-2 fw-semibold">{{ r.attendant.name }}</td>
+            <td class="px-3 py-2">
+              <a href="{{ url_for('contacts.client_detail', client_id=r.client_id) }}"
+                 style="color:var(--accent);">
+                {{ r.client.name }}
+              </a>
+            </td>
+            <td class="px-3 py-2">
+              {% if r.event_type == 'view' %}
+                <span class="badge" style="background:rgba(255,255,255,.06);color:var(--text-muted);font-size:.68rem;">
+                  <i class="bi bi-eye me-1"></i>Visualização
+                </span>
+              {% else %}
+                {% if r.direction == 'incoming' %}
+                  <span class="badge" style="background:rgba(16,185,129,.15);color:#6ee7b7;font-size:.68rem;">
+                    <i class="bi bi-arrow-down-left me-1"></i>Entrada
+                  </span>
+                {% else %}
+                  <span class="badge" style="background:rgba(124,58,237,.15);color:#a78bfa;font-size:.68rem;">
+                    <i class="bi bi-arrow-up-right me-1"></i>Saída
+                  </span>
+                {% endif %}
+              {% endif %}
+            </td>
+            <td class="px-3 py-2" style="color:var(--text-muted);">
+              {% if r.event_type != 'view' %}{{ r.channel_label }}{% endif %}
+            </td>
+            <td class="px-3 py-2">
+              {% if r.tag_info %}
+                {% set label, icon, bg, color = r.tag_info %}
+                <span class="badge" style="background:{{ bg }};color:{{ color }};font-size:.68rem;border-radius:20px;">
+                  <i class="bi {{ icon }} me-1"></i>{{ label }}
+                </span>
+              {% endif %}
+            </td>
+            <td class="px-3 py-2" style="color:var(--text-muted);max-width:200px;">
+              {% if r.notes %}
+                <span title="{{ r.notes }}">{{ r.notes[:60] }}{% if r.notes|length > 60 %}…{% endif %}</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+      <div class="text-center py-5">
+        <i class="bi bi-search" style="font-size:2.5rem;color:var(--text-muted);"></i>
+        <p class="mt-2 mb-0" style="color:var(--text-muted);">Nenhum registro encontrado para os filtros selecionados.</p>
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+{% endblock %}

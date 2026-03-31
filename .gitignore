@@ -1,0 +1,28 @@
+# Banco local
+instance/
+*.db
+*.sqlite3
+
+# Variáveis de ambiente (contém senha/chave)
+.env
+
+# Uploads locais (no Railway usam Volume separado)
+static/uploads/
+
+# Backups locais
+backups/
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+env/
+
+# VSCode
+.vscode/
+
+# Sistema operacional
+.DS_Store
+Thumbs.db

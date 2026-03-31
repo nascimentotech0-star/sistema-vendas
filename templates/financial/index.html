@@ -1,0 +1,335 @@
+{% extends "base.html" %}
+{% block title %}Financeiro — {{ viewed_month.label_full }}{% endblock %}
+{% block page_title %}Financeiro{% endblock %}
+{% block content %}
+
+<!-- Seletor de mês -->
+<div class="d-flex align-items-center gap-3 mb-4 flex-wrap">
+  <form method="GET" class="d-flex align-items-center gap-2">
+    <label class="fw-semibold" style="font-size:.875rem;color:var(--text-muted);">Período:</label>
+    <select name="m" class="form-select form-select-sm" style="width:200px;" onchange="this.form.submit()">
+      {% for opt in month_options %}
+      <option value="{{ opt.value }}" {% if opt.value == sel %}selected{% endif %}>{{ opt.label }}</option>
+      {% endfor %}
+    </select>
+  </form>
+  <span class="fw-bold" style="font-size:1.05rem;">{{ viewed_month.label_full }}</span>
+  <div class="ms-auto d-flex gap-2">
+    <a href="{{ url_for('exports.financial') }}" class="btn btn-sm"
+       style="background:rgba(16,185,129,.15);color:#6ee7b7;border:1px solid rgba(16,185,129,.3);">
+      <i class="bi bi-file-earmark-spreadsheet me-1"></i>Exportar 12 meses CSV
+    </a>
+  </div>
+</div>
+
+<!-- ── KPIs DO MÊS ───────────────────────────────────────────────────────── -->
+<div class="row g-3 mb-4">
+
+  <!-- Total Faturado -->
+  <div class="col-6 col-lg">
+    <div class="card h-100 py-3 px-3" style="border-color:rgba(99,102,241,.3);">
+      <div style="font-size:.72rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;">Total Faturado</div>
+      <div class="fw-bold mt-1" style="font-size:1.4rem;color:#a5b4fc;">
+        R$ {{ '%.2f'|format(viewed_month.total_billed)|replace('.',','|replace(',','.', 1)) }}
+      </div>
+      <div style="font-size:.75rem;color:var(--text-muted);" class="mt-1">
+        <i class="bi bi-receipt me-1"></i>{{ viewed_month.sales_count + viewed_month.renewals_count }} operações
+      </div>
+    </div>
+  </div>
+
+  <!-- Total Recebido -->
+  <div class="col-6 col-lg">
+    <div class="card h-100 py-3 px-3" style="border-color:rgba(16,185,129,.3);">
+      <div style="font-size:.72rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;">Recebido</div>
+      <div class="fw-bold mt-1" style="font-size:1.4rem;color:#6ee7b7;">
+        R$ {{ '%.2f'|format(viewed_month.total_received) }}
+      </div>
+      <div class="d-flex gap-2 mt-1" style="font-size:.72rem;color:var(--text-muted);">
+        <span><i class="bi bi-cart3 me-1"></i>Vendas R$ {{ '%.2f'|format(viewed_month.sales_total) }}</span>
+      </div>
+      <div style="font-size:.72rem;color:var(--text-muted);">
+        <span><i class="bi bi-arrow-repeat me-1"></i>Renovações R$ {{ '%.2f'|format(viewed_month.renewals_total) }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- A Receber -->
+  <div class="col-6 col-lg">
+    <div class="card h-100 py-3 px-3" style="border-color:rgba(245,158,11,.3);">
+      <div style="font-size:.72rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;">A Receber</div>
+      <div class="fw-bold mt-1" style="font-size:1.4rem;color:#fcd34d;">
+        R$ {{ '%.2f'|format(viewed_month.pending_total) }}
+      </div>
+      <div style="font-size:.75rem;color:var(--text-muted);" class="mt-1">
+        <i class="bi bi-hourglass-split me-1"></i>{{ viewed_month.pending_count }} renovação(ões) pendente(s)
+      </div>
+    </div>
+  </div>
+
+  <!-- Perdido (cancelado) -->
+  <div class="col-6 col-lg">
+    <div class="card h-100 py-3 px-3" style="border-color:rgba(239,68,68,.3);">
+      <div style="font-size:.72rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;">Perdido</div>
+      <div class="fw-bold mt-1" style="font-size:1.4rem;color:#fca5a5;">
+        R$ {{ '%.2f'|format(viewed_month.cancelled_total) }}
+      </div>
+      <div style="font-size:.75rem;color:var(--text-muted);" class="mt-1">
+        <i class="bi bi-x-circle me-1"></i>{{ viewed_month.cancelled_count }} renovação(ões) cancelada(s)
+      </div>
+    </div>
+  </div>
+
+  <!-- Crescimento -->
+  <div class="col-6 col-lg">
+    <div class="card h-100 py-3 px-3"
+         style="border-color:{% if viewed_month.growth and viewed_month.growth > 0 %}rgba(16,185,129,.3){% elif viewed_month.growth and viewed_month.growth < 0 %}rgba(239,68,68,.3){% else %}var(--border){% endif %};">
+      <div style="font-size:.72rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;">Crescimento</div>
+      {% if viewed_month.growth is not none %}
+        <div class="fw-bold mt-1" style="font-size:1.4rem;
+             color:{% if viewed_month.growth > 0 %}#6ee7b7{% elif viewed_month.growth < 0 %}#fca5a5{% else %}var(--text-muted){% endif %};">
+          {% if viewed_month.growth > 0 %}<i class="bi bi-arrow-up-right me-1"></i>+{% endif %}
+          {% if viewed_month.growth < 0 %}<i class="bi bi-arrow-down-right me-1"></i>{% endif %}
+          {{ viewed_month.growth }}%
+        </div>
+      {% else %}
+        <div class="fw-bold mt-1" style="font-size:1.4rem;color:var(--text-muted);">—</div>
+      {% endif %}
+      <div style="font-size:.75rem;color:var(--text-muted);" class="mt-1">
+        vs {{ prev_data.label_full }}: R$ {{ '%.2f'|format(prev_data.total_received) }}
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ── GRÁFICO DE EVOLUÇÃO ────────────────────────────────────────────────── -->
+<div class="card mb-4">
+  <div class="card-header d-flex align-items-center gap-2">
+    <i class="bi bi-graph-up-arrow" style="color:var(--accent);"></i>
+    <span class="fw-semibold">Evolução dos Últimos 12 Meses</span>
+  </div>
+  <div class="card-body">
+    <canvas id="chartEvolution" height="90"></canvas>
+  </div>
+</div>
+
+<!-- ── TABELA MENSAL ──────────────────────────────────────────────────────── -->
+<div class="card mb-4">
+  <div class="card-header d-flex align-items-center gap-2">
+    <i class="bi bi-table" style="color:var(--accent2);"></i>
+    <span class="fw-semibold">Resumo por Mês</span>
+  </div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0" style="font-size:.83rem;">
+        <thead>
+          <tr>
+            <th class="px-3 py-2">Mês</th>
+            <th class="px-3 py-2 text-end">Vendas</th>
+            <th class="px-3 py-2 text-end">Renovações</th>
+            <th class="px-3 py-2 text-end">Total Recebido</th>
+            <th class="px-3 py-2 text-end">A Receber</th>
+            <th class="px-3 py-2 text-end">Perdido</th>
+            <th class="px-3 py-2 text-end">Crescimento</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for m in months_data|reverse %}
+          <tr {% if m.year == viewed_month.year and m.month == viewed_month.month %}
+              style="background:rgba(99,102,241,.07);"{% endif %}>
+            <td class="px-3 py-2 fw-semibold">
+              <a href="?m={{ m.year }}-{{ '%02d'|format(m.month) }}"
+                 style="color:var(--text);text-decoration:none;">
+                {{ m.label_full }}
+              </a>
+            </td>
+            <td class="px-3 py-2 text-end">
+              R$ {{ '%.2f'|format(m.sales_total) }}
+              <small class="d-block" style="color:var(--text-muted);font-size:.72rem;">{{ m.sales_count }} venda(s)</small>
+            </td>
+            <td class="px-3 py-2 text-end">
+              R$ {{ '%.2f'|format(m.renewals_total) }}
+              <small class="d-block" style="color:var(--text-muted);font-size:.72rem;">{{ m.renewals_count }} renovação(ões)</small>
+            </td>
+            <td class="px-3 py-2 text-end fw-bold" style="color:#6ee7b7;">
+              R$ {{ '%.2f'|format(m.total_received) }}
+            </td>
+            <td class="px-3 py-2 text-end" style="color:#fcd34d;">
+              {% if m.pending_total > 0 %}
+                R$ {{ '%.2f'|format(m.pending_total) }}
+                <small class="d-block" style="font-size:.72rem;">{{ m.pending_count }} pendente(s)</small>
+              {% else %}
+                <span style="color:var(--text-muted);">—</span>
+              {% endif %}
+            </td>
+            <td class="px-3 py-2 text-end" style="color:#fca5a5;">
+              {% if m.cancelled_total > 0 %}
+                R$ {{ '%.2f'|format(m.cancelled_total) }}
+                <small class="d-block" style="font-size:.72rem;">{{ m.cancelled_count }} cancelada(s)</small>
+              {% else %}
+                <span style="color:var(--text-muted);">—</span>
+              {% endif %}
+            </td>
+            <td class="px-3 py-2 text-end">
+              {% if m.growth is not none %}
+                <span style="color:{% if m.growth > 0 %}#6ee7b7{% elif m.growth < 0 %}#fca5a5{% else %}var(--text-muted){% endif %};">
+                  {% if m.growth > 0 %}▲{% elif m.growth < 0 %}▼{% endif %}
+                  {{ m.growth }}%
+                </span>
+              {% else %}
+                <span style="color:var(--text-muted);">—</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+        <tfoot>
+          <tr style="border-top:2px solid var(--border);font-weight:700;">
+            <td class="px-3 py-2">Total (12 meses)</td>
+            <td class="px-3 py-2 text-end">R$ {{ '%.2f'|format(months_data|sum(attribute='sales_total')) }}</td>
+            <td class="px-3 py-2 text-end">R$ {{ '%.2f'|format(months_data|sum(attribute='renewals_total')) }}</td>
+            <td class="px-3 py-2 text-end" style="color:#6ee7b7;">R$ {{ '%.2f'|format(months_data|sum(attribute='total_received')) }}</td>
+            <td class="px-3 py-2 text-end" style="color:#fcd34d;">R$ {{ '%.2f'|format(months_data|sum(attribute='pending_total')) }}</td>
+            <td class="px-3 py-2 text-end" style="color:#fca5a5;">R$ {{ '%.2f'|format(months_data|sum(attribute='cancelled_total')) }}</td>
+            <td class="px-3 py-2"></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ── BREAKDOWN POR ATENDENTE ───────────────────────────────────────────── -->
+{% if att_rows %}
+<div class="card mb-4">
+  <div class="card-header d-flex align-items-center gap-2">
+    <i class="bi bi-people-fill" style="color:var(--accent2);"></i>
+    <span class="fw-semibold">Por Atendente — {{ viewed_month.label_full }}</span>
+  </div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0" style="font-size:.85rem;">
+        <thead>
+          <tr>
+            <th class="px-3 py-2">Atendente</th>
+            <th class="px-3 py-2 text-end">Vendas</th>
+            <th class="px-3 py-2 text-end">Renovações</th>
+            <th class="px-3 py-2 text-end">Total</th>
+            <th class="px-3 py-2">Participação</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in att_rows %}
+          <tr>
+            <td class="px-3 py-2 fw-semibold">
+              {% if loop.index == 1 %}<span style="margin-right:4px;">🥇</span>
+              {% elif loop.index == 2 %}<span style="margin-right:4px;">🥈</span>
+              {% elif loop.index == 3 %}<span style="margin-right:4px;">🥉</span>
+              {% endif %}
+              {{ row.name }}
+            </td>
+            <td class="px-3 py-2 text-end">
+              R$ {{ '%.2f'|format(row.sales_total) }}
+              <small class="d-block" style="color:var(--text-muted);font-size:.72rem;">{{ row.sales_count }} venda(s)</small>
+            </td>
+            <td class="px-3 py-2 text-end">
+              R$ {{ '%.2f'|format(row.renewals_total) }}
+              <small class="d-block" style="color:var(--text-muted);font-size:.72rem;">{{ row.renewals_count }} renovação(ões)</small>
+            </td>
+            <td class="px-3 py-2 text-end fw-bold" style="color:#6ee7b7;">
+              R$ {{ '%.2f'|format(row.total) }}
+            </td>
+            <td class="px-3 py-2" style="min-width:130px;">
+              <div class="d-flex align-items-center gap-2">
+                <div class="flex-fill rounded" style="height:8px;background:rgba(255,255,255,.08);">
+                  <div class="rounded" style="height:8px;width:{{ row.pct }}%;background:var(--accent);"></div>
+                </div>
+                <span style="font-size:.75rem;color:var(--text-muted);min-width:35px;">{{ row.pct }}%</span>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+        <tfoot>
+          <tr style="border-top:2px solid var(--border);font-weight:700;">
+            <td class="px-3 py-2">Total</td>
+            <td class="px-3 py-2 text-end">R$ {{ '%.2f'|format(att_rows|sum(attribute='sales_total')) }}</td>
+            <td class="px-3 py-2 text-end">R$ {{ '%.2f'|format(att_rows|sum(attribute='renewals_total')) }}</td>
+            <td class="px-3 py-2 text-end" style="color:#6ee7b7;">R$ {{ '%.2f'|format(att_rows|sum(attribute='total')) }}</td>
+            <td class="px-3 py-2"></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+<script>
+const labels    = {{ chart_labels | tojson }};
+const dSales    = {{ chart_sales  | tojson }};
+const dRenewals = {{ chart_renewals | tojson }};
+const dPending  = {{ chart_pending  | tojson }};
+
+const isDark = document.documentElement.getAttribute('data-bs-theme') !== 'light';
+const gridColor = 'rgba(255,255,255,.06)';
+const textColor = '#94a3b8';
+
+new Chart(document.getElementById('chartEvolution'), {
+  type: 'bar',
+  data: {
+    labels,
+    datasets: [
+      {
+        label: 'Vendas',
+        data: dSales,
+        backgroundColor: 'rgba(99,102,241,.7)',
+        borderRadius: 4,
+        stack: 'received',
+      },
+      {
+        label: 'Renovações',
+        data: dRenewals,
+        backgroundColor: 'rgba(16,185,129,.7)',
+        borderRadius: 4,
+        stack: 'received',
+      },
+      {
+        label: 'A Receber',
+        data: dPending,
+        backgroundColor: 'rgba(245,158,11,.35)',
+        borderRadius: 4,
+        borderDash: [4,2],
+        stack: 'pending',
+      },
+    ],
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: true,
+    interaction: { mode: 'index', intersect: false },
+    plugins: {
+      legend: { labels: { color: textColor, font: { size: 12 } } },
+      tooltip: {
+        callbacks: {
+          label: ctx => ` ${ctx.dataset.label}: R$ ${ctx.parsed.y.toFixed(2).replace('.',',')}`,
+        },
+      },
+    },
+    scales: {
+      x: { stacked: true, grid: { color: gridColor }, ticks: { color: textColor } },
+      y: {
+        stacked: true,
+        grid: { color: gridColor },
+        ticks: {
+          color: textColor,
+          callback: v => 'R$ ' + v.toLocaleString('pt-BR'),
+        },
+      },
+    },
+  },
+});
+</script>
+{% endblock %}

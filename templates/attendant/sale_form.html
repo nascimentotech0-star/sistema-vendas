@@ -1,0 +1,190 @@
+{% extends "base.html" %}
+{% block title %}Nova Venda — VendasPRO{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-12 col-md-7">
+    <div class="d-flex align-items-center mb-4">
+      <a href="{{ url_for('attendant.sales') }}" class="btn btn-outline-secondary btn-sm me-3">
+        <i class="bi bi-arrow-left"></i>
+      </a>
+      <div>
+        <h4 class="fw-bold mb-0">Registrar Venda</h4>
+        {% if is_overtime %}
+          <small class="text-warning fw-semibold">
+            <i class="bi bi-moon-stars-fill me-1"></i> Hora Extra — Comissão 20%
+          </small>
+        {% else %}
+          <small class="text-success fw-semibold">
+            <i class="bi bi-sun-fill me-1"></i> Horário Normal — Comissão 5%
+          </small>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+      <div class="card-body p-4">
+        <form method="POST" enctype="multipart/form-data">
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Cliente Cadastrado</label>
+            <select name="client_id" class="form-select" id="clientSelect">
+              <option value="">— Selecionar cliente —</option>
+              {% for c in clients %}
+              <option value="{{ c.id }}">{{ c.name }}{% if c.whatsapp %} · {{ c.whatsapp }}{% endif %}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="mb-3" id="clientNameDiv">
+            <label class="form-label fw-semibold">
+              Ou informar nome manualmente
+            </label>
+            <input type="text" name="client_name_manual" class="form-control" placeholder="Nome do cliente" id="clientNameInput">
+          </div>
+
+          <hr class="my-3">
+
+          <!-- Seleção rápida de planos -->
+          <div id="quickPrices" class="mb-3" style="display:none;">
+            <label class="form-label fw-semibold" style="font-size:.8rem;">Seleção rápida de plano</label>
+            <div id="priceButtons" class="d-flex flex-wrap gap-2"></div>
+          </div>
+
+          <div class="row g-3">
+            <div class="col-12 col-sm-6">
+              <label class="form-label fw-semibold">Valor Base (R$) <span class="text-danger">*</span></label>
+              <input type="text" name="amount" class="form-control" placeholder="0,00" id="amountInput" required oninput="calcComissao()">
+            </div>
+            <div class="col-12 col-sm-6">
+              <label class="form-label fw-semibold">Forma de Pagamento <span class="text-danger">*</span></label>
+              <select name="payment_method" class="form-select" required>
+                <option value="">Selecionar...</option>
+                {% for key, label in payment_methods.items() %}
+                <option value="{{ key }}">{{ label }}</option>
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+
+          <div class="row g-3 mt-1">
+            <div class="col-12 col-sm-6">
+              <label class="form-label fw-semibold">
+                Ajuste (R$) <small class="text-muted fw-normal">desconto (−) / acréscimo (+)</small>
+              </label>
+              <input type="number" name="adjustment" id="adjustmentInput" step="0.01"
+                     class="form-control" placeholder="0,00" value="0" oninput="calcComissao()">
+            </div>
+            <div class="col-12 col-sm-6">
+              <label class="form-label fw-semibold">Qtd. Telas</label>
+              <input type="number" name="screens" id="screensInput" min="1" value="1" class="form-control">
+            </div>
+          </div>
+
+          <!-- Preview de comissão -->
+          <div class="alert alert-info py-2 mt-3 small" id="commissionPreview" style="display:none">
+            <i class="bi bi-cash-stack me-1"></i>
+            Valor final: <strong id="finalValue"></strong> &nbsp;|&nbsp;
+            <i class="bi bi-calculator me-1"></i>
+            Comissão: <strong id="commissionValue"></strong>
+            ({{ 20 if is_overtime else 5 }}%)
+          </div>
+
+          <div class="mb-3 mt-3">
+            <label class="form-label fw-semibold">Descrição / Produto</label>
+            <input type="text" name="description" class="form-control" placeholder="Ex: Curso XYZ, Produto ABC...">
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold">
+              <i class="bi bi-image me-1 text-primary"></i> Comprovante de Pagamento
+            </label>
+            <input type="file" name="comprovante" class="form-control" accept="image/*,.pdf" id="fileInput" required>
+            <div class="form-text" style="color:#fca5a5;"><i class="bi bi-exclamation-circle me-1"></i>Obrigatório — a venda só é válida com comprovante anexado.</div>
+            <div id="imagePreview" class="mt-2" style="display:none">
+              <img id="previewImg" src="" alt="Preview" class="img-thumbnail" style="max-height:200px">
+            </div>
+          </div>
+
+          <div class="d-flex gap-2 mt-4">
+            <button type="submit" class="btn btn-success px-4 fw-semibold">
+              <i class="bi bi-check-circle-fill me-1"></i> Registrar Venda
+            </button>
+            <a href="{{ url_for('attendant.sales') }}" class="btn btn-outline-secondary">Cancelar</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+  const rate = {{ 20 if is_overtime else 5 }};
+
+  function calcComissao() {
+    const base = parseFloat(document.getElementById('amountInput').value.replace(',', '.')) || 0;
+    const adj  = parseFloat(document.getElementById('adjustmentInput').value) || 0;
+    const final = base + adj;
+    if (base > 0) {
+      const fmt = v => 'R$ ' + v.toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
+      document.getElementById('finalValue').textContent = fmt(final);
+      document.getElementById('commissionValue').textContent = fmt(final * rate / 100);
+      document.getElementById('commissionPreview').style.display = 'block';
+    } else {
+      document.getElementById('commissionPreview').style.display = 'none';
+    }
+  }
+
+  // Carrega planos rápidos
+  fetch('{{ url_for("attendant.api_prices") }}')
+    .then(r => r.json())
+    .then(items => {
+      if (!items.length) return;
+      document.getElementById('quickPrices').style.display = 'block';
+      const box = document.getElementById('priceButtons');
+      items.forEach(item => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        let label = `<span style="font-weight:700;">${item.period_label || item.name}</span>`;
+        label += ` <span style="opacity:.75;font-size:.82em;">${item.screens}x</span>`;
+        label += ` <span style="font-weight:600;">R$ ${item.price.toLocaleString('pt-BR',{minimumFractionDigits:2})}</span>`;
+        btn.innerHTML = label;
+        btn.className = 'btn btn-sm';
+        btn.style.cssText = 'background:rgba(124,58,237,.15);color:#a78bfa;border:1px solid rgba(124,58,237,.3);border-radius:8px;';
+        btn.onclick = () => {
+          document.getElementById('amountInput').value = item.price.toFixed(2);
+          document.getElementById('adjustmentInput').value = '0';
+          document.getElementById('screensInput').value = item.screens || 1;
+          const desc = document.querySelector('[name=description]');
+          if (desc && !desc.value) desc.value = item.name;
+          calcComissao();
+        };
+        box.appendChild(btn);
+      });
+    }).catch(() => {});
+
+  document.getElementById('clientSelect').addEventListener('change', function () {
+    const manual = document.getElementById('clientNameInput');
+    if (this.value) {
+      manual.value = '';
+      manual.disabled = true;
+    } else {
+      manual.disabled = false;
+    }
+  });
+
+  document.getElementById('fileInput').addEventListener('change', function () {
+    const file = this.files[0];
+    if (file && file.type.startsWith('image/')) {
+      const reader = new FileReader();
+      reader.onload = e => {
+        document.getElementById('previewImg').src = e.target.result;
+        document.getElementById('imagePreview').style.display = 'block';
+      };
+      reader.readAsDataURL(file);
+    } else {
+      document.getElementById('imagePreview').style.display = 'none';
+    }
+  });
+</script>
+{% endblock %}

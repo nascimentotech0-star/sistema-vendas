@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+{% block title %}Comissões — Nascimento Tech{% endblock %}
+{% block page_title %}Controle de Comissões{% endblock %}
+{% block content %}
+
+<!-- Filtro -->
+<div class="card mb-4">
+  <div class="card-body py-2">
+    <div class="d-flex flex-wrap gap-3 align-items-center">
+      <form method="GET" class="d-flex align-items-center gap-2">
+        <label class="form-label mb-0 small">Mês:</label>
+        <input type="month" name="month" value="{{ month }}" class="form-control form-control-sm" style="width:160px;">
+        <button class="btn btn-sm btn-primary">Filtrar</button>
+      </form>
+      <a href="{{ url_for('admin.commission_pdf', month=month) }}" target="_blank"
+         class="btn btn-sm ms-auto"
+         style="background:rgba(239,68,68,.2);color:#fca5a5;border:1px solid rgba(239,68,68,.3);">
+        <i class="bi bi-file-earmark-pdf-fill me-1"></i> Exportar PDF
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- Totais -->
+<div class="row g-3 mb-4">
+  <div class="col-4">
+    <div class="card stat-card stat-card-purple h-100">
+      <div class="card-body text-center py-3">
+        <p class="mb-1" style="font-size:.68rem;color:var(--text-muted);text-transform:uppercase;">Total Ganho</p>
+        <h4 class="fw-bold mb-0" style="color:#a78bfa;">R$ {{ "%.2f"|format(total_earned) }}</h4>
+      </div>
+    </div>
+  </div>
+  <div class="col-4">
+    <div class="card stat-card stat-card-green h-100">
+      <div class="card-body text-center py-3">
+        <p class="mb-1" style="font-size:.68rem;color:var(--text-muted);text-transform:uppercase;">Total Pago</p>
+        <h4 class="fw-bold mb-0" style="color:#6ee7b7;">R$ {{ "%.2f"|format(total_paid) }}</h4>
+      </div>
+    </div>
+  </div>
+  <div class="col-4">
+    <div class="card stat-card {% if total_balance > 0 %}stat-card-yellow{% else %}stat-card-green{% endif %} h-100">
+      <div class="card-body text-center py-3">
+        <p class="mb-1" style="font-size:.68rem;color:var(--text-muted);text-transform:uppercase;">Saldo a Pagar</p>
+        <h4 class="fw-bold mb-0" style="color:{% if total_balance > 0 %}#fcd34d{% else %}#6ee7b7{% endif %};">
+          R$ {{ "%.2f"|format(total_balance) }}
+        </h4>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Por atendente -->
+{% for row in data %}
+<div class="card mb-4">
+  <div class="card-header d-flex align-items-center gap-3">
+    <div class="stat-icon stat-icon-purple" style="width:36px;height:36px;font-size:.85rem;flex-shrink:0;">
+      <i class="bi bi-person-fill"></i>
+    </div>
+    <span class="fw-semibold">{{ row.attendant.name }}</span>
+    <span class="ms-2 small" style="color:var(--text-muted);">{{ row.sales_count }} venda(s)</span>
+    <div class="ms-auto d-flex gap-3">
+      <span class="small">Ganhou: <strong style="color:#a78bfa;">R$ {{ "%.2f"|format(row.earned) }}</strong></span>
+      <span class="small">Pago: <strong style="color:#6ee7b7;">R$ {{ "%.2f"|format(row.paid) }}</strong></span>
+      <span class="small">Saldo: <strong style="color:{% if row.balance > 0 %}#fcd34d{% else %}#6ee7b7{% endif %};">
+        R$ {{ "%.2f"|format(row.balance) }}
+      </strong></span>
+    </div>
+  </div>
+  <div class="card-body">
+    <div class="row g-3 align-items-start">
+
+      <!-- Histórico de pagamentos -->
+      <div class="col-12 col-md-7">
+        <p class="small fw-semibold mb-2" style="color:var(--text-muted);">Pagamentos realizados</p>
+        {% if row.payments %}
+        <div class="table-responsive">
+          <table class="table table-sm mb-0">
+            <thead><tr><th>Data</th><th>Valor</th><th>Observação</th><th>Por</th></tr></thead>
+            <tbody>
+              {% for p in row.payments %}
+              <tr>
+                <td style="font-size:.82rem;">{{ p.paid_at.strftime('%d/%m/%Y %H:%M') }}</td>
+                <td class="fw-semibold" style="color:#6ee7b7;">R$ {{ "%.2f"|format(p.amount) }}</td>
+                <td style="color:var(--text-muted);font-size:.82rem;">{{ p.notes or '—' }}</td>
+                <td style="color:var(--text-muted);font-size:.82rem;">{{ p.payer.name }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+          <p class="small" style="color:var(--text-muted);">Nenhum pagamento registrado.</p>
+        {% endif %}
+      </div>
+
+      <!-- Registrar pagamento -->
+      {% if row.balance > 0 %}
+      <div class="col-12 col-md-5">
+        <p class="small fw-semibold mb-2" style="color:var(--text-muted);">Registrar pagamento</p>
+        <form method="POST" action="{{ url_for('admin.pay_commission') }}">
+          <input type="hidden" name="attendant_id" value="{{ row.attendant.id }}">
+          <input type="hidden" name="year" value="{{ year }}">
+          <input type="hidden" name="month" value="{{ mon }}">
+          <div class="mb-2">
+            <input type="number" name="amount" step="0.01" min="0.01"
+                   max="{{ row.balance }}"
+                   class="form-control form-control-sm"
+                   placeholder="Valor (R$)" value="{{ row.balance }}">
+          </div>
+          <div class="mb-2">
+            <input type="text" name="notes" class="form-control form-control-sm"
+                   placeholder="Observação (opcional)">
+          </div>
+          <button type="submit" class="btn btn-sm w-100"
+                  style="background:rgba(16,185,129,.2);color:#6ee7b7;border:1px solid rgba(16,185,129,.3);">
+            <i class="bi bi-check-lg me-1"></i> Registrar Pagamento
+          </button>
+        </form>
+      </div>
+      {% else %}
+      <div class="col-12 col-md-5 d-flex align-items-center justify-content-center">
+        <span class="badge px-3 py-2" style="background:rgba(16,185,129,.15);color:#6ee7b7;font-size:.8rem;">
+          <i class="bi bi-check-circle-fill me-1"></i> Comissão quitada
+        </span>
+      </div>
+      {% endif %}
+
+    </div>
+  </div>
+</div>
+{% else %}
+<div class="text-center py-5">
+  <i class="bi bi-cash-coin" style="font-size:2.5rem;color:var(--text-muted);"></i>
+  <p class="mt-2" style="color:var(--text-muted);">Nenhuma comissão para este mês.</p>
+</div>
+{% endfor %}
+
+{% endblock %}

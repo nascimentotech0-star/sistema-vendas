@@ -1,0 +1,295 @@
+{% extends "base.html" %}
+{% block title %}{{ client.name }} — Contatos{% endblock %}
+{% block page_title %}{{ client.name }}{% endblock %}
+{% block content %}
+
+<div class="row g-4">
+
+  <!-- Coluna esquerda: info + registrar contato -->
+  <div class="col-12 col-lg-4">
+
+    <!-- Botão de mensagem rápida -->
+    <div class="d-flex gap-2 mb-3">
+      <button id="btnCopyMsg" class="btn btn-sm flex-fill"
+              style="background:rgba(37,211,102,.15);color:#25d366;border:1px solid rgba(37,211,102,.3);">
+        <i class="bi bi-clipboard me-1"></i>Copiar mensagem
+      </button>
+      {% if client.whatsapp %}
+      <a href="https://wa.me/{{ client.whatsapp|replace(' ','')|replace('(','') |replace(')','') |replace('-','') }}"
+         target="_blank" class="btn btn-sm"
+         style="background:rgba(37,211,102,.15);color:#25d366;border:1px solid rgba(37,211,102,.3);">
+        <i class="bi bi-whatsapp me-1"></i>WhatsApp
+      </a>
+      {% endif %}
+    </div>
+
+    <!-- Card do cliente -->
+    <div class="card mb-3">
+      <div class="card-body">
+        <div class="d-flex align-items-center gap-3 mb-3">
+          <div class="stat-icon stat-icon-purple" style="width:48px;height:48px;font-size:1.3rem;flex-shrink:0;">
+            <i class="bi bi-person-fill"></i>
+          </div>
+          <div>
+            <h6 class="fw-bold mb-0">{{ client.name }}</h6>
+            <small style="color:var(--text-muted);">Cadastrado em {{ client.created_at.strftime('%d/%m/%Y') }}</small>
+          </div>
+        </div>
+
+        <div class="d-flex flex-column gap-2" style="font-size:.875rem;">
+          {% if client.whatsapp %}
+          <div class="d-flex align-items-center gap-2">
+            <i class="bi bi-whatsapp" style="color:#25d366;width:18px;"></i>
+            <span>{{ client.whatsapp }}</span>
+          </div>
+          {% endif %}
+          {% if client.phone %}
+          <div class="d-flex align-items-center gap-2">
+            <i class="bi bi-telephone-fill" style="color:var(--accent2);width:18px;"></i>
+            <span>{{ client.phone }}</span>
+          </div>
+          {% endif %}
+          {% if client.email %}
+          <div class="d-flex align-items-center gap-2">
+            <i class="bi bi-envelope-fill" style="color:var(--accent);width:18px;"></i>
+            <span>{{ client.email }}</span>
+          </div>
+          {% endif %}
+          {% if client.city %}
+          <div class="d-flex align-items-center gap-2">
+            <i class="bi bi-geo-alt-fill" style="color:var(--text-muted);width:18px;"></i>
+            <span>{{ client.city }}{% if client.state %}/{{ client.state }}{% endif %}</span>
+          </div>
+          {% endif %}
+        </div>
+
+        <!-- Status de contato -->
+        <div class="mt-3 pt-3" style="border-top:1px solid var(--border);">
+          {% if client.is_at_risk %}
+            <div class="d-flex align-items-center gap-2">
+              <i class="bi bi-exclamation-triangle-fill" style="color:#f9a8d4;"></i>
+              <span style="color:#f9a8d4;font-size:.85rem;font-weight:600;">
+                {{ client.days_without_contact }} dias sem contato
+              </span>
+            </div>
+          {% elif client.last_contact %}
+            <div class="d-flex align-items-center gap-2">
+              <i class="bi bi-check-circle-fill" style="color:#6ee7b7;"></i>
+              <span style="color:#6ee7b7;font-size:.85rem;">
+                Último contato: {{ client.last_contact.contacted_at.strftime('%d/%m/%Y') }}
+              </span>
+            </div>
+          {% else %}
+            <span style="color:var(--text-muted);font-size:.85rem;">Nenhum contato registrado</span>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Registrar novo contato -->
+    <div class="card">
+      <div class="card-header d-flex align-items-center gap-2">
+        <i class="bi bi-chat-dots-fill" style="color:var(--accent2);"></i>
+        <span class="fw-semibold">Registrar Contato</span>
+      </div>
+      <div class="card-body">
+        <form method="POST" action="{{ url_for('contacts.register_contact', client_id=client.id) }}">
+          <input type="hidden" name="tag" id="selectedTag" value="">
+
+          <div class="mb-3">
+            <label class="form-label">Direção</label>
+            <div class="d-flex gap-2">
+              <label class="flex-fill text-center py-2 px-1 rounded"
+                     style="background:rgba(16,185,129,.15);border:1px solid rgba(16,185,129,.3);cursor:pointer;font-size:.8rem;">
+                <input type="radio" name="direction" value="incoming" checked class="d-none">
+                <i class="bi bi-arrow-down-left-circle-fill me-1" style="color:#6ee7b7;"></i>
+                <span style="color:#6ee7b7;">Cliente nos contactou</span>
+              </label>
+              <label class="flex-fill text-center py-2 px-1 rounded"
+                     style="background:rgba(124,58,237,.15);border:1px solid rgba(124,58,237,.3);cursor:pointer;font-size:.8rem;">
+                <input type="radio" name="direction" value="outgoing" class="d-none">
+                <i class="bi bi-arrow-up-right-circle-fill me-1" style="color:#a78bfa;"></i>
+                <span style="color:#a78bfa;">Nós contactamos</span>
+              </label>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Canal</label>
+            <select name="channel" class="form-select form-select-sm">
+              <option value="whatsapp">WhatsApp</option>
+              <option value="phone">Telefone</option>
+              <option value="email">E-mail</option>
+              <option value="other">Outro</option>
+            </select>
+          </div>
+
+          <!-- Tags -->
+          <div class="mb-3">
+            <label class="form-label">Assunto <small style="color:var(--text-muted);">(opcional)</small></label>
+            <div class="d-flex flex-wrap gap-1" id="tagButtons">
+              {% for key, (label, icon, bg, color) in contact_tags.items() %}
+              <button type="button" class="btn btn-sm tag-btn" data-tag="{{ key }}"
+                      style="background:{{ bg }};color:{{ color }};border:1px solid {{ color }}33;font-size:.72rem;border-radius:20px;padding:3px 10px;">
+                <i class="bi {{ icon }} me-1"></i>{{ label }}
+              </button>
+              {% endfor %}
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Observação <small style="color:var(--text-muted);">(opcional)</small></label>
+            <textarea name="notes" class="form-control form-control-sm" rows="2"
+                      placeholder="Ex: cliente perguntou sobre renovação..."></textarea>
+          </div>
+          <button type="submit" class="btn btn-primary w-100">
+            <i class="bi bi-check-lg me-1"></i> Registrar
+          </button>
+        </form>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Coluna direita: histórico -->
+  <div class="col-12 col-lg-8">
+    <div class="card">
+      <div class="card-header d-flex align-items-center gap-2">
+        <i class="bi bi-clock-history" style="color:var(--accent);"></i>
+        <span class="fw-semibold">Histórico de Contatos</span>
+        <span class="badge ms-1" style="background:rgba(255,255,255,.1);color:var(--text-muted);">
+          {{ contacts | selectattr('event_type','equalto','manual') | list | length }} manual(is)
+        </span>
+        {% set view_count = contacts | selectattr('event_type','equalto','view') | list | length %}
+        {% if view_count %}
+        <span class="badge ms-1" style="background:rgba(255,255,255,.06);color:var(--text-muted);font-size:.65rem;">
+          {{ view_count }} visualização(ões)
+        </span>
+        {% endif %}
+      </div>
+      <div class="card-body p-0">
+        {% if contacts %}
+          <div class="p-3 d-flex flex-column gap-2">
+            {% for c in contacts %}
+
+            {% if c.event_type == 'view' %}
+            <!-- Evento de visualização — estilo discreto -->
+            <div class="d-flex align-items-center gap-2 px-2 py-1 rounded"
+                 style="background:rgba(255,255,255,.03);border:1px solid var(--border);opacity:.65;">
+              <i class="bi bi-eye" style="color:var(--text-muted);font-size:.8rem;flex-shrink:0;"></i>
+              <small style="color:var(--text-muted);">
+                <strong style="color:var(--text);">{{ c.attendant.name }}</strong>
+                visualizou o cadastro —
+                {{ c.contacted_at.strftime('%d/%m/%Y %H:%M') }}
+              </small>
+            </div>
+
+            {% else %}
+            <!-- Evento manual -->
+            <div class="d-flex gap-3">
+              <!-- Ícone de direção -->
+              <div style="flex-shrink:0;margin-top:2px;">
+                {% if c.direction == 'incoming' %}
+                  <div class="stat-icon stat-icon-green" style="width:36px;height:36px;font-size:.9rem;">
+                    <i class="bi bi-arrow-down-left"></i>
+                  </div>
+                {% else %}
+                  <div class="stat-icon stat-icon-purple" style="width:36px;height:36px;font-size:.9rem;">
+                    <i class="bi bi-arrow-up-right"></i>
+                  </div>
+                {% endif %}
+              </div>
+              <!-- Conteúdo -->
+              <div class="flex-fill">
+                <div class="d-flex justify-content-between align-items-start flex-wrap gap-1">
+                  <div class="d-flex align-items-center gap-2 flex-wrap">
+                    <span class="fw-semibold" style="font-size:.875rem;">{{ c.direction_label }}</span>
+                    <span class="badge" style="background:rgba(255,255,255,.08);color:var(--text-muted);font-size:.7rem;">
+                      {{ c.channel_label }}
+                    </span>
+                    {% if c.tag_info %}
+                      {% set label, icon, bg, color = c.tag_info %}
+                      <span class="badge" style="background:{{ bg }};color:{{ color }};font-size:.7rem;border-radius:20px;">
+                        <i class="bi {{ icon }} me-1"></i>{{ label }}
+                      </span>
+                    {% endif %}
+                  </div>
+                  <small style="color:var(--text-muted);">{{ c.contacted_at.strftime('%d/%m/%Y %H:%M') }}</small>
+                </div>
+                <small style="color:var(--text-muted);">
+                  por <strong style="color:var(--text);">{{ c.attendant.name }}</strong>
+                </small>
+                {% if c.notes %}
+                  <p class="mb-0 mt-1 small" style="color:var(--text-muted);font-style:italic;">
+                    "{{ c.notes }}"
+                  </p>
+                {% endif %}
+              </div>
+            </div>
+            {% endif %}
+
+            {% if not loop.last %}
+              <div style="border-top:1px solid var(--border);margin:0;"></div>
+            {% endif %}
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="text-center py-5">
+            <i class="bi bi-chat-square-dots" style="font-size:2.5rem;color:var(--text-muted);"></i>
+            <p class="mt-2 mb-0" style="color:var(--text-muted);">Nenhum contato registrado ainda.</p>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Toast copiado -->
+<div class="position-fixed bottom-0 end-0 p-3" style="z-index:9999;">
+  <div id="toastCopy" class="toast align-items-center" role="alert"
+       style="background:rgba(37,211,102,.15);border:1px solid rgba(37,211,102,.3);color:#6ee7b7;">
+    <div class="d-flex">
+      <div class="toast-body"><i class="bi bi-clipboard-check me-2"></i>Mensagem copiada!</div>
+      <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+    </div>
+  </div>
+</div>
+
+<style>
+.tag-btn { transition: transform .1s, box-shadow .1s; }
+.tag-btn:hover { transform: translateY(-1px); }
+.tag-btn.active { box-shadow: 0 0 0 2px #fff4, inset 0 0 0 99px rgba(0,0,0,.15); transform: scale(.97); }
+</style>
+
+<script>
+const tagInput  = document.getElementById('selectedTag');
+const toastEl   = document.getElementById('toastCopy');
+const toastObj  = toastEl ? new bootstrap.Toast(toastEl, {delay:2200}) : null;
+
+// Copiar mensagem de follow-up
+document.getElementById('btnCopyMsg')?.addEventListener('click', async () => {
+  try {
+    const r    = await fetch(`/automacoes/mensagem?client_id={{ client.id }}`);
+    const data = await r.json();
+    await navigator.clipboard.writeText(data.text);
+    toastObj?.show();
+  } catch(e) { alert('Não foi possível copiar.'); }
+});
+
+document.querySelectorAll('.tag-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const val = btn.dataset.tag;
+    if (tagInput.value === val) {
+      // deselect
+      tagInput.value = '';
+      btn.classList.remove('active');
+    } else {
+      document.querySelectorAll('.tag-btn').forEach(b => b.classList.remove('active'));
+      tagInput.value = val;
+      btn.classList.add('active');
+    }
+  });
+});
+</script>
+{% endblock %}

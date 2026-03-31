@@ -1,0 +1,157 @@
+{% extends "base.html" %}
+{% block title %}Relatórios — VendasPRO{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h4 class="fw-bold mb-0"><i class="bi bi-bar-chart-line-fill me-2 text-primary"></i>Relatório Diário</h4>
+  <form method="GET" class="d-flex gap-2">
+    <input type="date" name="date" class="form-control form-control-sm" value="{{ report_date.strftime('%Y-%m-%d') }}">
+    <button type="submit" class="btn btn-primary btn-sm">Gerar</button>
+  </form>
+</div>
+
+<!-- Resumo geral -->
+<div class="row g-3 mb-4">
+  <div class="col-6 col-lg-3">
+    <div class="card border-0 shadow-sm text-center h-100">
+      <div class="card-body">
+        <p class="text-muted small mb-1">Total de Vendas</p>
+        <h4 class="fw-bold text-primary">R$ {{ "%.2f"|format(total_sales) }}</h4>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="card border-0 shadow-sm text-center h-100">
+      <div class="card-body">
+        <p class="text-muted small mb-1">Qtd. Transações</p>
+        <h4 class="fw-bold">{{ sales_count }}</h4>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="card border-0 shadow-sm text-center h-100">
+      <div class="card-body">
+        <p class="text-muted small mb-1">Total Comissões</p>
+        <h4 class="fw-bold text-danger">R$ {{ "%.2f"|format(total_commission) }}</h4>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="card border-0 shadow-sm text-center h-100">
+      <div class="card-body">
+        <p class="text-muted small mb-1">Líquido</p>
+        <h4 class="fw-bold text-success">R$ {{ "%.2f"|format(total_sales - total_commission) }}</h4>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3 mb-4">
+  <!-- Por atendente -->
+  <div class="col-12 col-lg-6">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-header bg-white border-0 fw-semibold pt-3">
+        <i class="bi bi-people me-1 text-primary"></i> Por Atendente
+      </div>
+      <div class="card-body p-0">
+        {% if attendant_stats %}
+        <div class="table-responsive">
+          <table class="table table-sm mb-0">
+            <thead class="table-light">
+              <tr><th>Nome</th><th>Qtd</th><th>Total</th><th>Comissão</th></tr>
+            </thead>
+            <tbody>
+              {% for aid, stat in attendant_stats.items() %}
+              <tr>
+                <td class="fw-semibold">{{ stat.name }}</td>
+                <td>{{ stat.count }}</td>
+                <td>R$ {{ "%.2f"|format(stat.total) }}</td>
+                <td class="text-danger">R$ {{ "%.2f"|format(stat.commission) }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+          <p class="text-center text-muted py-4">Sem dados.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Por forma de pagamento -->
+  <div class="col-12 col-lg-6">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-header bg-white border-0 fw-semibold pt-3">
+        <i class="bi bi-credit-card me-1 text-success"></i> Por Forma de Pagamento
+      </div>
+      <div class="card-body p-0">
+        {% if payment_stats %}
+        <div class="table-responsive">
+          <table class="table table-sm mb-0">
+            <thead class="table-light">
+              <tr><th>Forma</th><th>Qtd</th><th>Total</th><th>%</th></tr>
+            </thead>
+            <tbody>
+              {% for pm, stat in payment_stats.items() %}
+              <tr>
+                <td><span class="badge bg-secondary">{{ stat.label }}</span></td>
+                <td>{{ stat.count }}</td>
+                <td>R$ {{ "%.2f"|format(stat.total) }}</td>
+                <td class="text-muted small">
+                  {% if total_sales > 0 %}{{ "%.1f"|format(stat.total / total_sales * 100) }}%{% else %}0%{% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+          <p class="text-center text-muted py-4">Sem dados.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Detalhamento completo -->
+<div class="card border-0 shadow-sm">
+  <div class="card-header bg-white border-0 fw-semibold pt-3">
+    <i class="bi bi-list-columns me-1"></i> Todas as Vendas do Dia
+  </div>
+  <div class="card-body p-0">
+    {% if sales %}
+    <div class="table-responsive">
+      <table class="table table-sm table-hover mb-0">
+        <thead class="table-light">
+          <tr><th>#</th><th>Atendente</th><th>Cliente</th><th>Valor</th><th>Pagamento</th><th>Comissão</th><th>Hora</th></tr>
+        </thead>
+        <tbody>
+          {% for s in sales %}
+          <tr>
+            <td class="text-muted small">{{ s.id }}</td>
+            <td>{{ s.attendant.name }}</td>
+            <td>{{ s.client_display }}</td>
+            <td class="fw-semibold">R$ {{ "%.2f"|format(s.amount) }}</td>
+            <td><span class="badge bg-secondary">{{ s.payment_display }}</span></td>
+            <td class="text-danger">R$ {{ "%.2f"|format(s.commission_amount) }} ({{ s.commission_rate|int }}%)</td>
+            <td class="text-muted">{{ s.created_at.strftime('%H:%M') }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+        <tfoot class="table-light fw-bold">
+          <tr>
+            <td colspan="3">Total</td>
+            <td>R$ {{ "%.2f"|format(total_sales) }}</td>
+            <td></td>
+            <td class="text-danger">R$ {{ "%.2f"|format(total_commission) }}</td>
+            <td></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+    {% else %}
+      <p class="text-center text-muted py-4">Nenhuma venda nesta data.</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

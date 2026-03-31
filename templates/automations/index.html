@@ -1,0 +1,431 @@
+{% extends "base.html" %}
+{% block title %}Automações — Nascimento Tech{% endblock %}
+{% block page_title %}Automações{% endblock %}
+{% block content %}
+
+<!-- Resumo rápido -->
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-3">
+    <div class="card text-center py-3" style="border-color:rgba(245,158,11,.3);">
+      <div class="fw-bold" style="font-size:1.7rem;color:#fcd34d;">{{ renewals_week|length }}</div>
+      <div style="font-size:.78rem;color:var(--text-muted);">Renovam esta semana</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card text-center py-3" style="border-color:rgba(239,68,68,.3);">
+      <div class="fw-bold" style="font-size:1.7rem;color:#fca5a5;">{{ renewals_overdue|length }}</div>
+      <div style="font-size:.78rem;color:var(--text-muted);">Renovações atrasadas</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card text-center py-3" style="border-color:rgba(236,72,153,.3);">
+      <div class="fw-bold" style="font-size:1.7rem;color:#f9a8d4;">{{ at_risk|length }}</div>
+      <div style="font-size:.78rem;color:var(--text-muted);">Clientes em risco</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card text-center py-3" style="border-color:rgba(124,58,237,.3);">
+      <div class="fw-bold" style="font-size:1.7rem;color:#a78bfa;">{{ unassigned|length }}</div>
+      <div style="font-size:.78rem;color:var(--text-muted);">Sem atendente</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── RENOVAÇÕES DESTA SEMANA ───────────────────────────────────────────── -->
+<div class="card mb-4">
+  <div class="card-header d-flex align-items-center gap-2">
+    <i class="bi bi-calendar-week-fill" style="color:#fcd34d;"></i>
+    <span class="fw-semibold">Renovações dos próximos 7 dias</span>
+    <span class="badge ms-1" style="background:rgba(245,158,11,.2);color:#fcd34d;">{{ renewals_week|length }}</span>
+    <span class="ms-auto text-muted" style="font-size:.78rem;">
+      Clique em <i class="bi bi-clipboard"></i> para copiar a mensagem para o cliente
+    </span>
+  </div>
+  <div class="card-body p-0">
+    {% if renewals_week %}
+    <div class="table-responsive">
+      <table class="table table-hover mb-0" style="font-size:.85rem;">
+        <thead>
+          <tr>
+            <th class="px-3 py-2">Cliente</th>
+            <th class="px-3 py-2">Plano</th>
+            <th class="px-3 py-2">Valor</th>
+            <th class="px-3 py-2">Vencimento</th>
+            <th class="px-3 py-2">Atendente</th>
+            <th class="px-3 py-2">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in renewals_week %}
+          {% set days_left = (r.due_date - today).days %}
+          <tr>
+            <td class="px-3 py-2 fw-semibold">{{ r.client_display }}</td>
+            <td class="px-3 py-2" style="color:var(--text-muted);">{{ r.plan_name }}</td>
+            <td class="px-3 py-2">R$ {{ '%.2f'|format(r.amount) }}</td>
+            <td class="px-3 py-2">
+              {{ r.due_date.strftime('%d/%m/%Y') }}
+              <span class="badge ms-1"
+                style="background:{% if days_left == 0 %}rgba(239,68,68,.2){% elif days_left <= 2 %}rgba(245,158,11,.2){% else %}rgba(16,185,129,.15){% endif %};
+                       color:{% if days_left == 0 %}#fca5a5{% elif days_left <= 2 %}#fcd34d{% else %}#6ee7b7{% endif %};
+                       font-size:.68rem;">
+                {% if days_left == 0 %}Hoje{% elif days_left == 1 %}Amanhã{% else %}{{ days_left }}d{% endif %}
+              </span>
+            </td>
+            <td class="px-3 py-2" style="color:var(--text-muted);">
+              {{ r.attendant.name if r.attendant else '—' }}
+            </td>
+            <td class="px-3 py-2">
+              <div class="d-flex gap-1 flex-wrap">
+                <!-- Copiar mensagem para o cliente -->
+                <button class="btn btn-sm btn-copy-msg"
+                        data-renewal="{{ r.id }}"
+                        style="background:rgba(16,185,129,.15);color:#6ee7b7;border:1px solid rgba(16,185,129,.3);font-size:.75rem;padding:2px 8px;"
+                        title="Copiar mensagem para WhatsApp do cliente">
+                  <i class="bi bi-clipboard me-1"></i>Mensagem
+                </button>
+                <!-- WhatsApp direto (se tiver cliente com whatsapp) -->
+                {% if r.client and r.client.whatsapp %}
+                <a href="https://wa.me/{{ r.client.whatsapp|replace(' ','')|replace('(','') |replace(')','') |replace('-','') }}"
+                   target="_blank"
+                   class="btn btn-sm"
+                   style="background:rgba(37,211,102,.15);color:#25d366;border:1px solid rgba(37,211,102,.3);font-size:.75rem;padding:2px 8px;"
+                   title="Abrir WhatsApp">
+                  <i class="bi bi-whatsapp"></i>
+                </a>
+                {% endif %}
+                <!-- Enviar lembrete ao atendente -->
+                <button class="btn btn-sm btn-reminder"
+                        data-renewal="{{ r.id }}"
+                        data-attendant="{{ r.attendant_id or '' }}"
+                        style="background:rgba(124,58,237,.15);color:#a78bfa;border:1px solid rgba(124,58,237,.3);font-size:.75rem;padding:2px 8px;"
+                        title="Enviar lembrete ao atendente via chat">
+                  <i class="bi bi-bell me-1"></i>Lembrete
+                </button>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+      <div class="text-center py-4">
+        <i class="bi bi-calendar-check" style="font-size:2rem;color:#6ee7b7;"></i>
+        <p class="mt-2 mb-0" style="color:#6ee7b7;font-size:.875rem;">Nenhuma renovação nos próximos 7 dias.</p>
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- ── RENOVAÇÕES ATRASADAS ──────────────────────────────────────────────── -->
+{% if renewals_overdue %}
+<div class="card mb-4" style="border-color:rgba(239,68,68,.3);">
+  <div class="card-header d-flex align-items-center gap-2" style="border-bottom-color:rgba(239,68,68,.2);">
+    <i class="bi bi-exclamation-circle-fill" style="color:#fca5a5;"></i>
+    <span class="fw-semibold">Renovações Atrasadas</span>
+    <span class="badge ms-1" style="background:rgba(239,68,68,.2);color:#fca5a5;">{{ renewals_overdue|length }}</span>
+  </div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0" style="font-size:.85rem;">
+        <thead>
+          <tr>
+            <th class="px-3 py-2">Cliente</th>
+            <th class="px-3 py-2">Plano</th>
+            <th class="px-3 py-2">Valor</th>
+            <th class="px-3 py-2">Venceu em</th>
+            <th class="px-3 py-2">Dias em atraso</th>
+            <th class="px-3 py-2">Atendente</th>
+            <th class="px-3 py-2">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in renewals_overdue %}
+          {% set days_late = (today - r.due_date).days %}
+          <tr>
+            <td class="px-3 py-2 fw-semibold">{{ r.client_display }}</td>
+            <td class="px-3 py-2" style="color:var(--text-muted);">{{ r.plan_name }}</td>
+            <td class="px-3 py-2">R$ {{ '%.2f'|format(r.amount) }}</td>
+            <td class="px-3 py-2" style="color:#fca5a5;">{{ r.due_date.strftime('%d/%m/%Y') }}</td>
+            <td class="px-3 py-2">
+              <span class="badge" style="background:rgba(239,68,68,.2);color:#fca5a5;font-size:.72rem;">
+                {{ days_late }}d atraso
+              </span>
+            </td>
+            <td class="px-3 py-2" style="color:var(--text-muted);">
+              {{ r.attendant.name if r.attendant else '—' }}
+            </td>
+            <td class="px-3 py-2">
+              <div class="d-flex gap-1 flex-wrap">
+                <button class="btn btn-sm btn-copy-msg"
+                        data-renewal="{{ r.id }}"
+                        style="background:rgba(16,185,129,.15);color:#6ee7b7;border:1px solid rgba(16,185,129,.3);font-size:.75rem;padding:2px 8px;">
+                  <i class="bi bi-clipboard me-1"></i>Mensagem
+                </button>
+                {% if r.client and r.client.whatsapp %}
+                <a href="https://wa.me/{{ r.client.whatsapp|replace(' ','')|replace('(','') |replace(')','') |replace('-','') }}"
+                   target="_blank" class="btn btn-sm"
+                   style="background:rgba(37,211,102,.15);color:#25d366;border:1px solid rgba(37,211,102,.3);font-size:.75rem;padding:2px 8px;">
+                  <i class="bi bi-whatsapp"></i>
+                </a>
+                {% endif %}
+                <button class="btn btn-sm btn-reminder"
+                        data-renewal="{{ r.id }}"
+                        data-attendant="{{ r.attendant_id or '' }}"
+                        style="background:rgba(239,68,68,.15);color:#fca5a5;border:1px solid rgba(239,68,68,.3);font-size:.75rem;padding:2px 8px;">
+                  <i class="bi bi-bell me-1"></i>Lembrete
+                </button>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<!-- ── CLIENTES EM RISCO ──────────────────────────────────────────────────── -->
+<div class="card mb-4">
+  <div class="card-header d-flex align-items-center gap-2">
+    <i class="bi bi-person-x-fill" style="color:#f9a8d4;"></i>
+    <span class="fw-semibold">Clientes sem contato há {{ days_threshold }}+ dias</span>
+    <span class="badge ms-1" style="background:rgba(236,72,153,.2);color:#f9a8d4;">{{ at_risk|length }}</span>
+  </div>
+  <div class="card-body p-0">
+    {% if at_risk %}
+    <div class="table-responsive">
+      <table class="table table-hover mb-0" style="font-size:.85rem;">
+        <thead>
+          <tr>
+            <th class="px-3 py-2">Cliente</th>
+            <th class="px-3 py-2">Contato</th>
+            <th class="px-3 py-2">Último atendimento</th>
+            <th class="px-3 py-2">Dias sem contato</th>
+            <th class="px-3 py-2">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for c in at_risk %}
+          <tr>
+            <td class="px-3 py-2 fw-semibold">
+              <a href="{{ url_for('contacts.client_detail', client_id=c.id) }}"
+                 style="color:var(--text);text-decoration:none;">
+                {{ c.name }}
+              </a>
+            </td>
+            <td class="px-3 py-2">
+              {% if c.whatsapp %}
+                <a href="https://wa.me/{{ c.whatsapp|replace(' ','')|replace('(','') |replace(')','') |replace('-','') }}"
+                   target="_blank" style="color:#25d366;text-decoration:none;">
+                  <i class="bi bi-whatsapp me-1"></i>{{ c.whatsapp }}
+                </a>
+              {% elif c.phone %}
+                <span style="color:var(--text-muted);"><i class="bi bi-telephone me-1"></i>{{ c.phone }}</span>
+              {% else %}
+                <span style="color:var(--text-muted);">—</span>
+              {% endif %}
+            </td>
+            <td class="px-3 py-2" style="color:var(--text-muted);">
+              {% if c.last_contact %}
+                {{ c.last_contact.contacted_at.strftime('%d/%m/%Y') }}
+                <small class="d-block" style="font-size:.72rem;">por {{ c.last_contact.attendant.name }}</small>
+              {% else %}
+                <span style="color:#fca5a5;">Nunca contatado</span>
+              {% endif %}
+            </td>
+            <td class="px-3 py-2">
+              <span class="badge" style="background:rgba(236,72,153,.2);color:#f9a8d4;font-size:.72rem;">
+                {{ c.days_without_contact }} dias
+              </span>
+            </td>
+            <td class="px-3 py-2">
+              <div class="d-flex gap-1 flex-wrap">
+                <button class="btn btn-sm btn-copy-followup"
+                        data-client="{{ c.id }}"
+                        style="background:rgba(16,185,129,.15);color:#6ee7b7;border:1px solid rgba(16,185,129,.3);font-size:.75rem;padding:2px 8px;">
+                  <i class="bi bi-clipboard me-1"></i>Mensagem
+                </button>
+                {% if c.whatsapp %}
+                <a href="https://wa.me/{{ c.whatsapp|replace(' ','')|replace('(','') |replace(')','') |replace('-','') }}"
+                   target="_blank" class="btn btn-sm"
+                   style="background:rgba(37,211,102,.15);color:#25d366;border:1px solid rgba(37,211,102,.3);font-size:.75rem;padding:2px 8px;">
+                  <i class="bi bi-whatsapp"></i>
+                </a>
+                {% endif %}
+                <button class="btn btn-sm btn-followup"
+                        data-client="{{ c.id }}"
+                        style="background:rgba(236,72,153,.15);color:#f9a8d4;border:1px solid rgba(236,72,153,.3);font-size:.75rem;padding:2px 8px;">
+                  <i class="bi bi-bell me-1"></i>Lembrete
+                </button>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+      <div class="text-center py-4">
+        <i class="bi bi-emoji-smile" style="font-size:2rem;color:#6ee7b7;"></i>
+        <p class="mt-2 mb-0" style="color:#6ee7b7;font-size:.875rem;">Nenhum cliente em risco no momento!</p>
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- ── DISTRIBUIÇÃO AUTOMÁTICA ───────────────────────────────────────────── -->
+<div class="card mb-4">
+  <div class="card-header d-flex align-items-center gap-2">
+    <i class="bi bi-diagram-3-fill" style="color:#a78bfa;"></i>
+    <span class="fw-semibold">Distribuição de Renovações</span>
+    {% if unassigned %}
+    <span class="badge ms-1" style="background:rgba(124,58,237,.2);color:#a78bfa;">{{ unassigned|length }} sem atendente</span>
+    {% endif %}
+  </div>
+  <div class="card-body">
+    <!-- Carga atual -->
+    {% if attendants %}
+    <div class="row g-2 mb-3">
+      {% for a in attendants %}
+      <div class="col-6 col-sm-4 col-md-3">
+        <div class="d-flex align-items-center justify-content-between px-3 py-2 rounded"
+             style="background:rgba(255,255,255,.04);border:1px solid var(--border);">
+          <span style="font-size:.82rem;">{{ a.name }}</span>
+          <span class="badge" style="background:rgba(124,58,237,.2);color:#a78bfa;font-size:.72rem;">
+            {{ load.get(a.id, 0) }} renovações
+          </span>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    {% if unassigned %}
+    <div class="d-flex align-items-center gap-3 p-3 rounded mb-3"
+         style="background:rgba(124,58,237,.08);border:1px solid rgba(124,58,237,.2);">
+      <i class="bi bi-info-circle" style="color:#a78bfa;font-size:1.2rem;flex-shrink:0;"></i>
+      <div style="font-size:.875rem;">
+        <strong style="color:#a78bfa;">{{ unassigned|length }} renovação(ões)</strong> sem atendente atribuído.
+        A distribuição automática as divide igualmente pelo atendente com menor carga atual.
+      </div>
+    </div>
+    <form method="POST" action="{{ url_for('automations.auto_distribute') }}">
+      <button type="submit" class="btn btn-primary">
+        <i class="bi bi-diagram-3 me-2"></i>Distribuir automaticamente ({{ unassigned|length }})
+      </button>
+    </form>
+    {% else %}
+      <p class="mb-0" style="color:var(--text-muted);font-size:.875rem;">
+        <i class="bi bi-check-circle-fill me-1" style="color:#6ee7b7;"></i>
+        Todas as renovações pendentes têm atendente atribuído.
+      </p>
+    {% endif %}
+  </div>
+</div>
+
+<!-- ── MODAL: Enviar lembrete ────────────────────────────────────────────── -->
+<div class="modal fade" id="modalReminder" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content" style="background:var(--card-bg);border:1px solid var(--border);">
+      <div class="modal-header" style="border-bottom:1px solid var(--border);">
+        <h6 class="modal-title"><i class="bi bi-bell-fill me-2" style="color:#a78bfa;"></i>Enviar Lembrete</h6>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <form id="reminderForm" method="POST">
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">Enviar para o atendente</label>
+            <select name="attendant_id" class="form-select" id="reminderAttendant" required>
+              <option value="">Selecione...</option>
+              {% for a in attendants %}
+              <option value="{{ a.id }}">{{ a.name }} ({{ load.get(a.id, 0) }} renovações)</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="p-3 rounded" style="background:rgba(255,255,255,.04);font-size:.82rem;color:var(--text-muted);">
+            <i class="bi bi-info-circle me-1"></i>
+            O lembrete será enviado via chat interno e aparecerá como mensagem não lida para o atendente.
+          </div>
+        </div>
+        <div class="modal-footer" style="border-top:1px solid var(--border);">
+          <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary btn-sm">
+            <i class="bi bi-send me-1"></i>Enviar
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- ── TOAST: Mensagem copiada ───────────────────────────────────────────── -->
+<div class="position-fixed bottom-0 end-0 p-3" style="z-index:9999;">
+  <div id="toastCopy" class="toast align-items-center" role="alert"
+       style="background:rgba(16,185,129,.15);border:1px solid rgba(16,185,129,.3);color:#6ee7b7;">
+    <div class="d-flex">
+      <div class="toast-body">
+        <i class="bi bi-clipboard-check me-2"></i>Mensagem copiada para a área de transferência!
+      </div>
+      <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+    </div>
+  </div>
+</div>
+
+<script>
+const toast = new bootstrap.Toast(document.getElementById('toastCopy'), {delay: 2500});
+
+// ── Copiar mensagem de renovação ─────────────────────────────────────────────
+document.querySelectorAll('.btn-copy-msg').forEach(btn => {
+  btn.addEventListener('click', async () => {
+    const id = btn.dataset.renewal;
+    try {
+      const r = await fetch(`/automacoes/mensagem?renewal_id=${id}`);
+      const data = await r.json();
+      await navigator.clipboard.writeText(data.text);
+      toast.show();
+    } catch(e) { alert('Erro ao gerar mensagem.'); }
+  });
+});
+
+// ── Copiar mensagem de follow-up (cliente em risco) ──────────────────────────
+document.querySelectorAll('.btn-copy-followup').forEach(btn => {
+  btn.addEventListener('click', async () => {
+    const id = btn.dataset.client;
+    try {
+      const r = await fetch(`/automacoes/mensagem?client_id=${id}`);
+      const data = await r.json();
+      await navigator.clipboard.writeText(data.text);
+      toast.show();
+    } catch(e) { alert('Erro ao gerar mensagem.'); }
+  });
+});
+
+// ── Modal de lembrete (renovação) ────────────────────────────────────────────
+const modalEl  = document.getElementById('modalReminder');
+const modal    = new bootstrap.Modal(modalEl);
+const form     = document.getElementById('reminderForm');
+const selAtt   = document.getElementById('reminderAttendant');
+
+document.querySelectorAll('.btn-reminder').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const renewalId  = btn.dataset.renewal;
+    const attendant  = btn.dataset.attendant;
+    form.action      = `/automacoes/lembrete/${renewalId}`;
+    selAtt.value     = attendant || '';
+    modal.show();
+  });
+});
+
+// ── Modal de lembrete (follow-up cliente) ────────────────────────────────────
+document.querySelectorAll('.btn-followup').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const clientId = btn.dataset.client;
+    form.action    = `/automacoes/followup/${clientId}`;
+    selAtt.value   = '';
+    modal.show();
+  });
+});
+</script>
+{% endblock %}

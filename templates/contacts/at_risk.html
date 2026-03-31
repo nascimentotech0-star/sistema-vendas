@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+{% block title %}Clientes Sem Contato — Nascimento Tech{% endblock %}
+{% block page_title %}Clientes Sem Contato{% endblock %}
+{% block content %}
+
+<div class="card mb-4" style="border-left:4px solid #f9a8d4 !important;">
+  <div class="card-body py-3">
+    <div class="d-flex align-items-center gap-3">
+      <div class="stat-icon stat-icon-pink" style="width:46px;height:46px;font-size:1.2rem;flex-shrink:0;">
+        <i class="bi bi-exclamation-triangle-fill"></i>
+      </div>
+      <div>
+        <h5 class="fw-bold mb-0" style="color:#f9a8d4;">{{ risk_clients|length }} cliente(s) sem contato há {{ days_threshold }}+ dias</h5>
+        <small style="color:var(--text-muted);">Esses clientes podem estar deixando o serviço. Acione os atendentes responsáveis.</small>
+      </div>
+      <a href="{{ url_for('contacts.all_clients') }}" class="btn btn-sm ms-auto"
+         style="background:rgba(255,255,255,.08);color:var(--text);border:1px solid var(--border);">
+        Ver todos os clientes
+      </a>
+    </div>
+  </div>
+</div>
+
+{% if risk_clients %}
+
+  <!-- Por atendente responsável -->
+  {% if by_attendant %}
+  <h6 class="fw-semibold mb-3" style="color:var(--text-muted);font-size:.8rem;text-transform:uppercase;letter-spacing:.06em;">
+    Por Atendente Responsável
+  </h6>
+
+  {% for att_id, clients_list in by_attendant.items() %}
+  {% set att = attendants[att_id] %}
+  <div class="card mb-3">
+    <div class="card-header d-flex align-items-center gap-2">
+      <i class="bi bi-person-fill" style="color:var(--accent);"></i>
+      <span class="fw-semibold">{{ att.name }}</span>
+      <span class="badge ms-1" style="background:rgba(236,72,153,.2);color:#f9a8d4;">{{ clients_list|length }} cliente(s)</span>
+    </div>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead>
+            <tr><th>Cliente</th><th>Telefone</th><th>Último contato</th><th>Dias</th><th></th></tr>
+          </thead>
+          <tbody>
+            {% for c in clients_list %}
+            <tr>
+              <td class="fw-semibold">
+                <i class="bi bi-exclamation-triangle-fill me-1" style="color:#f9a8d4;font-size:.75rem;"></i>
+                {{ c.name }}
+              </td>
+              <td>
+                {% if c.whatsapp %}
+                  <a href="https://wa.me/{{ c.whatsapp|replace(' ','')|replace('(','') |replace(')','') |replace('-','') }}"
+                     target="_blank" style="color:#25d366;text-decoration:none;">
+                    <i class="bi bi-whatsapp me-1"></i>{{ c.whatsapp }}
+                  </a>
+                {% elif c.phone %}
+                  <i class="bi bi-telephone me-1" style="color:var(--text-muted);"></i>{{ c.phone }}
+                {% else %}
+                  <span style="color:var(--text-muted);">—</span>
+                {% endif %}
+              </td>
+              <td style="color:var(--text-muted);font-size:.85rem;">
+                {{ c.last_contact.contacted_at.strftime('%d/%m/%Y') if c.last_contact else 'Nunca' }}
+              </td>
+              <td>
+                <span class="badge" style="background:rgba(236,72,153,.2);color:#f9a8d4;">
+                  {{ c.days_without_contact }}d
+                </span>
+              </td>
+              <td>
+                <a href="{{ url_for('contacts.client_detail', client_id=c.id) }}" class="btn btn-sm"
+                   style="background:rgba(124,58,237,.2);color:#a78bfa;border:none;padding:3px 10px;font-size:.8rem;">
+                  Ver / Registrar
+                </a>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+  {% endif %}
+
+  <!-- Sem nenhum contato registrado -->
+  {% if no_contact_clients %}
+  <div class="card mb-3">
+    <div class="card-header d-flex align-items-center gap-2">
+      <i class="bi bi-person-x-fill" style="color:#f9a8d4;"></i>
+      <span class="fw-semibold">Sem nenhum contato registrado</span>
+      <span class="badge ms-1" style="background:rgba(236,72,153,.2);color:#f9a8d4;">{{ no_contact_clients|length }}</span>
+    </div>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead>
+            <tr><th>Cliente</th><th>Telefone</th><th>Cadastrado em</th><th>Dias</th><th></th></tr>
+          </thead>
+          <tbody>
+            {% for c in no_contact_clients %}
+            <tr>
+              <td class="fw-semibold">{{ c.name }}</td>
+              <td>
+                {% if c.whatsapp %}
+                  <a href="https://wa.me/{{ c.whatsapp|replace(' ','')|replace('(','') |replace(')','') |replace('-','') }}"
+                     target="_blank" style="color:#25d366;text-decoration:none;">
+                    <i class="bi bi-whatsapp me-1"></i>{{ c.whatsapp }}
+                  </a>
+                {% elif c.phone %}{{ c.phone }}
+                {% else %}<span style="color:var(--text-muted);">—</span>{% endif %}
+              </td>
+              <td style="color:var(--text-muted);font-size:.85rem;">{{ c.created_at.strftime('%d/%m/%Y') }}</td>
+              <td>
+                <span class="badge" style="background:rgba(236,72,153,.2);color:#f9a8d4;">{{ c.days_without_contact }}d</span>
+              </td>
+              <td>
+                <a href="{{ url_for('contacts.client_detail', client_id=c.id) }}" class="btn btn-sm"
+                   style="background:rgba(124,58,237,.2);color:#a78bfa;border:none;padding:3px 10px;font-size:.8rem;">
+                  Ver / Registrar
+                </a>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+{% else %}
+  <div class="card">
+    <div class="card-body text-center py-5">
+      <i class="bi bi-emoji-smile" style="font-size:2.5rem;color:#6ee7b7;"></i>
+      <p class="mt-2 mb-0" style="color:#6ee7b7;font-weight:600;">Todos os clientes foram contactados nos últimos {{ days_threshold }} dias!</p>
+    </div>
+  </div>
+{% endif %}
+
+{% endblock %}

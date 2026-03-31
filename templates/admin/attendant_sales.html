@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% block title %}Vendas de {{ attendant.name }} — VendasPRO{% endblock %}
+{% block content %}
+<div class="d-flex align-items-center mb-4">
+  <a href="{{ url_for('admin.attendants') }}" class="btn btn-outline-secondary btn-sm me-3">
+    <i class="bi bi-arrow-left"></i>
+  </a>
+  <div>
+    <h4 class="fw-bold mb-0">Vendas — {{ attendant.name }}</h4>
+    <small class="text-muted">Atendente</small>
+  </div>
+</div>
+
+<div class="card border-0 shadow-sm mb-3">
+  <div class="card-body">
+    <form method="GET" class="d-flex gap-2 align-items-end">
+      <div>
+        <label class="form-label small fw-semibold">Filtrar por data</label>
+        <input type="date" name="date" class="form-control form-control-sm" value="{{ date_str }}">
+      </div>
+      <button type="submit" class="btn btn-primary btn-sm">Ver</button>
+      <a href="{{ url_for('admin.attendant_sales', id=attendant.id) }}" class="btn btn-outline-secondary btn-sm">Todas</a>
+    </form>
+  </div>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-3">
+    <div class="card border-0 shadow-sm text-center">
+      <div class="card-body">
+        <p class="text-muted small mb-1">Total Vendido</p>
+        <h5 class="fw-bold text-primary">R$ {{ "%.2f"|format(total) }}</h5>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card border-0 shadow-sm text-center">
+      <div class="card-body">
+        <p class="text-muted small mb-1">Comissões</p>
+        <h5 class="fw-bold text-danger">R$ {{ "%.2f"|format(commission) }}</h5>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card border-0 shadow-sm text-center">
+      <div class="card-body">
+        <p class="text-muted small mb-1">Qtd. Vendas</p>
+        <h5 class="fw-bold">{{ sales|length }}</h5>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card border-0 shadow-sm">
+  <div class="card-body p-0">
+    {% if sales %}
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead class="table-light">
+          <tr><th>#</th><th>Cliente</th><th>Valor</th><th>Pagamento</th><th>Comissão</th><th>Comprovante</th><th>Data</th></tr>
+        </thead>
+        <tbody>
+          {% for s in sales %}
+          <tr>
+            <td class="text-muted small">{{ s.id }}</td>
+            <td>{{ s.client_display }}</td>
+            <td class="fw-semibold">R$ {{ "%.2f"|format(s.amount) }}</td>
+            <td><span class="badge bg-secondary">{{ s.payment_display }}</span></td>
+            <td class="text-danger">R$ {{ "%.2f"|format(s.commission_amount) }} ({{ s.commission_rate|int }}%)</td>
+            <td>
+              {% if s.comprovante_filename %}
+                <a href="{{ url_for('static', filename='uploads/' + s.comprovante_filename) }}" target="_blank" class="btn btn-sm btn-outline-info py-0">
+                  <i class="bi bi-file-image"></i>
+                </a>
+              {% else %} — {% endif %}
+            </td>
+            <td class="text-muted small">{{ s.created_at.strftime('%d/%m/%Y %H:%M') }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+      <p class="text-center text-muted py-4">Nenhuma venda encontrada.</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

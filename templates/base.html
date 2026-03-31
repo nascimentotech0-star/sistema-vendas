@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Nascimento Tech{% endblock %}</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+  <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+  <meta name="csrf-token" content="{{ csrf_token() }}">
+</head>
+<body>
+
+{% if current_user.is_authenticated %}
+
+<!-- SIDEBAR -->
+<aside class="nt-sidebar" id="sidebar">
+  <a class="nt-brand" href="/">
+    <div class="nt-brand-icon"><i class="bi bi-shop-window"></i></div>
+    <span class="nt-brand-name">Nascimento Tech</span>
+  </a>
+
+  <nav class="nt-nav">
+    {% if current_user.can_access_admin() %}
+      <div class="nt-nav-label">
+        Menu
+        {% if current_user.is_manager() %}
+          <span style="background:rgba(6,182,212,.2);color:#67e8f9;border-radius:4px;padding:1px 6px;font-size:.65rem;font-weight:700;margin-left:4px;">GERENTE</span>
+        {% endif %}
+      </div>
+      <a class="nt-nav-link {% if request.endpoint == 'admin.dashboard' %}active{% endif %}"
+         href="{{ url_for('admin.dashboard') }}">
+        <i class="bi bi-speedometer2"></i> Dashboard
+      </a>
+      <a class="nt-nav-link {% if 'attendant' in request.endpoint %}active{% endif %}"
+         href="{{ url_for('admin.attendants') }}">
+        <i class="bi bi-people-fill"></i> Atendentes
+      </a>
+      <a class="nt-nav-link {% if request.endpoint == 'admin.sales' %}active{% endif %}"
+         href="{{ url_for('admin.sales') }}">
+        <i class="bi bi-cart3"></i> Vendas
+      </a>
+      <a class="nt-nav-link {% if request.endpoint == 'admin.cash' %}active{% endif %}"
+         href="{{ url_for('admin.cash') }}">
+        <i class="bi bi-cash-coin"></i> Caixa
+      </a>
+      <a class="nt-nav-link {% if request.endpoint and 'financial' in request.endpoint %}active{% endif %}"
+         href="{{ url_for('financial.index') }}">
+        <i class="bi bi-wallet2"></i> Financeiro
+      </a>
+      <a class="nt-nav-link {% if request.endpoint == 'admin.reports' %}active{% endif %}"
+         href="{{ url_for('admin.reports') }}">
+        <i class="bi bi-bar-chart-line-fill"></i> Relatórios
+      </a>
+      <a class="nt-nav-link {% if request.endpoint == 'admin.overtime_requests' %}active{% endif %}"
+         href="{{ url_for('admin.overtime_requests') }}">
+        <i class="bi bi-clock-history"></i> Hora Extra
+        {% if pending_overtime_count is defined and pending_overtime_count %}
+          <span class="badge bg-danger ms-auto rounded-pill">{{ pending_overtime_count }}</span>
+        {% endif %}
+      </a>
+      <a class="nt-nav-link {% if request.endpoint == 'admin.attendance' %}active{% endif %}"
+         href="{{ url_for('admin.attendance') }}">
+        <i class="bi bi-calendar2-check"></i> Ponto
+      </a>
+      <a class="nt-nav-link {% if request.endpoint in ['contacts.all_clients','contacts.at_risk','contacts.client_detail'] %}active{% endif %}"
+         href="{{ url_for('contacts.all_clients') }}">
+        <i class="bi bi-telephone-fill"></i> Clientes
+        {% if at_risk_clients_count is defined and at_risk_clients_count %}
+          <span class="badge ms-auto rounded-pill" style="background:rgba(236,72,153,.3);color:#f9a8d4;font-size:.65rem;">{{ at_risk_clients_count }}</span>
+        {% endif %}
+      </a>
+      <a class="nt-nav-link {% if 'renewal' in request.endpoint %}active{% endif %}"
+         href="{{ url_for('renewals.index') }}">
+        <i class="bi bi-arrow-repeat"></i> Renovações
+        {% if pending_renewals_count is defined and pending_renewals_count %}
+          <span class="badge bg-warning text-dark ms-auto rounded-pill" style="font-size:.65rem;">{{ pending_renewals_count }}</span>
+        {% endif %}
+      </a>
+      <a class="nt-nav-link {% if request.endpoint and 'goals' in request.endpoint %}active{% endif %}"
+         href="{{ url_for('admin.goals') }}">
+        <i class="bi bi-bullseye"></i> Metas
+      </a>
+      <a class="nt-nav-link {% if request.endpoint and 'commission' in request.endpoint %}active{% endif %}"
+         href="{{ url_for('admin.commissions') }}">
+        <i class="bi bi-cash-coin"></i> Comissões
+      </a>
+      <a class="nt-nav-link {% if request.endpoint == 'admin.salaries' %}active{% endif %}"
+         href="{{ url_for('admin.salaries') }}">
+        <i class="bi bi-wallet2"></i> Salários
+      </a>
+      <a class="nt-nav-link {% if request.endpoint and 'price' in request.endpoint %}active{% endif %}"
+         href="{{ url_for('admin.price_items') }}">
+        <i class="bi bi-tags-fill"></i> Tabela de Preços
+      </a>
+      <a class="nt-nav-link {% if request.endpoint and 'automations' in request.endpoint %}active{% endif %}"
+         href="{{ url_for('automations.index') }}">
+        <i class="bi bi-lightning-charge-fill"></i> Automações
+        {% set total_alerts = (renewals_overdue_count|default(0)) %}
+        {% if total_alerts %}
+          <span class="badge ms-auto rounded-pill" style="background:rgba(239,68,68,.3);color:#fca5a5;font-size:.65rem;">{{ total_alerts }}</span>
+        {% endif %}
+      </a>
+      <a class="nt-nav-link {% if request.endpoint == 'contacts.audit' %}active{% endif %}"
+         href="{{ url_for('contacts.audit') }}">
+        <i class="bi bi-shield-check"></i> Auditoria
+      </a>
+      <a class="nt-nav-link {% if request.endpoint and 'chat' in request.endpoint %}active{% endif %}"
+         href="{{ url_for('chat.index') }}">
+        <i class="bi bi-chat-dots-fill"></i> Chat
+        {% if unread_chat_count %}
+          <span class="badge ms-auto rounded-pill" style="background:#7c3aed;font-size:.65rem;">{{ unread_chat_count }}</span>
+        {% endif %}
+      </a>
+      {% if current_user.is_manager() %}
+      <div class="nt-nav-label mt-2">Operacional</div>
+      <a class="nt-nav-link {% if request.endpoint in ['attendant.clients','attendant.new_client','attendant.edit_client','attendant.dashboard'] %}active{% endif %}"
+         href="{{ url_for('attendant.new_client') }}">
+        <i class="bi bi-person-plus-fill"></i> Novo Cliente/Venda
+      </a>
+      <a class="nt-nav-link {% if request.endpoint == 'attendant.renewals' %}active{% endif %}"
+         href="{{ url_for('attendant.renewals') }}">
+        <i class="bi bi-arrow-repeat"></i> Minhas Renovações
+      </a>
+      {% endif %}
+      <div style="border-top:1px solid var(--border);margin:10px 0;"></div>
+      <button onclick="Tour.start(TOUR_STEPS)" class="nt-nav-link w-100 text-start"
+              style="background:none;border:none;cursor:pointer;" title="Ver o tutorial novamente">
+        <i class="bi bi-mortarboard-fill" style="color:#fcd34d;"></i>
+        <span style="color:#fcd34d;">Tutorial</span>
+      </button>
+    {% elif current_user.is_financial() %}
+      <div class="nt-nav-label">Financeiro</div>
+      <a class="nt-nav-link {% if request.endpoint and 'financial' in request.endpoint %}active{% endif %}"
+         href="{{ url_for('financial.index') }}">
+        <i class="bi bi-wallet2"></i> Visão Geral
+      </a>
+      <a class="nt-nav-link {% if 'renewal' in request.endpoint %}active{% endif %}"
+         href="{{ url_for('renewals.index') }}">
+        <i class="bi bi-arrow-repeat"></i> Renovações
+      </a>
+      <div class="nt-nav-label mt-2">Exportar</div>
+      <a class="nt-nav-link" href="{{ url_for('exports.financial') }}">
+        <i class="bi bi-file-earmark-spreadsheet"></i> Financeiro CSV
+      </a>
+      <a class="nt-nav-link" href="{{ url_for('exports.sales') }}">
+        <i class="bi bi-file-earmark-spreadsheet"></i> Vendas CSV
+      </a>
+      <a class="nt-nav-link" href="{{ url_for('exports.renewals') }}">
+        <i class="bi bi-file-earmark-spreadsheet"></i> Renovações CSV
+      </a>
+      <a class="nt-nav-link" href="{{ url_for('exports.clients') }}">
+        <i class="bi bi-file-earmark-spreadsheet"></i> Clientes CSV
+      </a>
+    {% else %}
+      <div class="nt-nav-label">Menu</div>
+      <a class="nt-nav-link {% if request.endpoint == 'attendant.dashboard' %}active{% endif %}"
+         href="{{ url_for('attendant.dashboard') }}">
+        <i class="bi bi-house-fill"></i> Início
+      </a>
+      <a class="nt-nav-link {% if request.endpoint in ['attendant.clients','attendant.new_client','attendant.edit_client'] or request.endpoint == 'contacts.client_detail' %}active{% endif %}"
+         href="{{ url_for('attendant.clients') }}">
+        <i class="bi bi-person-lines-fill"></i> Clientes
+      </a>
+      <a class="nt-nav-link {% if request.endpoint == 'attendant.renewals' %}active{% endif %}"
+         href="{{ url_for('attendant.renewals') }}">
+        <i class="bi bi-arrow-repeat"></i> Renovações
+      </a>
+      <a class="nt-nav-link {% if request.endpoint == 'attendant.my_commissions' %}active{% endif %}"
+         href="{{ url_for('attendant.my_commissions') }}">
+        <i class="bi bi-cash-coin"></i> Comissões
+      </a>
+      <a class="nt-nav-link {% if request.endpoint and 'chat' in request.endpoint %}active{% endif %}"
+         href="{{ url_for('chat.index') }}">
+        <i class="bi bi-chat-dots-fill"></i> Chat
+        {% if unread_chat_count %}
+          <span class="badge ms-auto rounded-pill" style="background:#7c3aed;font-size:.65rem;">{{ unread_chat_count }}</span>
+        {% endif %}
+      </a>
+      <div style="border-top:1px solid var(--border);margin:10px 0;"></div>
+      <button onclick="Tour.start(TOUR_STEPS)" class="nt-nav-link w-100 text-start"
+              style="background:none;border:none;cursor:pointer;"
+              title="Ver o tutorial novamente">
+        <i class="bi bi-mortarboard-fill" style="color:#fcd34d;"></i>
+        <span style="color:#fcd34d;">Tutorial</span>
+      </button>
+    {% endif %}
+  </nav>
+
+  <div class="nt-sidebar-footer">
+    <a class="nt-nav-link text-danger" href="{{ url_for('auth.logout') }}">
+      <i class="bi bi-box-arrow-right"></i> Sair
+    </a>
+  </div>
+</aside>
+
+<!-- HEADER -->
+<header class="nt-header">
+  <div class="nt-header-left">
+    <button class="nt-hamburger" id="hamburger" aria-label="Menu">
+      <i class="bi bi-list"></i>
+    </button>
+    <h1 class="nt-page-title">{% block page_title %}{% endblock %}</h1>
+  </div>
+  <div class="nt-header-right">
+    <button id="darkToggle" title="Alternar tema">
+      <i class="bi bi-sun-fill"></i>
+    </button>
+    <div class="dropdown">
+      <button class="btn btn-sm d-flex align-items-center gap-2 dropdown-toggle"
+              style="background:rgba(255,255,255,.08);border:1px solid var(--border);color:#fff;border-radius:10px;"
+              data-bs-toggle="dropdown">
+        <i class="bi bi-person-circle fs-5"></i>
+        <span class="d-none d-sm-inline" style="font-size:.85rem;">{{ current_user.name }}</span>
+        {% if current_user.is_admin() %}
+          <span class="badge" style="background:rgba(245,158,11,.25);color:#fcd34d;font-size:.7rem;">Admin</span>
+        {% elif current_user.is_manager() %}
+          <span class="badge" style="background:rgba(6,182,212,.2);color:#67e8f9;font-size:.7rem;">Gerente</span>
+        {% endif %}
+      </button>
+      <ul class="dropdown-menu dropdown-menu-end">
+        <li><span class="dropdown-item-text text-muted small px-3">{{ current_user.username }}</span></li>
+        <li><hr class="dropdown-divider"></li>
+        <li>
+          <a class="dropdown-item" href="{{ url_for('auth.change_password') }}">
+            <i class="bi bi-key me-2"></i>Trocar Senha
+          </a>
+        </li>
+        <li><hr class="dropdown-divider"></li>
+        <li>
+          <a class="dropdown-item text-danger" href="{{ url_for('auth.logout') }}">
+            <i class="bi bi-box-arrow-right me-2"></i>Sair
+          </a>
+        </li>
+      </ul>
+    </div>
+  </div>
+</header>
+
+<!-- MAIN -->
+<main class="nt-main">
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for category, message in messages %}
+      <div class="alert alert-{{ category }} alert-dismissible fade show mb-3" role="alert">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      </div>
+    {% endfor %}
+  {% endwith %}
+  {% block content %}{% endblock %}
+</main>
+
+<!-- Overlay mobile -->
+<div id="sidebarOverlay" onclick="closeSidebar()"
+     style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:999;"></div>
+
+{% endif %}
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+{% if current_user.is_authenticated and not current_user.is_financial() %}
+<script src="{{ url_for('static', filename='js/tour.js') }}"></script>
+<script>
+{% if current_user.is_admin() %}
+const TOUR_STEPS = [
+  {
+    icon: '👋',
+    title: 'Bem-vindo, Administrador!',
+    text: 'Este é o painel completo do <strong>Nascimento Tech</strong>. Você tem controle total: atendentes, salários, vendas, caixa, financeiro, automações e muito mais. Este tutorial vai te guiar por todas as funcionalidades.',
+    selector: null
+  },
+  {
+    icon: '📊',
+    title: 'Dashboard — Visão Geral',
+    text: 'O <strong>Dashboard</strong> é a central de informações em tempo real. Você vê: total de vendas do dia, comissões geradas, atendentes online agora, renovações vencidas (badge vermelho no menu), gráfico de vendas dos últimos 30 dias e ranking dos atendentes.',
+    selector: 'a[href*="dashboard"]'
+  },
+  {
+    icon: '👥',
+    title: 'Atendentes — Gestão de Equipe',
+    text: 'Em <strong>Atendentes</strong> você cria e gerencia toda a equipe. Perfis disponíveis: <strong>Atendente</strong> (vendas e renovações), <strong>Gerente</strong> (painel completo + operacional), <strong>Financeiro</strong> (leitura e exportação). Você também define salário base, carga horária/dia e dias trabalhados/mês de cada um.',
+    selector: 'a[href*="atendentes"]'
+  },
+  {
+    icon: '💼',
+    title: 'Salários — Controle de Ponto e Desconto',
+    text: 'Em <strong>Salários</strong> você acompanha o salário previsto de cada funcionário no mês. O sistema calcula automaticamente: <strong>Valor/hora</strong> = Salário ÷ (Dias/mês × h/dia). Se o atendente bater menos horas do que o esperado, o desconto é calculado sobre os minutos em falta. Turno em aberto não desconta — só turnos encerrados.',
+    selector: 'a[href*="salarios"]'
+  },
+  {
+    icon: '🛒',
+    title: 'Vendas — Histórico Completo',
+    text: 'Em <strong>Vendas</strong> você vê todas as vendas registradas pela equipe. Filtre por atendente, data, plano ou forma de pagamento. Cada registro mostra: cliente, plano, valor base, ajuste (desconto/acréscimo), valor final e comprovante em PDF/imagem. Vendas sem comprovante não são aceitas pelo sistema.',
+    selector: 'a[href*="vendas"]'
+  },
+  {
+    icon: '💰',
+    title: 'Caixa — Conferência Diária',
+    text: 'O <strong>Caixa</strong> resume os recebimentos do dia separados por forma de pagamento: Pix, Cartão de Crédito, Cartão de Débito e Cakto. Use para conferir se o total fechado bate com o que foi recebido fisicamente. Você pode navegar por datas anteriores também.',
+    selector: 'a[href*="caixa"]'
+  },
+  {
+    icon: '💳',
+    title: 'Financeiro — Controle de Entrada e Saída',
+    text: 'O módulo <strong>Financeiro</strong> permite registrar entradas e saídas manuais (ex: pagamento de comissão, despesas operacionais). Separa por categoria e mostra saldo do período. Use em conjunto com o Caixa para ter controle financeiro completo.',
+    selector: 'a[href*="financeiro"]'
+  },
+  {
+    icon: '🔄',
+    title: 'Renovações — Controle de Vencimentos',
+    text: 'Em <strong>Renovações</strong> você acompanha todos os vencimentos. Renovações vencidas aparecem em vermelho com badge no menu. Você pode criar renovações manualmente, editar datas e marcar como renovada ou cancelada. Cada renovação exige comprovante obrigatório.',
+    selector: 'a[href*="renovacoes"]'
+  },
+  {
+    icon: '📞',
+    title: 'Clientes — Monitoramento e Auditoria',
+    text: 'Em <strong>Clientes</strong> você vê todos os clientes cadastrados no sistema. Clientes sem contato há mais de 5 dias aparecem destacados como <em>Em risco</em>. Ao clicar em um cliente, você vê o histórico completo de contatos, vendas e renovações — ótimo para auditoria de atendimento.',
+    selector: 'a[href*="clientes"]'
+  },
+  {
+    icon: '🏆',
+    title: 'Metas e Comissões',
+    text: 'Em <strong>Metas</strong> você define a meta mensal de vendas de cada atendente. O sistema calcula automaticamente as comissões: <strong>5%</strong> por venda normal e <strong>20%</strong> em hora extra. Em <strong>Comissões</strong> você registra os pagamentos para que o atendente veja o histórico do que foi pago.',
+    selector: 'a[href*="metas"]'
+  },
+  {
+    icon: '💳',
+    title: 'Tabela de Preços — Planos',
+    text: 'Em <strong>Tabela de Preços</strong> você cadastra os planos disponíveis com nome, valor, período (ex: 1 mês, 3 meses) e número de telas. Esses planos aparecem como botões de seleção rápida para os atendentes ao registrar uma venda. Mantenha sempre atualizado com os valores reais praticados.',
+    selector: 'a[href*="precos"]'
+  },
+  {
+    icon: '⚡',
+    title: 'Automações — Produtividade Automática',
+    text: '<strong>Automações</strong> inclui três ferramentas: (1) <strong>Lembrete de renovação</strong>: alerta automático para clientes próximos do vencimento; (2) <strong>Follow-up</strong>: mensagem automática para clientes em risco de churn; (3) <strong>Distribuição</strong>: divide clientes sem atendente entre a equipe automaticamente.',
+    selector: 'a[href*="automacoes"]'
+  },
+  {
+    icon: '⏱️',
+    title: 'Ponto — Controle de Presença',
+    text: 'Em <strong>Ponto</strong> você acompanha os registros de entrada/saída/pausas de cada atendente por dia. Turnos abertos aparecem em destaque. Veja o total de horas trabalhadas, pausas acumuladas e horas em falta no mês — vinculado diretamente ao cálculo de salário.',
+    selector: 'a[href*="ponto"]'
+  },
+  {
+    icon: '💬',
+    title: 'Chat — Comunicação Direta',
+    text: 'O <strong>Chat</strong> permite comunicação privada entre você e cada atendente. Você pode enviar texto, imagens e áudios gravados pelo microfone. Mensagens não lidas aparecem com um badge numérico no ícone do chat no menu. O atendente também recebe notificação visual.',
+    selector: 'a[href*="chat"]'
+  },
+  {
+    icon: '📤',
+    title: 'Exportações — Relatórios em Excel',
+    text: 'Em <strong>Exportações</strong> você baixa relatórios em Excel (.xlsx) de vendas, renovações, clientes e histórico de ponto. Ideal para enviar relatórios por período, fazer backup de dados ou análise em planilha. Selecione o período e o tipo de dado desejado.',
+    selector: 'a[href*="exportar"]'
+  },
+  {
+    icon: '🔐',
+    title: 'Dica de Segurança',
+    text: 'Nunca compartilhe sua senha de administrador. Se precisar dar acesso a alguém de confiança, crie uma conta com perfil <strong>Gerente</strong> — ele acessa quase tudo, mas não cria nem exclui usuários. Troque sua senha regularmente em <em>Configurações</em>.',
+    selector: null
+  },
+  {
+    icon: '✅',
+    title: 'Você está pronto para administrar!',
+    text: 'Clique em <strong>Tutorial</strong> no menu a qualquer momento para rever este guia. Dúvidas sobre uma tela específica? O botão Tutorial sempre estará disponível no menu lateral. Bom trabalho!',
+    selector: null
+  },
+];
+{% elif current_user.is_manager() %}
+const TOUR_STEPS = [
+  {
+    icon: '👋',
+    title: 'Bem-vindo, Gerente!',
+    text: 'Você tem acesso ao painel de gestão completo <strong>E</strong> pode operar como atendente: cadastrar clientes, registrar vendas e fazer renovações. Suas vendas também geram comissão! Vou te mostrar tudo.',
+    selector: null
+  },
+  {
+    icon: '📊',
+    title: 'Dashboard — Central de Informações',
+    text: 'O <strong>Dashboard</strong> mostra o resumo do dia: total de vendas, comissões geradas, atendentes online, renovações vencidas e gráficos de desempenho da equipe inteira. Use para tomar decisões rápidas sobre o dia.',
+    selector: 'a[href*="dashboard"]'
+  },
+  {
+    icon: '👤',
+    title: 'Novo Cliente / Venda — Sua Operação',
+    text: 'Em <strong>Novo Cliente/Venda</strong> (seção Operacional do menu) você cadastra novos clientes e registra vendas. Selecione o plano pelo botão rápido, informe o valor recebido, use o campo de ajuste para descontos ou acréscimos, e anexe o <strong>comprovante obrigatório</strong>. Sua comissão é calculada automaticamente (5%).',
+    selector: 'a[href*="novo-cliente"]'
+  },
+  {
+    icon: '🔄',
+    title: 'Minhas Renovações — Gestão dos Seus Clientes',
+    text: 'Em <strong>Minhas Renovações</strong> você vê apenas os clientes que você cadastrou e que precisam renovar. Clique em <strong>Renovar</strong> para abrir o modal, informe o valor recebido e anexe o comprovante. A renovação sem comprovante não é registrada.',
+    selector: 'a[href*="renovacoes"]'
+  },
+  {
+    icon: '🛒',
+    title: 'Vendas — Histórico Geral da Equipe',
+    text: 'Em <strong>Vendas</strong> no menu principal você vê todas as vendas de toda a equipe. Filtre por atendente, data ou plano. Veja valor base, ajustes, valor final e comprovante de cada venda. Ideal para monitorar o desempenho da equipe.',
+    selector: 'a[href*="vendas"]'
+  },
+  {
+    icon: '💰',
+    title: 'Caixa — Conferência do Dia',
+    text: 'O <strong>Caixa</strong> mostra o total recebido no dia por forma de pagamento (Pix, crédito, débito, Cakto). Use para conferir se o fechamento bate com o que foi recebido. Você pode navegar por datas anteriores.',
+    selector: 'a[href*="caixa"]'
+  },
+  {
+    icon: '📞',
+    title: 'Clientes — Monitoramento da Base',
+    text: 'Em <strong>Clientes</strong> você monitora todos os clientes da empresa. Veja quais estão <em>em risco</em> (sem contato há mais de 5 dias), quem está com renovação próxima e o histórico completo de atendimento. Ótimo para supervisionar a equipe.',
+    selector: 'a[href*="clientes"]'
+  },
+  {
+    icon: '🔍',
+    title: 'Auditoria — Rastreio de Ações',
+    text: 'Dentro de cada cliente você vê o <strong>histórico de contatos</strong>: quem ligou, quando, qual assunto e o resultado. Use para auditar o trabalho dos atendentes e garantir que nenhum cliente está sendo negligenciado.',
+    selector: 'a[href*="clientes"]'
+  },
+  {
+    icon: '🏆',
+    title: 'Metas e Comissões da Equipe',
+    text: 'Em <strong>Metas</strong> você acompanha o progresso de cada atendente em relação à meta do mês. Em <strong>Comissões</strong> veja o quanto cada um ganhou e o que já foi pago. Lembre-se: você também aparece nesse painel pelas suas próprias vendas!',
+    selector: 'a[href*="metas"]'
+  },
+  {
+    icon: '🔄',
+    title: 'Renovações — Painel Completo',
+    text: 'O painel de <strong>Renovações</strong> (menu principal) mostra todas as renovações do sistema — não só as suas. Veja as vencidas em vermelho, filtre por período e crie renovações avulsas quando necessário.',
+    selector: 'a[href*="renovacoes"]'
+  },
+  {
+    icon: '⚡',
+    title: 'Automações — Ferramentas Automáticas',
+    text: '<strong>Automações</strong> inclui: (1) Lembrete de renovação para clientes próximos do vencimento; (2) Follow-up automático para clientes em risco; (3) Redistribuição de clientes sem atendente. Use para manter a base ativa sem esforço manual.',
+    selector: 'a[href*="automacoes"]'
+  },
+  {
+    icon: '💬',
+    title: 'Chat — Comunicação com a Equipe',
+    text: 'O <strong>Chat</strong> é o canal de comunicação privado entre você e o administrador, e entre você e os atendentes. Envie texto, imagens e áudios. Mensagens não lidas aparecem com badge no ícone. Responda sempre rápido — os atendentes dependem de você!',
+    selector: 'a[href*="chat"]'
+  },
+  {
+    icon: '💳',
+    title: 'Financeiro — Visão de Entradas e Saídas',
+    text: 'O módulo <strong>Financeiro</strong> mostra o balanço de entradas e saídas registradas. Você tem acesso de leitura para acompanhar a saúde financeira da operação sem poder editar os dados — isso é privilégio do administrador.',
+    selector: 'a[href*="financeiro"]'
+  },
+  {
+    icon: '💵',
+    title: 'Seu Salário e Comissão',
+    text: 'Seu salário é calculado com base no ponto: <strong>Valor/hora</strong> = Salário ÷ (Dias/mês × h/dia). Horas em falta geram desconto proporcional. Suas comissões de vendas (5% por venda) são somadas ao salário. O administrador define seu salário base e carga horária.',
+    selector: null
+  },
+  {
+    icon: '✅',
+    title: 'Você está pronto para gerenciar!',
+    text: 'Clique em <strong>Tutorial</strong> no menu a qualquer momento para rever este guia. Lembre-se: você é referência para os atendentes — lidere pelo exemplo registrando comprovantes em todas as suas vendas. Boas vendas!',
+    selector: null
+  },
+];
+{% else %}
+const TOUR_STEPS = [
+  {
+    icon: '👋',
+    title: 'Bem-vindo ao Nascimento Tech!',
+    text: 'Este é o seu painel de atendente. Aqui você bate ponto, registra vendas, faz renovações e acompanha suas comissões. Vou te guiar por tudo em poucos passos!',
+    selector: null
+  },
+  {
+    icon: '🏠',
+    title: 'Seu Dashboard',
+    text: 'O <strong>Dashboard</strong> é sua central. Você vê: vendas de hoje, comissão gerada, seu status de ponto atual (entrada, pausa, encerrado), gráfico de desempenho dos últimos 30 dias e um resumo do seu salário previsto no mês.',
+    selector: 'a[href*="atendente"]'
+  },
+  {
+    icon: '⏱️',
+    title: 'Bater Ponto — Entrada',
+    text: 'Ao chegar, clique em <strong>Entrar</strong> no card de ponto do dashboard. O sistema registra sua hora de entrada. <strong>Importante</strong>: bata o ponto assim que chegar — o horário é registrado automaticamente e não pode ser alterado depois.',
+    selector: '.nt-main'
+  },
+  {
+    icon: '☕',
+    title: 'Pausas — Use com Responsabilidade',
+    text: 'Durante o turno, clique em <strong>Pausar</strong> para intervalos (café, almoço, etc.). Clique em <strong>Retomar</strong> quando voltar. O tempo de pausa é descontado das suas horas trabalhadas. <strong>Atenção</strong>: pausas excessivas impactam seu salário! Mantenha pausas dentro do razoável.',
+    selector: '.nt-main'
+  },
+  {
+    icon: '🏁',
+    title: 'Encerrar Turno — Saída',
+    text: 'Ao terminar o dia, clique em <strong>Encerrar turno</strong>. O sistema registra sua saída e calcula o total de horas trabalhadas (descontando pausas). <strong>Não esqueça</strong>: turno em aberto não conta desconto ainda, mas turno encerrado com menos horas do que o esperado gera desconto no salário.',
+    selector: '.nt-main'
+  },
+  {
+    icon: '💵',
+    title: 'Salário — Como é Calculado',
+    text: 'Seu <strong>Valor/hora</strong> = Salário base ÷ (Dias/mês × Horas/dia). Se você trabalhar menos horas do que o esperado em um dia encerrado, o déficit de minutos é multiplicado pelo valor/hora e vira desconto. No dashboard você vê em tempo real a projeção de desconto do dia atual.',
+    selector: null
+  },
+  {
+    icon: '👤',
+    title: 'Novo Cliente — Como Cadastrar',
+    text: 'Clique em <strong>Clientes</strong> no menu, depois em <strong>Novo Cliente</strong>. Preencha: nome completo, número do WhatsApp (com DDD), e-mail (opcional). Na mesma tela você já registra a primeira venda: escolha o plano, informe o valor recebido e preencha os dados do pagamento.',
+    selector: 'a[href*="clientes"]'
+  },
+  {
+    icon: '📋',
+    title: 'Planos — Seleção Rápida',
+    text: 'Ao registrar uma venda, os <strong>planos cadastrados</strong> aparecem como botões coloridos. Clique no plano para preencher automaticamente o nome e o valor base. Se o cliente pagou diferente (desconto ou acréscimo), use o campo <strong>Ajuste</strong> — negativo para desconto, positivo para acréscimo.',
+    selector: 'a[href*="clientes"]'
+  },
+  {
+    icon: '📎',
+    title: 'Comprovante — Obrigatório em Tudo',
+    text: 'Toda venda e toda renovação <strong>exige comprovante</strong>. Sem o arquivo, o sistema não salva. Formatos aceitos: imagem (JPG, PNG) ou PDF. Peça sempre o comprovante do cliente antes de fechar a venda. Sem comprovante = sem registro = sem comissão.',
+    selector: null
+  },
+  {
+    icon: '🔄',
+    title: 'Renovações — Seus Clientes',
+    text: 'Em <strong>Renovações</strong> você vê os clientes que você cadastrou e que estão próximos do vencimento ou já vencidos. Clique em <strong>Renovar</strong>, informe o valor recebido e anexe o comprovante. O sistema atualiza automaticamente a data de vencimento.',
+    selector: 'a[href*="renovacoes"]'
+  },
+  {
+    icon: '📋',
+    title: 'Histórico do Cliente',
+    text: 'Ao clicar em qualquer cliente, você vê o histórico completo: vendas, renovações e todos os contatos registrados. <strong>Registre sempre</strong> o motivo de cada contato: ligou para cobrar, cliente pediu suporte, combinou data de renovação... Isso mostra seu trabalho pro admin e protege você.',
+    selector: 'a[href*="clientes"]'
+  },
+  {
+    icon: '💬',
+    title: 'Chat com o Admin/Gerente',
+    text: 'O <strong>Chat</strong> é o canal direto de comunicação com o administrador e com seu gerente. Você pode enviar texto, imagens e áudios gravados pelo microfone (botão do microfone na caixa de mensagem). Mensagens não lidas aparecem com badge no ícone do chat.',
+    selector: 'a[href*="chat"]'
+  },
+  {
+    icon: '💵',
+    title: 'Suas Comissões',
+    text: 'Em <strong>Comissões</strong> você acompanha quanto ganhou em cada mês: <strong>5%</strong> sobre cada venda registrada no seu nome. Em <strong>hora extra</strong> (fora do horário normal) a comissão sobe para <strong>20%</strong>. O histórico mostra o que foi pago e o que ainda está pendente.',
+    selector: 'a[href*="comissoes"]'
+  },
+  {
+    icon: '🎯',
+    title: 'Dica de Ouro — Seja o Melhor',
+    text: '<strong>3 hábitos dos top atendentes:</strong> (1) Bata o ponto sempre ao chegar e sair; (2) Registre TODOS os contatos com clientes — mesmo os sem renovação; (3) Nunca feche uma venda sem o comprovante em mãos. Esses três hábitos garantem sua comissão e mostram seu valor pro admin.',
+    selector: null
+  },
+  {
+    icon: '✅',
+    title: 'Pronto! Você está preparado.',
+    text: 'Clique em <strong>Tutorial</strong> no menu a qualquer momento para rever este guia. Se tiver dúvidas, use o chat para falar com o admin. Boas vendas e bom trabalho!',
+    selector: null
+  },
+];
+{% endif %}
+
+// Inicia automaticamente na primeira vez (chave separada por perfil)
+{% if current_user.is_admin() %}
+Tour.autoStart(TOUR_STEPS, 'nt_tour_admin');
+{% elif current_user.is_manager() %}
+Tour.autoStart(TOUR_STEPS, 'nt_tour_gerente');
+{% else %}
+Tour.autoStart(TOUR_STEPS, 'nt_tour_atendente');
+{% endif %}
+</script>
+{% endif %}
+<script>
+  // CSRF auto-inject: adiciona csrf_token em todos os forms POST
+  (function() {
+    const csrfMeta = document.querySelector('meta[name="csrf-token"]');
+    if (!csrfMeta) return;
+    const token = csrfMeta.getAttribute('content');
+    document.addEventListener('DOMContentLoaded', function() {
+      document.querySelectorAll('form').forEach(function(form) {
+        const method = (form.getAttribute('method') || 'get').toUpperCase();
+        if (method === 'POST' && !form.querySelector('[name="csrf_token"]')) {
+          const inp = document.createElement('input');
+          inp.type = 'hidden';
+          inp.name = 'csrf_token';
+          inp.value = token;
+          form.appendChild(inp);
+        }
+      });
+    });
+  })();
+</script>
+<script>
+  // Dark mode (padrão dark)
+  const toggle = document.getElementById('darkToggle');
+  const icon = toggle ? toggle.querySelector('i') : null;
+
+  function applyTheme(dark) {
+    document.body.style.setProperty('--bg-main',    dark ? '#0d0d1a' : '#f3f4f6');
+    document.body.style.setProperty('--bg-sidebar', dark ? '#12122a' : '#1e1e3f');
+    document.body.style.setProperty('--bg-card',    dark ? '#1a1a35' : '#ffffff');
+    document.body.style.setProperty('--bg-card2',   dark ? '#1e1e3f' : '#f9fafb');
+    document.body.style.setProperty('--text',       dark ? '#e0e0f0' : '#111827');
+    document.body.style.setProperty('--text-muted', dark ? '#7b7b9e' : '#6b7280');
+    document.body.style.setProperty('--border',     dark ? 'rgba(255,255,255,.07)' : 'rgba(0,0,0,.1)');
+    if (icon) icon.className = dark ? 'bi bi-sun-fill' : 'bi bi-moon-fill';
+  }
+
+  const saved = localStorage.getItem('theme');
+  applyTheme(saved !== 'light');
+
+  if (toggle) {
+    toggle.addEventListener('click', () => {
+      const nowDark = document.body.style.getPropertyValue('--bg-main').trim() === '#0d0d1a';
+      localStorage.setItem('theme', nowDark ? 'light' : 'dark');
+      applyTheme(!nowDark);
+    });
+  }
+
+  // Sidebar mobile
+  function closeSidebar() {
+    document.getElementById('sidebar').classList.remove('open');
+    document.getElementById('sidebarOverlay').style.display = 'none';
+  }
+  const ham = document.getElementById('hamburger');
+  if (ham) {
+    ham.addEventListener('click', () => {
+      document.getElementById('sidebar').classList.toggle('open');
+      const ov = document.getElementById('sidebarOverlay');
+      ov.style.display = document.getElementById('sidebar').classList.contains('open') ? 'block' : 'none';
+    });
+  }
+</script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

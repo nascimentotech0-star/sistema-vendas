@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login — Nascimento Tech</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+  <style>
+    :root {
+      --accent: #7c3aed;
+      --accent2: #06b6d4;
+    }
+    * { box-sizing: border-box; }
+    body {
+      background: #0d0d1a;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+    }
+
+    /* Fundo animado */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 20% 50%, rgba(124,58,237,.25) 0%, transparent 60%),
+        radial-gradient(ellipse at 80% 20%, rgba(6,182,212,.2) 0%, transparent 50%),
+        radial-gradient(ellipse at 60% 80%, rgba(236,72,153,.15) 0%, transparent 50%);
+      pointer-events: none;
+    }
+
+    .login-wrap {
+      position: relative;
+      width: 100%;
+      max-width: 400px;
+      padding: 16px;
+    }
+
+    .login-card {
+      background: rgba(26,26,53,.9);
+      border: 1px solid rgba(255,255,255,.08);
+      border-radius: 20px;
+      padding: 40px 36px;
+      backdrop-filter: blur(20px);
+      box-shadow: 0 30px 80px rgba(0,0,0,.5);
+    }
+
+    .brand-icon {
+      width: 64px; height: 64px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border-radius: 18px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.8rem;
+      color: #fff;
+      margin: 0 auto 16px;
+      box-shadow: 0 8px 30px rgba(124,58,237,.4);
+    }
+
+    .login-card h4 {
+      color: #fff;
+      font-weight: 700;
+      font-size: 1.3rem;
+    }
+
+    .login-card .subtitle {
+      color: #7b7b9e;
+      font-size: .85rem;
+    }
+
+    .form-label {
+      color: #c4c4d8;
+      font-size: .85rem;
+      font-weight: 500;
+    }
+
+    .form-control {
+      background: rgba(255,255,255,.06) !important;
+      border: 1px solid rgba(255,255,255,.1) !important;
+      color: #e0e0f0 !important;
+      border-radius: 10px !important;
+      padding: 10px 14px;
+    }
+    .form-control:focus {
+      border-color: var(--accent) !important;
+      box-shadow: 0 0 0 3px rgba(124,58,237,.25) !important;
+      background: rgba(255,255,255,.08) !important;
+    }
+    .form-control::placeholder { color: #555570 !important; }
+
+    .input-group-text {
+      background: rgba(255,255,255,.06) !important;
+      border: 1px solid rgba(255,255,255,.1) !important;
+      color: #7b7b9e !important;
+      border-radius: 10px 0 0 10px !important;
+    }
+    .input-group .form-control { border-radius: 0 10px 10px 0 !important; }
+
+    .btn-login {
+      background: linear-gradient(135deg, var(--accent), #6d28d9);
+      border: none;
+      border-radius: 10px;
+      color: #fff;
+      font-weight: 600;
+      padding: 11px;
+      width: 100%;
+      font-size: .95rem;
+      transition: opacity .15s, transform .15s;
+      box-shadow: 0 4px 20px rgba(124,58,237,.4);
+    }
+    .btn-login:hover { opacity: .9; transform: translateY(-1px); }
+
+    .alert {
+      border-radius: 10px;
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.1);
+      color: #e0e0f0;
+      font-size: .85rem;
+    }
+  </style>
+</head>
+<body>
+<div class="login-wrap">
+  <div class="login-card">
+    <div class="text-center mb-4">
+      <div class="brand-icon"><i class="bi bi-shop-window"></i></div>
+      <h4 class="mb-1">Nascimento Tech</h4>
+      <p class="subtitle mb-0">Sistema de Gestão de Vendas</p>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for category, message in messages %}
+        <div class="alert mb-3">{{ message }}</div>
+      {% endfor %}
+    {% endwith %}
+
+    <form method="POST" action="{{ url_for('auth.login') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="mb-3">
+        <label class="form-label">Usuário</label>
+        <div class="input-group">
+          <span class="input-group-text"><i class="bi bi-person"></i></span>
+          <input type="text" name="username" class="form-control" placeholder="seu.usuario" required autofocus>
+        </div>
+      </div>
+      <div class="mb-4">
+        <label class="form-label">Senha</label>
+        <div class="input-group">
+          <span class="input-group-text"><i class="bi bi-lock"></i></span>
+          <input type="password" name="password" class="form-control" placeholder="••••••••" required>
+        </div>
+      </div>
+      <button type="submit" class="btn-login">
+        <i class="bi bi-box-arrow-in-right me-1"></i> Entrar
+      </button>
+    </form>
+  </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+{% block title %}{% if attendant %}Editar{% else %}Novo{% endif %} Atendente — VendasPRO{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-12 col-md-6">
+    <div class="d-flex align-items-center mb-4">
+      <a href="{{ url_for('admin.attendants') }}" class="btn btn-outline-secondary btn-sm me-3">
+        <i class="bi bi-arrow-left"></i>
+      </a>
+      <h4 class="fw-bold mb-0">
+        {% if attendant %}Editar Atendente{% else %}Novo Atendente{% endif %}
+      </h4>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+      <div class="card-body p-4">
+        <form method="POST">
+          {% if not attendant %}
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Usuário <span class="text-danger">*</span></label>
+            <input type="text" name="username" class="form-control" placeholder="ex: joao.silva" required>
+            <div class="form-text">Usado no login. Sem espaços.</div>
+          </div>
+          {% endif %}
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Nome Completo <span class="text-danger">*</span></label>
+            <input type="text" name="name" class="form-control" value="{{ attendant.name if attendant else '' }}" required>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold">E-mail</label>
+            <input type="email" name="email" class="form-control" value="{{ attendant.email if attendant else '' }}">
+          </div>
+
+          <div class="row g-3 mb-3">
+            <div class="col-7">
+              <label class="form-label fw-semibold">Salário Mensal (R$)</label>
+              <input type="number" name="monthly_salary" step="0.01" min="0"
+                     class="form-control" placeholder="0,00"
+                     value="{{ attendant.monthly_salary if attendant and attendant.monthly_salary else '' }}">
+              <div class="form-text">Base para cálculo de desconto por atraso/falta.</div>
+            </div>
+            <div class="col-5">
+              <label class="form-label fw-semibold">Carga Horária/dia</label>
+              <div class="input-group">
+                <input type="number" name="work_hours_per_day" min="1" max="24"
+                       class="form-control" placeholder="8"
+                       value="{{ attendant.work_hours_per_day if attendant and attendant.work_hours_per_day else 8 }}">
+                <span class="input-group-text">h</span>
+              </div>
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Dias trabalhados/mês</label>
+            <select name="work_days_per_month" class="form-select">
+              {% set cur_days = attendant.work_days_per_month if attendant and attendant.work_days_per_month else 22 %}
+              <option value="22" {% if cur_days == 22 %}selected{% endif %}>22 dias — seg. a sex.</option>
+              <option value="24" {% if cur_days == 24 %}selected{% endif %}>24 dias — + 2 sábados</option>
+              <option value="26" {% if cur_days == 26 %}selected{% endif %}>26 dias — + sábados</option>
+              <option value="27" {% if cur_days == 27 %}selected{% endif %}>27 dias — + sáb. e 1 dom.</option>
+              <option value="28" {% if cur_days == 28 %}selected{% endif %}>28 dias — + sáb. e 2 dom.</option>
+              <option value="30" {% if cur_days == 30 %}selected{% endif %}>30 dias — domingo a domingo</option>
+            </select>
+            <div class="form-text">Define a base de cálculo do valor por hora.</div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Perfil de acesso</label>
+            <select name="role" class="form-select">
+              <option value="attendant" {% if not attendant or attendant.role == 'attendant' %}selected{% endif %}>
+                Atendente — vendas e renovações
+              </option>
+              <option value="financial" {% if attendant and attendant.role == 'financial' %}selected{% endif %}>
+                Financeiro — leitura + exportação
+              </option>
+              <option value="gerente" {% if attendant and attendant.role == 'gerente' %}selected{% endif %}>
+                Gerente — painel completo (sem criar usuários)
+              </option>
+            </select>
+            <div class="form-text">Gerente acessa tudo exceto criação e exclusão de usuários.</div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold">
+              Senha {% if not attendant %}<span class="text-danger">*</span>{% else %}<small class="text-muted">(deixe em branco para manter)</small>{% endif %}
+            </label>
+            <input type="password" name="password" class="form-control" {% if not attendant %}required{% endif %} placeholder="••••••••">
+          </div>
+
+          {% if attendant %}
+          <div class="mb-3">
+            <div class="form-check form-switch">
+              <input class="form-check-input" type="checkbox" name="is_active" id="is_active"
+                {% if attendant.is_active %}checked{% endif %}>
+              <label class="form-check-label fw-semibold" for="is_active">Conta ativa</label>
+            </div>
+          </div>
+          {% endif %}
+
+          <div class="d-flex gap-2 pt-2">
+            <button type="submit" class="btn btn-primary px-4">
+              <i class="bi bi-check-lg me-1"></i> Salvar
+            </button>
+            <a href="{{ url_for('admin.attendants') }}" class="btn btn-outline-secondary">Cancelar</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

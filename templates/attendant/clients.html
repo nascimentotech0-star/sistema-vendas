@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% block title %}Clientes — Nascimento Tech{% endblock %}
+{% block page_title %}Meus Clientes{% endblock %}
+{% block content %}
+
+<div class="card mb-3">
+  <div class="card-body py-2">
+    <form method="GET" class="d-flex gap-2 align-items-center">
+      <div class="input-group" style="max-width:280px;">
+        <span class="input-group-text"><i class="bi bi-search"></i></span>
+        <input type="text" name="q" class="form-control form-control-sm"
+               placeholder="Buscar por nome..." value="{{ search }}">
+      </div>
+      {% if search %}
+        <a href="{{ url_for('attendant.clients') }}" class="btn btn-sm"
+           style="background:rgba(255,255,255,.08);color:var(--text);border:1px solid var(--border);">Limpar</a>
+      {% endif %}
+      <a href="{{ url_for('attendant.new_client') }}" class="btn btn-sm btn-primary ms-auto">
+        <i class="bi bi-plus-lg me-1"></i> Novo Cliente
+      </a>
+    </form>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-body p-0">
+    {% if clients %}
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead>
+          <tr><th>Nome</th><th>WhatsApp / Telefone</th><th>Último Contato</th><th>Cidade</th><th>Ações</th></tr>
+        </thead>
+        <tbody>
+          {% for c in clients %}
+          <tr>
+            <td class="fw-semibold">
+              {% if c.is_at_risk %}
+                <i class="bi bi-exclamation-triangle-fill me-1" style="color:#f9a8d4;font-size:.75rem;"
+                   title="{{ c.days_without_contact }} dias sem contato"></i>
+              {% endif %}
+              {{ c.name }}
+            </td>
+            <td>
+              {% if c.whatsapp %}
+                <a href="https://wa.me/{{ c.whatsapp|replace(' ','')|replace('(','') |replace(')','') |replace('-','') }}"
+                   target="_blank" style="color:#25d366;text-decoration:none;">
+                  <i class="bi bi-whatsapp me-1"></i>{{ c.whatsapp }}
+                </a>
+              {% elif c.phone %}
+                <i class="bi bi-telephone me-1" style="color:var(--text-muted);"></i>{{ c.phone }}
+              {% else %}
+                <span style="color:var(--text-muted);">—</span>
+              {% endif %}
+            </td>
+            <td style="font-size:.82rem;">
+              {% if c.last_contact %}
+                <span style="color:{% if c.is_at_risk %}#f9a8d4{% else %}#6ee7b7{% endif %};">
+                  {{ c.last_contact.contacted_at.strftime('%d/%m/%Y') }}
+                </span>
+                <small class="d-block" style="color:var(--text-muted);">{{ c.last_contact.channel_label }}</small>
+              {% else %}
+                <span style="color:#f9a8d4;">Nunca</span>
+              {% endif %}
+            </td>
+            <td style="color:var(--text-muted);font-size:.85rem;">{{ c.city or '—' }}{% if c.state %}/{{ c.state }}{% endif %}</td>
+            <td>
+              <div class="d-flex gap-1">
+                <a href="{{ url_for('contacts.client_detail', client_id=c.id) }}" class="btn btn-sm"
+                   style="background:rgba(6,182,212,.2);color:#67e8f9;border:none;padding:3px 8px;"
+                   title="Registrar contato">
+                  <i class="bi bi-chat-dots-fill"></i>
+                </a>
+                <a href="{{ url_for('attendant.edit_client', id=c.id) }}" class="btn btn-sm"
+                   style="background:rgba(124,58,237,.2);color:#a78bfa;border:none;padding:3px 8px;"
+                   title="Editar">
+                  <i class="bi bi-pencil"></i>
+                </a>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+      <div class="text-center py-5">
+        <i class="bi bi-people" style="font-size:2.5rem;color:var(--text-muted);"></i>
+        <p class="mt-2" style="color:var(--text-muted);">
+          {% if search %}Nenhum cliente encontrado para "{{ search }}".
+          {% else %}Nenhum cliente cadastrado ainda.{% endif %}
+        </p>
+        <a href="{{ url_for('attendant.new_client') }}" class="btn btn-primary btn-sm">Cadastrar agora</a>
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+{% endblock %}

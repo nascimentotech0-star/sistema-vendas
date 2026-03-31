@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Editar' if renewal else 'Nova' }} Renovação — Nascimento Tech{% endblock %}
+{% block page_title %}{{ 'Editar' if renewal else 'Nova' }} Renovação{% endblock %}
+{% block content %}
+
+<div class="row justify-content-center">
+  <div class="col-12 col-lg-7">
+    <div class="card">
+      <div class="card-header d-flex align-items-center gap-2">
+        <i class="bi bi-arrow-repeat" style="color:var(--accent2);"></i>
+        <span class="fw-semibold">{{ 'Editar' if renewal else 'Cadastrar' }} Renovação</span>
+      </div>
+      <div class="card-body">
+        <form method="POST">
+
+          <!-- Cliente -->
+          <div class="mb-3">
+            <label class="form-label">Cliente (cadastrado)</label>
+            <select name="client_id" class="form-select">
+              <option value="">— Selecionar cliente —</option>
+              {% for c in clients %}
+                <option value="{{ c.id }}" {% if renewal and renewal.client_id == c.id %}selected{% endif %}>
+                  {{ c.name }}
+                </option>
+              {% endfor %}
+            </select>
+            <small style="color:var(--text-muted);">Ou informe o nome manualmente abaixo</small>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Nome manual (se não cadastrado)</label>
+            <input type="text" name="client_name_manual" class="form-control" placeholder="Nome do cliente"
+                   value="{{ renewal.client_name_manual if renewal else '' }}">
+          </div>
+
+          <!-- Plano -->
+          <div class="mb-3">
+            <label class="form-label">Nome do Plano <span class="text-danger">*</span></label>
+            <input type="text" name="plan_name" class="form-control" required
+                   placeholder="Ex: Plano Mensal, Premium, Basic..."
+                   value="{{ renewal.plan_name if renewal else '' }}">
+          </div>
+
+          <div class="row g-3 mb-3">
+            <!-- Valor -->
+            <div class="col-6">
+              <label class="form-label">Valor (R$)</label>
+              <input type="number" name="amount" step="0.01" min="0" class="form-control"
+                     placeholder="0,00"
+                     value="{{ '%.2f'|format(renewal.amount) if renewal else '' }}">
+            </div>
+            <!-- Vencimento -->
+            <div class="col-6">
+              <label class="form-label">Data de Vencimento <span class="text-danger">*</span></label>
+              <input type="date" name="due_date" class="form-control" required
+                     value="{{ renewal.due_date.strftime('%Y-%m-%d') if renewal else '' }}">
+            </div>
+          </div>
+
+          <!-- Atendente responsável -->
+          <div class="mb-3">
+            <label class="form-label">Atendente Responsável</label>
+            <select name="attendant_id" class="form-select">
+              <option value="">— Nenhum —</option>
+              {% for a in attendants %}
+                <option value="{{ a.id }}" {% if renewal and renewal.attendant_id == a.id %}selected{% endif %}>
+                  {{ a.name }}
+                </option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <!-- Observações -->
+          <div class="mb-4">
+            <label class="form-label">Observações</label>
+            <textarea name="notes" class="form-control" rows="3"
+                      placeholder="Informações adicionais sobre a renovação...">{{ renewal.notes if renewal else '' }}</textarea>
+          </div>
+
+          <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-primary px-4">
+              <i class="bi bi-check-lg me-1"></i> Salvar
+            </button>
+            <a href="{{ url_for('renewals.index') }}" class="btn btn-sm"
+               style="background:rgba(255,255,255,.08);color:var(--text);border:1px solid var(--border);">
+              Cancelar
+            </a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

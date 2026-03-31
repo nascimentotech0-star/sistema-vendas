@@ -1,0 +1,420 @@
+{% extends "base.html" %}
+{% block title %}Renovações — Nascimento Tech{% endblock %}
+{% block page_title %}Minhas Renovações{% endblock %}
+{% block content %}
+
+<!-- Filtros + botão nova -->
+<div class="card mb-4">
+  <div class="card-body py-2">
+    <form method="GET" class="d-flex flex-wrap gap-2 align-items-center">
+      <div class="d-flex align-items-center gap-2">
+        <label class="form-label mb-0 small">Mês:</label>
+        <input type="month" name="month" value="{{ month }}" class="form-control form-control-sm" style="width:160px;">
+      </div>
+      <div class="d-flex align-items-center gap-2">
+        <label class="form-label mb-0 small">Status:</label>
+        <select name="status" class="form-select form-select-sm" style="width:140px;">
+          <option value="">Todos</option>
+          <option value="pending"   {% if status_filter=='pending'   %}selected{% endif %}>Pendente</option>
+          <option value="renewed"   {% if status_filter=='renewed'   %}selected{% endif %}>Renovado</option>
+          <option value="cancelled" {% if status_filter=='cancelled' %}selected{% endif %}>Cancelado</option>
+        </select>
+      </div>
+      <button class="btn btn-sm btn-primary">Filtrar</button>
+      <button type="button" class="btn btn-sm ms-auto"
+              style="background:rgba(16,185,129,.2);color:#6ee7b7;border:1px solid rgba(16,185,129,.3);"
+              data-bs-toggle="modal" data-bs-target="#modalNovaRenovacao">
+        <i class="bi bi-plus-lg me-1"></i> Nova Renovação
+      </button>
+    </form>
+  </div>
+</div>
+
+<!-- Stat cards -->
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-2">
+    <div class="card stat-card stat-card-purple h-100">
+      <div class="card-body text-center py-3">
+        <p class="mb-1" style="font-size:.68rem;color:var(--text-muted);text-transform:uppercase;">Total</p>
+        <h3 class="fw-bold mb-0">{{ stats.total }}</h3>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-2">
+    <div class="card stat-card stat-card-green h-100">
+      <div class="card-body text-center py-3">
+        <p class="mb-1" style="font-size:.68rem;color:var(--text-muted);text-transform:uppercase;">Renovados</p>
+        <h3 class="fw-bold mb-0" style="color:#6ee7b7;">{{ stats.renewed }}</h3>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-2">
+    <div class="card stat-card stat-card-yellow h-100">
+      <div class="card-body text-center py-3">
+        <p class="mb-1" style="font-size:.68rem;color:var(--text-muted);text-transform:uppercase;">Pendentes</p>
+        <h3 class="fw-bold mb-0" style="color:#fcd34d;">{{ stats.pending }}</h3>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-2">
+    <div class="card stat-card stat-card-pink h-100">
+      <div class="card-body text-center py-3">
+        <p class="mb-1" style="font-size:.68rem;color:var(--text-muted);text-transform:uppercase;">Cancelados</p>
+        <h3 class="fw-bold mb-0" style="color:#f9a8d4;">{{ stats.cancelled }}</h3>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-2">
+    <div class="card stat-card stat-card-cyan h-100">
+      <div class="card-body text-center py-3">
+        <p class="mb-1" style="font-size:.68rem;color:var(--text-muted);text-transform:uppercase;">Vencidos</p>
+        <h3 class="fw-bold mb-0" style="color:#f9a8d4;">{{ stats.overdue }}</h3>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-2">
+    <div class="card stat-card stat-card-green h-100">
+      <div class="card-body text-center py-3">
+        <p class="mb-1" style="font-size:.68rem;color:var(--text-muted);text-transform:uppercase;">Taxa</p>
+        <h3 class="fw-bold mb-0" style="color:#6ee7b7;">{{ stats.rate }}%</h3>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Barra de progresso -->
+{% if stats.total > 0 %}
+<div class="card mb-4">
+  <div class="card-body py-3">
+    <div class="d-flex justify-content-between mb-2">
+      <span class="small fw-semibold">Taxa de Renovação do Mês</span>
+      <span class="small" style="color:var(--text-muted);">{{ stats.renewed }}/{{ stats.total }}</span>
+    </div>
+    <div class="progress" style="height:10px;background:rgba(255,255,255,.08);border-radius:10px;">
+      <div class="progress-bar" style="width:{{ stats.rate }}%;background:linear-gradient(90deg,#7c3aed,#06b6d4);border-radius:10px;"></div>
+    </div>
+    <div class="d-flex justify-content-between mt-2">
+      <small style="color:#6ee7b7;">{{ stats.renewed }} renovados</small>
+      {% if stats.overdue %}<small style="color:#f9a8d4;"><i class="bi bi-exclamation-triangle-fill me-1"></i>{{ stats.overdue }} vencido(s)</small>{% endif %}
+      <small style="color:#fcd34d;">{{ stats.pending }} pendentes</small>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<!-- Gráficos -->
+<div class="row g-3 mb-4">
+  <div class="col-12 col-lg-5">
+    <div class="card h-100">
+      <div class="card-header d-flex align-items-center gap-2">
+        <i class="bi bi-bar-chart-fill" style="color:var(--accent);"></i>
+        <span class="fw-semibold" style="font-size:.9rem;">Por Dia da Semana</span>
+        <small class="ms-auto" style="color:var(--text-muted);font-size:.7rem;">últimas 4 semanas</small>
+      </div>
+      <div class="card-body" style="position:relative;height:210px;">
+        <canvas id="chartWeekday"></canvas>
+      </div>
+    </div>
+  </div>
+  <div class="col-12 col-lg-7">
+    <div class="card h-100">
+      <div class="card-header d-flex align-items-center gap-2">
+        <i class="bi bi-calendar3" style="color:var(--accent2);"></i>
+        <span class="fw-semibold" style="font-size:.9rem;">Por Mês</span>
+        <small class="ms-auto" style="color:var(--text-muted);font-size:.7rem;">últimos 6 meses</small>
+      </div>
+      <div class="card-body" style="position:relative;height:210px;">
+        <canvas id="chartMonthly"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Tabela de renovações -->
+<div class="card">
+  <div class="card-header d-flex align-items-center gap-2">
+    <i class="bi bi-arrow-repeat" style="color:var(--accent2);"></i>
+    <span class="fw-semibold">Renovações</span>
+    <span class="badge ms-1" style="background:rgba(255,255,255,.1);color:var(--text-muted);">{{ renewals|length }}</span>
+  </div>
+  <div class="card-body p-0">
+    {% if renewals %}
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead>
+          <tr>
+            <th>Cliente</th><th>Plano</th><th>Vencimento</th>
+            <th>Valor</th><th>Status</th><th>Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in renewals %}
+          <tr {% if r.is_overdue %}style="border-left:3px solid #f9a8d4;"{% endif %}>
+            <td class="fw-semibold">
+              <a href="{{ url_for('contacts.client_detail', client_id=r.client_id) if r.client_id else '#' }}"
+                 style="color:var(--text);text-decoration:none;">
+                {{ r.client_display }}
+              </a>
+            </td>
+            <td style="color:var(--text-muted);">{{ r.plan_name }}</td>
+            <td style="font-size:.85rem;">
+              {{ r.due_date.strftime('%d/%m/%Y') }}
+              {% if r.is_overdue %}
+                <span class="badge ms-1" style="background:rgba(236,72,153,.2);color:#f9a8d4;font-size:.65rem;">Vencido</span>
+              {% endif %}
+            </td>
+            <td>R$ {{ "%.2f"|format(r.amount) }}</td>
+            <td>
+              {% if r.status == 'renewed' %}
+                <span class="badge" style="background:rgba(16,185,129,.2);color:#6ee7b7;">Renovado</span>
+              {% elif r.status == 'cancelled' %}
+                <span class="badge" style="background:rgba(236,72,153,.2);color:#f9a8d4;">Cancelado</span>
+              {% else %}
+                <span class="badge" style="background:rgba(245,158,11,.2);color:#fcd34d;">Pendente</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if r.status == 'pending' %}
+              <div class="d-flex gap-1">
+                <button class="btn btn-sm px-2 py-1"
+                        style="background:rgba(16,185,129,.2);color:#6ee7b7;border:1px solid rgba(16,185,129,.3);font-size:.75rem;"
+                        title="Confirmar renovação com comprovante"
+                        onclick="openRenewModal({{ r.id }}, '{{ r.client_display|e }}', {{ r.amount }})">
+                  <i class="bi bi-check-lg"></i> Renovar
+                </button>
+                <form method="POST" action="{{ url_for('attendant.att_cancel', id=r.id) }}"
+                      onsubmit="return confirm('Confirmar cancelamento?')">
+                  <button class="btn btn-sm px-2 py-1"
+                          style="background:rgba(236,72,153,.15);color:#f9a8d4;border:1px solid rgba(236,72,153,.3);font-size:.75rem;"
+                          title="Marcar como cancelado">
+                    <i class="bi bi-x-lg"></i>
+                  </button>
+                </form>
+              </div>
+              {% else %}
+                <span style="color:var(--text-muted);font-size:.8rem;">
+                  {{ r.renewed_at.strftime('%d/%m %H:%M') if r.renewed_at else '—' }}
+                </span>
+              {% endif %}
+            </td>
+          </tr>
+          {% if r.notes %}
+          <tr style="border-top:none;">
+            <td colspan="6" style="padding-top:0;padding-bottom:6px;">
+              <small style="color:var(--text-muted);"><i class="bi bi-chat-left-text me-1"></i>{{ r.notes }}</small>
+            </td>
+          </tr>
+          {% endif %}
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+      <div class="text-center py-5">
+        <i class="bi bi-arrow-repeat" style="font-size:2.5rem;color:var(--text-muted);"></i>
+        <p class="mt-2" style="color:var(--text-muted);">Nenhuma renovação para os seus clientes neste mês.</p>
+        <button class="btn btn-sm mt-2"
+                style="background:rgba(16,185,129,.2);color:#6ee7b7;border:1px solid rgba(16,185,129,.3);"
+                data-bs-toggle="modal" data-bs-target="#modalNovaRenovacao">
+          <i class="bi bi-plus-lg me-1"></i> Cadastrar Renovação
+        </button>
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Modal Nova Renovação -->
+<div class="modal fade" id="modalNovaRenovacao" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content" style="background:var(--bg-card);border:1px solid var(--border);">
+      <div class="modal-header" style="border-color:var(--border);">
+        <h5 class="modal-title fw-semibold">
+          <i class="bi bi-plus-circle-fill me-2" style="color:#6ee7b7;"></i>Nova Renovação
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="POST" action="{{ url_for('attendant.att_new_renewal') }}" enctype="multipart/form-data">
+        <div class="modal-body">
+
+          <!-- Busca de cliente -->
+          <div class="mb-3">
+            <label class="form-label">Cliente <span class="text-danger">*</span></label>
+            <input type="text" id="clientSearch" class="form-control mb-2"
+                   placeholder="Digite o nome ou telefone para buscar..."
+                   autocomplete="off">
+            <select name="client_id" id="clientSelect" class="form-select" required size="4"
+                    style="height:auto;max-height:160px;overflow-y:auto;">
+              <option value="">— selecione —</option>
+              {% for c in my_clients %}
+                <option value="{{ c.id }}"
+                        data-name="{{ c.name|lower }}"
+                        data-phone="{{ (c.whatsapp or c.phone or '')|lower }}">
+                  {{ c.name }}{% if c.whatsapp or c.phone %} · {{ c.whatsapp or c.phone }}{% endif %}
+                </option>
+              {% endfor %}
+            </select>
+            <small style="color:var(--text-muted);">Não encontrou? <a href="{{ url_for('attendant.new_client') }}" style="color:var(--accent);">Cadastrar novo cliente</a></small>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Plano / Descrição <span class="text-danger">*</span></label>
+            <input type="text" name="plan_name" class="form-control"
+                   placeholder="Ex: Plano mensal, Netflix..." required>
+          </div>
+
+          <div class="row g-3 mb-3">
+            <div class="col-6">
+              <label class="form-label">Valor (R$)</label>
+              <input type="number" name="amount" step="0.01" min="0"
+                     class="form-control" placeholder="0,00" value="0">
+            </div>
+            <div class="col-6">
+              <label class="form-label">Vencimento <span class="text-danger">*</span></label>
+              <input type="date" name="due_date" class="form-control" required>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">
+              <i class="bi bi-image me-1" style="color:var(--accent2);"></i>
+              Comprovante de Pagamento <span class="text-danger">*</span>
+            </label>
+            <input type="file" name="comprovante" class="form-control" accept="image/*,.pdf" required>
+            <small style="color:#fca5a5;"><i class="bi bi-exclamation-circle me-1"></i>Obrigatório — renovação só é válida com comprovante.</small>
+          </div>
+
+          <div class="mb-1">
+            <label class="form-label">Observações</label>
+            <textarea name="notes" class="form-control" rows="2"
+                      placeholder="Anotações opcionais..."></textarea>
+          </div>
+        </div>
+        <div class="modal-footer" style="border-color:var(--border);">
+          <button type="button" class="btn btn-sm"
+                  style="background:rgba(255,255,255,.08);color:var(--text);border:1px solid var(--border);"
+                  data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary px-4">
+            <i class="bi bi-check-lg me-1"></i>Cadastrar
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Confirmar Renovação com Comprovante -->
+<div class="modal fade" id="modalRenovar" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content" style="background:#1a1a35;border:1px solid rgba(124,58,237,.3);">
+      <form method="POST" id="formRenovar" enctype="multipart/form-data">
+        <div class="modal-header" style="border-color:var(--border);">
+          <h5 class="modal-title" style="font-size:.95rem;font-weight:700;">
+            <i class="bi bi-check-circle-fill me-2" style="color:#6ee7b7;"></i>Confirmar Renovação
+          </h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <p class="mb-3" style="color:var(--text-muted);font-size:.88rem;">
+            Cliente: <strong id="renewClientName" style="color:#e0e0f0;"></strong>
+          </p>
+
+          <div class="mb-3">
+            <label class="form-label">Valor Recebido (R$)</label>
+            <input type="number" name="amount" id="renewAmount" step="0.01" min="0"
+                   class="form-control" placeholder="0,00">
+            <small style="color:var(--text-muted);">Deixe em branco para manter o valor original.</small>
+          </div>
+
+          <div class="mb-2">
+            <label class="form-label">
+              <i class="bi bi-image me-1" style="color:var(--accent2);"></i>
+              Comprovante de Pagamento <span class="text-danger">*</span>
+            </label>
+            <input type="file" name="comprovante" class="form-control" accept="image/*,.pdf" required>
+            <small style="color:#fca5a5;"><i class="bi bi-exclamation-circle me-1"></i>Obrigatório para confirmar a renovação.</small>
+          </div>
+        </div>
+        <div class="modal-footer" style="border-color:var(--border);">
+          <button type="button" class="btn btn-sm"
+                  style="background:rgba(255,255,255,.08);color:var(--text);border:1px solid var(--border);"
+                  data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-sm px-4"
+                  style="background:linear-gradient(135deg,#059669,#10b981);border:none;color:#fff;font-weight:600;">
+            <i class="bi bi-check-lg me-1"></i> Confirmar Renovação
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+<script>
+  const grid = 'rgba(255,255,255,.06)', muted = '#7b7b9e';
+  Chart.defaults.color = muted;
+  Chart.defaults.font.family = "'Segoe UI', system-ui, sans-serif";
+  Chart.defaults.font.size = 11;
+
+  // Por dia da semana (stacked)
+  (function(){
+    const ctx = document.getElementById('chartWeekday').getContext('2d');
+    new Chart(ctx, { type:'bar', data:{
+      labels: {{ chart_weekday.labels|tojson }},
+      datasets:[
+        {label:'Renovados',  data:{{ chart_weekday.renewed|tojson }},   backgroundColor:'rgba(16,185,129,.7)',  borderRadius:4},
+        {label:'Cancelados', data:{{ chart_weekday.cancelled|tojson }}, backgroundColor:'rgba(236,72,153,.6)',  borderRadius:4},
+        {label:'Pendentes',  data:{{ chart_weekday.pending|tojson }},   backgroundColor:'rgba(245,158,11,.5)',  borderRadius:4},
+      ]
+    }, options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{position:'bottom', labels:{boxWidth:12, padding:10}}},
+      scales:{
+        x:{stacked:true, grid:{color:grid}},
+        y:{stacked:true, grid:{color:grid}, ticks:{stepSize:1}}
+      }
+    }});
+  })();
+
+  // Por mês (grouped bars)
+  (function(){
+    const ctx = document.getElementById('chartMonthly').getContext('2d');
+    new Chart(ctx, { type:'bar', data:{
+      labels: {{ chart_monthly.labels|tojson }},
+      datasets:[
+        {label:'Renovados',  data:{{ chart_monthly.renewed|tojson }},   backgroundColor:'rgba(16,185,129,.75)', borderRadius:6},
+        {label:'Cancelados', data:{{ chart_monthly.cancelled|tojson }}, backgroundColor:'rgba(236,72,153,.6)',  borderRadius:6},
+        {label:'Pendentes',  data:{{ chart_monthly.pending|tojson }},   backgroundColor:'rgba(245,158,11,.5)',  borderRadius:6},
+      ]
+    }, options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{position:'bottom', labels:{boxWidth:12, padding:10}}},
+      scales:{
+        x:{grid:{color:grid}},
+        y:{grid:{color:grid}, ticks:{stepSize:1}}
+      }
+    }});
+  })();
+
+  // Abre modal de confirmação de renovação
+  function openRenewModal(renewalId, clientName, amount) {
+    document.getElementById('renewClientName').textContent = clientName;
+    document.getElementById('renewAmount').value = amount ? amount.toFixed(2) : '';
+    document.getElementById('formRenovar').action = '/renovacoes/' + renewalId + '/renovar';
+    new bootstrap.Modal(document.getElementById('modalRenovar')).show();
+  }
+
+  // Busca de cliente no modal
+  document.getElementById('clientSearch').addEventListener('input', function(){
+    const q = this.value.toLowerCase();
+    const sel = document.getElementById('clientSelect');
+    Array.from(sel.options).forEach(opt => {
+      if (!opt.value) { opt.style.display = ''; return; }
+      const match = opt.dataset.name.includes(q) || opt.dataset.phone.includes(q);
+      opt.style.display = match ? '' : 'none';
+    });
+  });
+</script>
+{% endblock %}

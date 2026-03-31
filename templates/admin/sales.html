@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+{% block title %}Vendas — VendasPRO{% endblock %}
+{% block content %}
+<h4 class="fw-bold mb-4"><i class="bi bi-cart3 me-2 text-primary"></i>Todas as Vendas</h4>
+
+<!-- Filtros -->
+<div class="card border-0 shadow-sm mb-4">
+  <div class="card-body">
+    <form method="GET" class="row g-2 align-items-end">
+      <div class="col-12 col-sm-4 col-md-3">
+        <label class="form-label small fw-semibold">Data</label>
+        <input type="date" name="date" class="form-control form-control-sm" value="{{ date_filter }}">
+      </div>
+      <div class="col-12 col-sm-4 col-md-3">
+        <label class="form-label small fw-semibold">Atendente</label>
+        <select name="attendant" class="form-select form-select-sm">
+          <option value="">Todos</option>
+          {% for a in attendants %}
+          <option value="{{ a.id }}" {% if attendant_filter == a.id %}selected{% endif %}>{{ a.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-12 col-sm-4 col-md-3">
+        <label class="form-label small fw-semibold">Pagamento</label>
+        <select name="payment" class="form-select form-select-sm">
+          <option value="">Todos</option>
+          {% for key, label in payment_methods.items() %}
+          <option value="{{ key }}" {% if payment_filter == key %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-auto d-flex gap-2">
+        <button type="submit" class="btn btn-primary btn-sm">
+          <i class="bi bi-funnel me-1"></i> Filtrar
+        </button>
+        <a href="{{ url_for('admin.sales') }}" class="btn btn-outline-secondary btn-sm">Limpar</a>
+        <a href="{{ url_for('exports.sales', **request.args) }}" class="btn btn-sm"
+           style="background:rgba(16,185,129,.15);color:#6ee7b7;border:1px solid rgba(16,185,129,.3);white-space:nowrap;">
+          <i class="bi bi-file-earmark-spreadsheet me-1"></i>Exportar CSV
+        </a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="card border-0 shadow-sm">
+  <div class="card-body p-0">
+    {% if sales.items %}
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>#</th><th>Atendente</th><th>Cliente</th><th>Valor</th>
+            <th>Pagamento</th><th>Comissão</th><th>Tipo</th>
+            <th>Comprovante</th><th>Data/Hora</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for s in sales.items %}
+          <tr>
+            <td class="text-muted small">{{ s.id }}</td>
+            <td>{{ s.attendant.name }}</td>
+            <td>{{ s.client_display }}</td>
+            <td class="fw-semibold">R$ {{ "%.2f"|format(s.amount) }}</td>
+            <td><span class="badge bg-secondary">{{ s.payment_display }}</span></td>
+            <td class="text-success fw-semibold">
+              R$ {{ "%.2f"|format(s.commission_amount) }}
+              <small class="text-muted">({{ s.commission_rate|int }}%)</small>
+            </td>
+            <td>
+              {% if s.is_overtime %}
+                <span class="badge bg-warning text-dark">Hora Extra</span>
+              {% else %}
+                <span class="badge bg-light text-muted border">Normal</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if s.comprovante_filename %}
+                <a href="{{ url_for('static', filename='uploads/' + s.comprovante_filename) }}" target="_blank" class="btn btn-sm btn-outline-info py-0">
+                  <i class="bi bi-file-image"></i>
+                </a>
+              {% else %}
+                <span class="text-muted">—</span>
+              {% endif %}
+            </td>
+            <td class="text-muted small">{{ s.created_at.strftime('%d/%m/%Y %H:%M') }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Paginação -->
+    {% if sales.pages > 1 %}
+    <div class="d-flex justify-content-center py-3">
+      <nav>
+        <ul class="pagination pagination-sm mb-0">
+          {% if sales.has_prev %}
+          <li class="page-item">
+            <a class="page-link" href="?page={{ sales.prev_num }}&date={{ date_filter }}&attendant={{ attendant_filter }}&payment={{ payment_filter }}">Anterior</a>
+          </li>
+          {% endif %}
+          <li class="page-item active"><span class="page-link">{{ sales.page }} / {{ sales.pages }}</span></li>
+          {% if sales.has_next %}
+          <li class="page-item">
+            <a class="page-link" href="?page={{ sales.next_num }}&date={{ date_filter }}&attendant={{ attendant_filter }}&payment={{ payment_filter }}">Próxima</a>
+          </li>
+          {% endif %}
+        </ul>
+      </nav>
+    </div>
+    {% endif %}
+    {% else %}
+      <p class="text-center text-muted py-5">Nenhuma venda encontrada.</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

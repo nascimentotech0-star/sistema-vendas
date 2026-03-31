@@ -1,0 +1,389 @@
+{% extends "base.html" %}
+{% block title %}Chat — Nascimento Tech{% endblock %}
+{% block page_title %}
+  {% if current_user.is_admin() %}Chat · {{ attendant.name }}
+  {% else %}Chat com Admin{% endif %}
+{% endblock %}
+
+{% macro bubble(m) %}
+{% set mine = (m.sender_id == current_user.id) %}
+<div class="d-flex {% if mine %}justify-content-end{% endif %}" style="margin-bottom:2px;">
+  <div class="px-3 py-2 rounded-3" style="max-width:78%;
+    {% if mine %}
+      background:linear-gradient(135deg,#7c3aed,#06b6d4);color:#fff;border-bottom-right-radius:4px!important;
+    {% else %}
+      background:var(--bg-card2);color:var(--text);border:1px solid var(--border);border-bottom-left-radius:4px!important;
+    {% endif %}">
+
+    {% if not mine %}
+      <div style="font-size:.7rem;font-weight:700;margin-bottom:4px;color:{% if m.is_from_admin %}#fcd34d{% else %}#a78bfa{% endif %};">
+        {{ m.sender.name }}
+      </div>
+    {% endif %}
+
+    {% if m.file_type == 'image' %}
+      <img src="{{ url_for('chat.serve_file', filename=m.file_name) }}"
+           style="max-width:220px;max-height:220px;border-radius:8px;display:block;cursor:pointer;"
+           onclick="openImg(this.src)">
+      {% if m.content %}<div style="margin-top:6px;font-size:.88rem;white-space:pre-wrap;">{{ m.content }}</div>{% endif %}
+    {% elif m.file_type == 'audio' %}
+      <audio controls style="max-width:240px;width:100%;margin:2px 0;">
+        <source src="{{ url_for('chat.serve_file', filename=m.file_name) }}">
+      </audio>
+      {% if m.content %}<div style="margin-top:4px;font-size:.85rem;opacity:.8;white-space:pre-wrap;">{{ m.content }}</div>{% endif %}
+    {% else %}
+      <div style="font-size:.9rem;white-space:pre-wrap;word-break:break-word;">{{ m.content }}</div>
+    {% endif %}
+
+    <div style="font-size:.62rem;opacity:.65;text-align:right;margin-top:4px;">{{ m.created_at.strftime('%H:%M') }}</div>
+  </div>
+</div>
+{% endmacro %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-12 col-lg-8">
+
+    {% if current_user.is_admin() %}
+    <a href="{{ url_for('chat.index') }}" class="btn btn-sm mb-3"
+       style="background:rgba(255,255,255,.08);color:var(--text);border:1px solid var(--border);">
+      <i class="bi bi-arrow-left me-1"></i> Voltar
+    </a>
+    {% endif %}
+
+    <div class="card" style="overflow:hidden;">
+      <!-- Header -->
+      <div class="card-header d-flex align-items-center gap-3" style="border-bottom:1px solid var(--border);">
+        <div class="stat-icon stat-icon-purple" style="width:38px;height:38px;font-size:.95rem;flex-shrink:0;">
+          <i class="bi bi-person-fill"></i>
+        </div>
+        <div>
+          <div class="fw-semibold">{{ attendant.name }}</div>
+          <div style="font-size:.72rem;color:#6ee7b7;">● Online</div>
+        </div>
+      </div>
+
+      <!-- Mensagens -->
+      <div id="msgContainer"
+           style="height:450px;overflow-y:auto;display:flex;flex-direction:column;
+                  gap:8px;padding:16px;background:var(--bg-card);">
+        {% for m in messages %}{{ bubble(m) }}{% endfor %}
+      </div>
+
+      <!-- Preview antes de enviar -->
+      <div id="filePreviewBar"
+           style="display:none;padding:8px 14px;background:var(--bg-card2);border-top:1px solid var(--border);">
+        <div class="d-flex align-items-center gap-3">
+          <img id="imgPreview" style="max-height:56px;max-width:100px;border-radius:6px;display:none;">
+          <span id="audioPreviewLabel" style="color:#a78bfa;font-size:.82rem;display:none;">
+            <i class="bi bi-mic-fill me-1"></i><span id="audioPreviewText"></span>
+          </span>
+          <span id="filePreviewName" style="color:var(--text-muted);font-size:.82rem;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></span>
+          <button type="button" id="btnClearFile"
+                  style="background:rgba(239,68,68,.2);color:#fca5a5;border:none;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:.75rem;">
+            <i class="bi bi-x-lg"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Gravação em andamento -->
+      <div id="recordingBar"
+           style="display:none;padding:10px 14px;background:rgba(236,72,153,.07);border-top:1px solid rgba(236,72,153,.25);">
+        <div class="d-flex align-items-center gap-3">
+          <span style="background:rgba(236,72,153,.3);color:#f9a8d4;border-radius:20px;padding:3px 10px;font-size:.8rem;">
+            <i class="bi bi-circle-fill me-1" style="font-size:.5rem;animation:blink 1s infinite;"></i>Gravando…
+          </span>
+          <span id="recTimer" style="color:#f9a8d4;font-weight:700;font-size:.95rem;min-width:36px;">0:00</span>
+          <button id="btnStopRec"
+                  style="background:rgba(16,185,129,.2);color:#6ee7b7;border:1px solid rgba(16,185,129,.3);border-radius:8px;padding:5px 14px;cursor:pointer;font-size:.82rem;margin-left:auto;">
+            <i class="bi bi-stop-fill me-1"></i>Parar e enviar
+          </button>
+          <button id="btnCancelRec"
+                  style="background:rgba(255,255,255,.08);color:var(--text-muted);border:1px solid var(--border);border-radius:8px;padding:5px 12px;cursor:pointer;font-size:.82rem;">
+            Cancelar
+          </button>
+        </div>
+      </div>
+
+      <!-- Input -->
+      <div style="border-top:1px solid var(--border);padding:10px 14px;background:var(--bg-card);">
+        <div class="d-flex gap-2 align-items-end">
+
+          <button type="button" id="btnPickImage" title="Enviar imagem"
+                  style="background:rgba(6,182,212,.15);color:#67e8f9;border:1px solid rgba(6,182,212,.3);
+                         border-radius:10px;width:42px;height:42px;flex-shrink:0;
+                         display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:1.1rem;">
+            <i class="bi bi-image-fill"></i>
+          </button>
+          <input type="file" id="fileInput" accept="image/*,image/gif" style="display:none;">
+
+          <button type="button" id="btnRecord" title="Gravar áudio"
+                  style="background:rgba(236,72,153,.15);color:#f9a8d4;border:1px solid rgba(236,72,153,.3);
+                         border-radius:10px;width:42px;height:42px;flex-shrink:0;
+                         display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:1.1rem;">
+            <i class="bi bi-mic-fill"></i>
+          </button>
+
+          <textarea id="msgInput" class="form-control" rows="1"
+                    placeholder="Mensagem… (Enter envia)"
+                    style="resize:none;font-size:.9rem;min-height:42px;max-height:110px;overflow-y:auto;border-radius:10px;"></textarea>
+
+          <button id="btnSend" class="btn btn-primary"
+                  style="width:42px;height:42px;flex-shrink:0;padding:0;border-radius:10px;font-size:1rem;">
+            <i class="bi bi-send-fill"></i>
+          </button>
+        </div>
+        <div style="font-size:.68rem;color:var(--text-muted);margin-top:4px;">
+          Enter envia · Shift+Enter nova linha
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<style>
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+#msgContainer::-webkit-scrollbar { width:4px; }
+#msgContainer::-webkit-scrollbar-thumb { background:rgba(255,255,255,.12);border-radius:4px; }
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const ATTENDANT_ID = {{ attendant.id }};
+let lastId = {{ messages[-1].id if messages else 0 }};
+const container = document.getElementById('msgContainer');
+
+function scrollBottom(smooth) {
+  container.scrollTo({ top: container.scrollHeight, behavior: smooth ? 'smooth' : 'instant' });
+}
+scrollBottom(false);
+
+/* ── Render de nova bolha vinda do polling ── */
+function esc(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function buildBubble(m) {
+  const mine  = m.is_mine;
+  const color = m.is_admin ? '#fcd34d' : '#a78bfa';
+  let body = '';
+
+  if (m.file_type === 'image' && m.file_name) {
+    body = `<img src="/chat/arquivo/${m.file_name}"
+               style="max-width:220px;max-height:220px;border-radius:8px;display:block;cursor:pointer;"
+               onclick="openImg(this.src)">`;
+    if (m.content) body += `<div style="margin-top:6px;font-size:.88rem;white-space:pre-wrap;">${esc(m.content)}</div>`;
+  } else if (m.file_type === 'audio' && m.file_name) {
+    body = `<audio controls style="max-width:240px;width:100%;margin:2px 0;">
+              <source src="/chat/arquivo/${m.file_name}">
+            </audio>`;
+    if (m.content) body += `<div style="margin-top:4px;font-size:.85rem;opacity:.8;white-space:pre-wrap;">${esc(m.content)}</div>`;
+  } else {
+    body = `<div style="font-size:.9rem;white-space:pre-wrap;word-break:break-word;">${esc(m.content)}</div>`;
+  }
+
+  return `<div class="d-flex ${mine?'justify-content-end':''}" style="margin-bottom:2px;">
+    <div class="px-3 py-2 rounded-3" style="max-width:78%;${mine
+      ? 'background:linear-gradient(135deg,#7c3aed,#06b6d4);color:#fff;border-bottom-right-radius:4px!important;'
+      : 'background:var(--bg-card2);color:var(--text);border:1px solid var(--border);border-bottom-left-radius:4px!important;'}">
+      ${!mine ? `<div style="font-size:.7rem;font-weight:700;margin-bottom:4px;color:${color};">${esc(m.sender_name)}</div>` : ''}
+      ${body}
+      <div style="font-size:.62rem;opacity:.65;text-align:right;margin-top:4px;">${m.time}</div>
+    </div>
+  </div>`;
+}
+
+function addMessage(m) {
+  const atBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 80;
+  container.insertAdjacentHTML('beforeend', buildBubble(m));
+  if (atBottom) scrollBottom(true);
+}
+
+/* ── Lightbox ── */
+function openImg(src) {
+  const ov = document.createElement('div');
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:9999;display:flex;align-items:center;justify-content:center;cursor:zoom-out;';
+  ov.innerHTML = `<img src="${src}" style="max-width:92vw;max-height:92vh;border-radius:10px;box-shadow:0 0 40px rgba(0,0,0,.9);">`;
+  ov.onclick = () => document.body.removeChild(ov);
+  document.body.appendChild(ov);
+}
+
+/* ── Upload de imagem ── */
+let selectedFile = null;
+const fileInput = document.getElementById('fileInput');
+
+document.getElementById('btnPickImage').addEventListener('click', () => fileInput.click());
+fileInput.addEventListener('change', () => {
+  const f = fileInput.files[0];
+  if (!f) return;
+  selectedFile = f;
+  const prev = document.getElementById('imgPreview');
+  prev.src = URL.createObjectURL(f);
+  prev.style.display = 'block';
+  document.getElementById('audioPreviewLabel').style.display = 'none';
+  document.getElementById('filePreviewName').textContent = f.name;
+  document.getElementById('filePreviewBar').style.display = 'block';
+});
+
+document.getElementById('btnClearFile').addEventListener('click', clearFile);
+function clearFile() {
+  selectedFile = null;
+  fileInput.value = '';
+  document.getElementById('filePreviewBar').style.display = 'none';
+  document.getElementById('imgPreview').style.display = 'none';
+}
+
+/* ── Gravação de áudio ── */
+let mediaRecorder = null, audioChunks = [], recInterval = null, recSec = 0;
+
+function getMimeAndExt() {
+  const types = [
+    ['audio/webm;codecs=opus', 'webm'],
+    ['audio/webm',             'webm'],
+    ['audio/ogg;codecs=opus',  'ogg'],
+    ['audio/ogg',              'ogg'],
+    ['audio/mp4',              'mp4'],
+  ];
+  for (const [mime, ext] of types) {
+    try { if (MediaRecorder.isTypeSupported(mime)) return { mime, ext }; } catch(_) {}
+  }
+  return { mime: '', ext: 'webm' };
+}
+
+document.getElementById('btnRecord').addEventListener('click', async () => {
+  if (mediaRecorder) return;
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    const { mime, ext: _ext } = getMimeAndExt();
+    mediaRecorder = new MediaRecorder(stream, mime ? { mimeType: mime } : {});
+    audioChunks = [];
+    mediaRecorder.ondataavailable = e => { if (e.data && e.data.size > 0) audioChunks.push(e.data); };
+    mediaRecorder.start(100);
+
+    recSec = 0;
+    document.getElementById('recTimer').textContent = '0:00';
+    document.getElementById('recordingBar').style.display = 'block';
+    document.getElementById('filePreviewBar').style.display = 'none';
+    selectedFile = null;
+
+    recInterval = setInterval(() => {
+      recSec++;
+      const m = Math.floor(recSec / 60), s = recSec % 60;
+      document.getElementById('recTimer').textContent = `${m}:${s.toString().padStart(2, '0')}`;
+    }, 1000);
+  } catch(e) {
+    alert('Microfone não disponível ou permissão negada.\nPermita o acesso ao microfone nas configurações do navegador.');
+  }
+});
+
+// "Parar e enviar" — envia automaticamente ao parar
+document.getElementById('btnStopRec').addEventListener('click', () => stopRec(true));
+document.getElementById('btnCancelRec').addEventListener('click', () => stopRec(false));
+
+function stopRec(doSend) {
+  if (!mediaRecorder) return;
+  clearInterval(recInterval);
+  document.getElementById('recordingBar').style.display = 'none';
+
+  const capturedMime = mediaRecorder.mimeType || 'audio/webm';
+  const capturedSec  = recSec;
+
+  mediaRecorder.onstop = () => {
+    mediaRecorder.stream.getTracks().forEach(t => t.stop());
+
+    if (doSend && audioChunks.length > 0) {
+      let ext = 'webm';
+      if (capturedMime.includes('ogg')) ext = 'ogg';
+      else if (capturedMime.includes('mp4')) ext = 'mp4';
+
+      const blob = new Blob(audioChunks, { type: capturedMime });
+      const audioFile = new File([blob], `audio_${Date.now()}.${ext}`, { type: capturedMime });
+
+      // Envia imediatamente sem esperar clique extra
+      sendFile(audioFile, `🎤 Áudio (${capturedSec}s)`);
+    }
+
+    mediaRecorder = null;
+    audioChunks   = [];
+  };
+
+  mediaRecorder.stop();
+}
+
+async function sendFile(file, previewLabel) {
+  const txt = document.getElementById('msgInput').value.trim();
+  const fd  = new FormData();
+  fd.append('attendant_id', ATTENDANT_ID);
+  if (txt) fd.append('content', txt);
+  fd.append('file', file, file.name);
+  document.getElementById('msgInput').value = '';
+
+  // Mostra indicador de envio
+  const sendBtn = document.getElementById('btnSend');
+  sendBtn.disabled = true;
+
+  try {
+    const res  = await fetch('{{ url_for("chat.send") }}', { method: 'POST', body: fd });
+    const data = await res.json();
+    if (data.id) {
+      addMessage(data);
+      lastId = data.id;
+    } else {
+      alert('Erro ao enviar: ' + (data.error || 'resposta inválida'));
+    }
+  } catch(e) {
+    alert('Falha na conexão ao enviar o arquivo.');
+    console.error(e);
+  } finally {
+    sendBtn.disabled = false;
+    clearFile();
+  }
+}
+
+/* ── Enviar texto (e imagem selecionada) ── */
+async function doSend() {
+  const txt = document.getElementById('msgInput').value.trim();
+  if (!txt && !selectedFile) return;
+
+  if (selectedFile) {
+    // Delega para sendFile (que já lida com texto + arquivo)
+    await sendFile(selectedFile, selectedFile.name);
+    return;
+  }
+
+  // Só texto
+  document.getElementById('msgInput').value = '';
+  const sendBtn = document.getElementById('btnSend');
+  sendBtn.disabled = true;
+  try {
+    const res  = await fetch('{{ url_for("chat.send") }}', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ attendant_id: ATTENDANT_ID, content: txt }),
+    });
+    const data = await res.json();
+    if (data.id) { addMessage(data); lastId = data.id; }
+    else alert('Erro: ' + (data.error || 'resposta inválida'));
+  } catch(e) { console.error('Erro ao enviar:', e); }
+  finally { sendBtn.disabled = false; }
+}
+
+document.getElementById('btnSend').addEventListener('click', doSend);
+document.getElementById('msgInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); doSend(); }
+});
+
+/* ── Auto-resize textarea ── */
+const ta = document.getElementById('msgInput');
+ta.addEventListener('input', () => { ta.style.height='auto'; ta.style.height=Math.min(ta.scrollHeight,110)+'px'; });
+
+/* ── Polling 3s ── */
+setInterval(async () => {
+  try {
+    const res  = await fetch(`{{ url_for("chat.poll") }}?attendant_id=${ATTENDANT_ID}&after=${lastId}`);
+    const msgs = await res.json();
+    msgs.forEach(m => { addMessage(m); lastId = m.id; });
+  } catch(e) {}
+}, 3000);
+</script>
+{% endblock %}

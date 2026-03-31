@@ -1,0 +1,325 @@
+{% extends "base.html" %}
+{% block title %}Renovações — Nascimento Tech{% endblock %}
+{% block page_title %}Controle de Renovações{% endblock %}
+{% block content %}
+
+<!-- Filtros -->
+<div class="card mb-4">
+  <div class="card-body py-2">
+    <form method="GET" class="d-flex flex-wrap gap-2 align-items-center">
+      <div class="d-flex align-items-center gap-2">
+        <label class="form-label mb-0 small">Mês:</label>
+        <input type="month" name="month" value="{{ month }}" class="form-control form-control-sm" style="width:160px;">
+      </div>
+      <div class="d-flex align-items-center gap-2">
+        <label class="form-label mb-0 small">Status:</label>
+        <select name="status" class="form-select form-select-sm" style="width:140px;">
+          <option value="">Todos</option>
+          <option value="pending"   {% if status_filter=='pending'   %}selected{% endif %}>Pendente</option>
+          <option value="renewed"   {% if status_filter=='renewed'   %}selected{% endif %}>Renovado</option>
+          <option value="cancelled" {% if status_filter=='cancelled' %}selected{% endif %}>Cancelado</option>
+        </select>
+      </div>
+      <button class="btn btn-sm btn-primary">Filtrar</button>
+      <a href="{{ url_for('exports.renewals', **request.args) }}" class="btn btn-sm"
+         style="background:rgba(16,185,129,.15);color:#6ee7b7;border:1px solid rgba(16,185,129,.3);">
+        <i class="bi bi-file-earmark-spreadsheet me-1"></i>Exportar CSV
+      </a>
+      <a href="{{ url_for('renewals.new_renewal') }}" class="btn btn-sm ms-auto"
+         style="background:rgba(16,185,129,.2);color:#6ee7b7;border:1px solid rgba(16,185,129,.3);">
+        <i class="bi bi-plus-lg me-1"></i> Nova Renovação
+      </a>
+    </form>
+  </div>
+</div>
+
+<!-- Stat cards -->
+<div class="row g-3 mb-4">
+  <div class="col-6 col-lg-2">
+    <div class="card stat-card stat-card-purple h-100">
+      <div class="card-body text-center py-3">
+        <p class="mb-1" style="font-size:.68rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;">Total</p>
+        <h3 class="fw-bold mb-0">{{ stats.total }}</h3>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-2">
+    <div class="card stat-card stat-card-green h-100">
+      <div class="card-body text-center py-3">
+        <p class="mb-1" style="font-size:.68rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;">Renovados</p>
+        <h3 class="fw-bold mb-0" style="color:#6ee7b7;">{{ stats.renewed }}</h3>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-2">
+    <div class="card stat-card stat-card-yellow h-100">
+      <div class="card-body text-center py-3">
+        <p class="mb-1" style="font-size:.68rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;">Pendentes</p>
+        <h3 class="fw-bold mb-0" style="color:#fcd34d;">{{ stats.pending }}</h3>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-2">
+    <div class="card stat-card stat-card-pink h-100">
+      <div class="card-body text-center py-3">
+        <p class="mb-1" style="font-size:.68rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;">Cancelados</p>
+        <h3 class="fw-bold mb-0" style="color:#f9a8d4;">{{ stats.cancelled }}</h3>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-2">
+    <div class="card stat-card stat-card-cyan h-100">
+      <div class="card-body text-center py-3">
+        <p class="mb-1" style="font-size:.68rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;">Taxa</p>
+        <h3 class="fw-bold mb-0" style="color:#67e8f9;">{{ stats.renewal_rate }}%</h3>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-2">
+    <div class="card stat-card stat-card-green h-100">
+      <div class="card-body text-center py-3">
+        <p class="mb-1" style="font-size:.68rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;">Valor</p>
+        <h5 class="fw-bold mb-0" style="color:#6ee7b7;">R$ {{ "%.2f"|format(stats.total_value) }}</h5>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Barra de progresso -->
+{% if stats.total > 0 %}
+<div class="card mb-4">
+  <div class="card-body py-3">
+    <div class="d-flex justify-content-between mb-2">
+      <span class="small fw-semibold">Taxa de Renovação do Mês</span>
+      <span class="small" style="color:var(--text-muted);">{{ stats.renewed }}/{{ stats.total }}</span>
+    </div>
+    <div class="progress" style="height:10px;background:rgba(255,255,255,.08);border-radius:10px;">
+      <div class="progress-bar" role="progressbar"
+           style="width:{{ stats.renewal_rate }}%;background:linear-gradient(90deg,#7c3aed,#06b6d4);border-radius:10px;">
+      </div>
+    </div>
+    <div class="d-flex justify-content-between mt-2">
+      <small style="color:#6ee7b7;">{{ stats.renewed }} renovados</small>
+      {% if stats.overdue > 0 %}
+        <small style="color:#f9a8d4;"><i class="bi bi-exclamation-triangle-fill me-1"></i>{{ stats.overdue }} vencido(s)</small>
+      {% endif %}
+      <small style="color:#fcd34d;">{{ stats.pending }} pendentes</small>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<!-- Gráficos -->
+<div class="row g-3 mb-4">
+  <div class="col-12 col-lg-5">
+    <div class="card h-100">
+      <div class="card-header d-flex align-items-center gap-2">
+        <i class="bi bi-bar-chart-fill" style="color:var(--accent);"></i>
+        <span class="fw-semibold">Por Dia da Semana</span>
+        <small class="ms-auto" style="color:var(--text-muted);font-size:.72rem;">últimas 4 semanas</small>
+      </div>
+      <div class="card-body" style="position:relative;height:230px;">
+        <canvas id="chartWeekday"></canvas>
+      </div>
+    </div>
+  </div>
+  <div class="col-12 col-lg-7">
+    <div class="card h-100">
+      <div class="card-header d-flex align-items-center gap-2">
+        <i class="bi bi-graph-up-arrow" style="color:var(--accent2);"></i>
+        <span class="fw-semibold">Por Semana</span>
+        <small class="ms-auto" style="color:var(--text-muted);font-size:.72rem;">últimas 8 semanas</small>
+      </div>
+      <div class="card-body" style="position:relative;height:230px;">
+        <canvas id="chartWeekly"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card mb-4">
+  <div class="card-header d-flex align-items-center gap-2">
+    <i class="bi bi-calendar3" style="color:var(--accent3);"></i>
+    <span class="fw-semibold">Por Mês — Renovados vs Cancelados</span>
+    <small class="ms-auto" style="color:var(--text-muted);font-size:.72rem;">últimos 12 meses</small>
+  </div>
+  <div class="card-body" style="position:relative;height:230px;">
+    <canvas id="chartMonthly"></canvas>
+  </div>
+</div>
+
+<!-- Tabela -->
+<div class="card">
+  <div class="card-header d-flex align-items-center gap-2">
+    <i class="bi bi-arrow-repeat" style="color:var(--accent2));"></i>
+    <span class="fw-semibold">Renovações</span>
+    <span class="badge ms-1" style="background:rgba(255,255,255,.1);color:var(--text-muted);">{{ renewals|length }}</span>
+  </div>
+  <div class="card-body p-0">
+    {% if renewals %}
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead>
+          <tr>
+            <th>Cliente</th>
+            <th>Plano</th>
+            <th>Vencimento</th>
+            <th>Valor</th>
+            <th>Atendente</th>
+            <th>Status</th>
+            <th>Renovado em</th>
+            <th style="width:140px;">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in renewals %}
+          <tr {% if r.is_overdue %}style="border-left:3px solid #f9a8d4;"{% endif %}>
+            <td class="fw-semibold">{{ r.client_display }}</td>
+            <td>{{ r.plan_name }}</td>
+            <td>
+              {{ r.due_date.strftime('%d/%m/%Y') }}
+              {% if r.is_overdue %}
+                <span class="badge ms-1" style="background:rgba(236,72,153,.2);color:#f9a8d4;font-size:.65rem;">Vencido</span>
+              {% endif %}
+            </td>
+            <td>R$ {{ "%.2f"|format(r.amount) }}</td>
+            <td style="color:var(--text-muted);">{{ r.attendant.name if r.attendant else '—' }}</td>
+            <td>
+              {% if r.status == 'renewed' %}
+                <span class="badge" style="background:rgba(16,185,129,.2);color:#6ee7b7;">Renovado</span>
+              {% elif r.status == 'cancelled' %}
+                <span class="badge" style="background:rgba(236,72,153,.2);color:#f9a8d4;">Cancelado</span>
+              {% else %}
+                <span class="badge" style="background:rgba(245,158,11,.2);color:#fcd34d;">Pendente</span>
+              {% endif %}
+            </td>
+            <td style="color:var(--text-muted);font-size:.8rem;">
+              {{ r.renewed_at.strftime('%d/%m %H:%M') if r.renewed_at else '—' }}
+            </td>
+            <td>
+              <div class="d-flex gap-1">
+                {% if r.status == 'pending' %}
+                  <form method="POST" action="{{ url_for('renewals.mark_renewed', id=r.id) }}">
+                    <button class="btn btn-sm" title="Marcar como renovado"
+                            style="background:rgba(16,185,129,.2);color:#6ee7b7;border:none;padding:3px 8px;">
+                      <i class="bi bi-check-lg"></i>
+                    </button>
+                  </form>
+                  <form method="POST" action="{{ url_for('renewals.mark_cancelled', id=r.id) }}">
+                    <button class="btn btn-sm" title="Marcar como cancelado"
+                            style="background:rgba(236,72,153,.2);color:#f9a8d4;border:none;padding:3px 8px;">
+                      <i class="bi bi-x-lg"></i>
+                    </button>
+                  </form>
+                {% endif %}
+                <a href="{{ url_for('renewals.edit_renewal', id=r.id) }}" class="btn btn-sm"
+                   style="background:rgba(124,58,237,.2);color:#a78bfa;border:none;padding:3px 8px;" title="Editar">
+                  <i class="bi bi-pencil"></i>
+                </a>
+                <form method="POST" action="{{ url_for('renewals.delete_renewal', id=r.id) }}"
+                      onsubmit="return confirm('Excluir esta renovação?')">
+                  <button class="btn btn-sm" style="background:rgba(255,255,255,.06);color:var(--text-muted);border:none;padding:3px 8px;" title="Excluir">
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </form>
+              </div>
+            </td>
+          </tr>
+          {% if r.notes %}
+          <tr style="border-top:none;">
+            <td colspan="8" style="padding-top:0;padding-bottom:6px;">
+              <small style="color:var(--text-muted);"><i class="bi bi-chat-left-text me-1"></i>{{ r.notes }}</small>
+            </td>
+          </tr>
+          {% endif %}
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+      <div class="text-center py-5">
+        <i class="bi bi-arrow-repeat" style="font-size:2.5rem;color:var(--text-muted);"></i>
+        <p class="mt-2" style="color:var(--text-muted);">Nenhuma renovação neste mês.</p>
+        <a href="{{ url_for('renewals.new_renewal') }}" class="btn btn-primary btn-sm">
+          <i class="bi bi-plus-lg me-1"></i> Cadastrar Renovação
+        </a>
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+<script>
+  const grid  = 'rgba(255,255,255,.06)';
+  const muted = '#7b7b9e';
+  Chart.defaults.color = muted;
+  Chart.defaults.font.family = "'Segoe UI', system-ui, sans-serif";
+  Chart.defaults.font.size = 11;
+
+  const C_GREEN  = 'rgba(16,185,129,.8)';
+  const C_PINK   = 'rgba(236,72,153,.8)';
+  const C_YELLOW = 'rgba(245,158,11,.6)';
+  const C_GREEN2 = 'rgba(16,185,129,.2)';
+  const C_PINK2  = 'rgba(236,72,153,.2)';
+
+  const scaleOpts = {
+    x: { grid: { color: grid } },
+    y: { grid: { color: grid }, ticks: { stepSize: 1 } }
+  };
+
+  // Dia da semana (barras empilhadas)
+  new Chart(document.getElementById('chartWeekday'), {
+    type: 'bar',
+    data: {
+      labels: {{ chart_weekday.labels | tojson }},
+      datasets: [
+        { label: 'Renovados',  data: {{ chart_weekday.renewed   | tojson }}, backgroundColor: C_GREEN,  borderRadius: 4 },
+        { label: 'Cancelados', data: {{ chart_weekday.cancelled | tojson }}, backgroundColor: C_PINK,   borderRadius: 4 },
+        { label: 'Pendentes',  data: {{ chart_weekday.pending   | tojson }}, backgroundColor: C_YELLOW, borderRadius: 4 },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { position: 'top', labels: { boxWidth: 12, padding: 16 } } },
+      scales: { x: { ...scaleOpts.x, stacked: true }, y: { ...scaleOpts.y, stacked: true } }
+    }
+  });
+
+  // Por semana (linha dupla)
+  new Chart(document.getElementById('chartWeekly'), {
+    type: 'line',
+    data: {
+      labels: {{ chart_weekly.labels | tojson }},
+      datasets: [
+        { label: 'Renovados',  data: {{ chart_weekly.renewed   | tojson }}, borderColor: '#10b981', backgroundColor: C_GREEN2, fill: true, tension: 0.4, pointRadius: 4 },
+        { label: 'Cancelados', data: {{ chart_weekly.cancelled | tojson }}, borderColor: '#ec4899', backgroundColor: C_PINK2,  fill: true, tension: 0.4, pointRadius: 4 },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { position: 'top', labels: { boxWidth: 12, padding: 16 } } },
+      scales: scaleOpts,
+    }
+  });
+
+  // Por mês (barras agrupadas)
+  new Chart(document.getElementById('chartMonthly'), {
+    type: 'bar',
+    data: {
+      labels: {{ chart_monthly.labels | tojson }},
+      datasets: [
+        { label: 'Renovados',  data: {{ chart_monthly.renewed   | tojson }}, backgroundColor: C_GREEN, borderRadius: 6 },
+        { label: 'Cancelados', data: {{ chart_monthly.cancelled | tojson }}, backgroundColor: C_PINK,  borderRadius: 6 },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { position: 'top', labels: { boxWidth: 12, padding: 16 } } },
+      scales: scaleOpts,
+    }
+  });
+</script>
+{% endblock %}
