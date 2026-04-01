@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block title %}Clientes — Nascimento Tech{% endblock %}
-{% block page_title %}Meus Clientes{% endblock %}
+{% block page_title %}Clientes{% endblock %}
 {% block content %}
 
 <div class="card mb-3">
@@ -28,7 +28,7 @@
     <div class="table-responsive">
       <table class="table table-hover mb-0">
         <thead>
-          <tr><th>Nome</th><th>WhatsApp / Telefone</th><th>Último Contato</th><th>Cidade</th><th>Ações</th></tr>
+          <tr><th>Nome</th><th>WhatsApp / Telefone</th><th>Cadastrado por</th><th>Último Contato</th><th>Cidade</th><th>Ações</th></tr>
         </thead>
         <tbody>
           {% for c in clients %}
@@ -61,6 +61,11 @@
               {% else %}
                 <span style="color:#f9a8d4;">Nunca</span>
               {% endif %}
+            </td>
+            <td style="font-size:.8rem;color:var(--text-muted);">
+              {% if c.registered_by_user %}
+                {{ c.registered_by_user.name.split()[0] }}
+              {% else %}—{% endif %}
             </td>
             <td style="color:var(--text-muted);font-size:.85rem;">{{ c.city or '—' }}{% if c.state %}/{{ c.state }}{% endif %}</td>
             <td>

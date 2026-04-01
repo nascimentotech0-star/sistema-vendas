@@ -156,10 +156,10 @@ def dashboard():
     renewals_overdue  = [r for r in my_renewals if r.is_overdue]
     renewals_done     = sum(1 for r in my_renewals if r.status == 'renewed')
 
-    # ── Clientes em risco (sem contato há 5+ dias) ────────────────────────────
-    my_clients = Client.query.filter_by(registered_by=current_user.id).all()
+    # ── Clientes em risco (sem contato há 5+ dias) — todos os clientes ──────────
+    all_clients = Client.query.all()
     at_risk_clients = sorted(
-        [c for c in my_clients if c.is_at_risk],
+        [c for c in all_clients if c.is_at_risk],
         key=lambda c: c.days_without_contact, reverse=True
     )
 
@@ -523,7 +523,7 @@ def request_overtime():
 @attendant_required
 def clients():
     search = request.args.get('q', '').strip()
-    query = Client.query.filter_by(registered_by=current_user.id)
+    query = Client.query
     if search:
         query = query.filter(Client.name.ilike(f'%{search}%'))
     clients_list = query.order_by(Client.name).all()
