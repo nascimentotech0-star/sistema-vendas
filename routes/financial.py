@@ -2,7 +2,8 @@ from flask import Blueprint, render_template, request
 from flask_login import login_required, current_user
 from functools import wraps
 from models import db, User, Sale, Renewal
-from datetime import date
+from datetime import date, datetime, timedelta
+from utils import today_br
 from sqlalchemy import func
 import calendar
 
@@ -29,13 +30,15 @@ def financial_or_admin(f):
 
 def _month_data(year, month):
     """Computes all financial metrics for a given year/month."""
-    first_day = date(year, month, 1)
-    last_day  = date(year, month, calendar.monthrange(year, month)[1])
+    first_day  = date(year, month, 1)
+    last_day   = date(year, month, calendar.monthrange(year, month)[1])
+    month_start = datetime(year, month, 1)
+    month_end   = datetime(last_day.year, last_day.month, last_day.day) + timedelta(days=1)
 
     # Vendas novas registradas no mês
     sales = Sale.query.filter(
-        func.date(Sale.created_at) >= first_day,
-        func.date(Sale.created_at) <= last_day
+        Sale.created_at >= month_start,
+        Sale.created_at < month_end,
     ).all()
     sales_total = sum(s.amount for s in sales)
     sales_count = len(sales)
@@ -43,8 +46,8 @@ def _month_data(year, month):
     # Renovações confirmadas no mês (pela data de renovação)
     renewals_done = Renewal.query.filter(
         Renewal.status == 'renewed',
-        func.date(Renewal.renewed_at) >= first_day,
-        func.date(Renewal.renewed_at) <= last_day
+        Renewal.renewed_at >= month_start,
+        Renewal.renewed_at < month_end,
     ).all()
     renewals_total = sum(r.amount for r in renewals_done)
     renewals_count = len(renewals_done)
@@ -146,16 +149,18 @@ def index():
     att_rows     = []
     grand_total  = viewed_month['total_received'] or 1  # evita divisão por zero
     for a in attendants:
+        vm_start = datetime(viewed_month['first_day'].year, viewed_month['first_day'].month, viewed_month['first_day'].day)
+        vm_end   = datetime(viewed_month['last_day'].year, viewed_month['last_day'].month, viewed_month['last_day'].day) + timedelta(days=1)
         att_sales = Sale.query.filter(
             Sale.attendant_id == a.id,
-            func.date(Sale.created_at) >= viewed_month['first_day'],
-            func.date(Sale.created_at) <= viewed_month['last_day']
+            Sale.created_at >= vm_start,
+            Sale.created_at < vm_end,
         ).all()
         att_ren = Renewal.query.filter(
             Renewal.attendant_id == a.id,
             Renewal.status == 'renewed',
-            func.date(Renewal.renewed_at) >= viewed_month['first_day'],
-            func.date(Renewal.renewed_at) <= viewed_month['last_day']
+            Renewal.renewed_at >= vm_start,
+            Renewal.renewed_at < vm_end,
         ).all()
         s_total = sum(s.amount for s in att_sales)
         r_total = sum(r.amount for r in att_ren)
