@@ -2,6 +2,7 @@ import os
 import uuid
 import calendar as cal
 from datetime import datetime, date, timedelta
+from utils import now_br, today_br
 from functools import wraps
 
 from flask import Blueprint, render_template, redirect, url_for, flash, request, current_app
@@ -42,18 +43,18 @@ def allowed_file(filename):
 
 
 def get_commission_rate():
-    hour = datetime.now().hour
+    hour = now_br().hour
     return 5.0 if 8 <= hour < 22 else 20.0
 
 
 def is_overtime_now():
-    hour = datetime.now().hour
+    hour = now_br().hour
     return not (8 <= hour < 22)
 
 
 def can_request_overtime_now():
     """Solicitação permitida apenas a partir das 21h."""
-    return datetime.now().hour >= 21
+    return now_br().hour >= 21
 
 
 # ── Dashboard ──────────────────────────────────────────────────────────────────
@@ -62,7 +63,7 @@ def can_request_overtime_now():
 @login_required
 @attendant_required
 def dashboard():
-    today = date.today()
+    today = today_br()
     attendance = current_user.active_attendance
 
     today_sales = Sale.query.filter(
@@ -168,7 +169,7 @@ def dashboard():
         commission_rate=commission_rate,
         is_overtime=overtime,
         payment_methods=PAYMENT_METHODS,
-        now=datetime.now(),
+        now=now_br(),
         active_break=active_break,
         break_allowed=BREAK_ALLOWED_MINUTES,
         can_request_overtime=can_request_overtime,
@@ -195,7 +196,7 @@ def checkin():
     if current_user.active_attendance:
         flash('Você já iniciou o atendimento.', 'warning')
         return redirect(url_for('attendant.dashboard'))
-    att = Attendance(user_id=current_user.id, check_in=datetime.now(), date=date.today())
+    att = Attendance(user_id=current_user.id, check_in=now_br(), date=today_br())
     db.session.add(att)
     db.session.commit()
     flash('Atendimento iniciado! Boas vendas!', 'success')
@@ -210,7 +211,7 @@ def checkout():
     if not att:
         flash('Nenhum atendimento ativo.', 'warning')
         return redirect(url_for('attendant.dashboard'))
-    att.check_out = datetime.now()
+    att.check_out = now_br()
     db.session.commit()
     flash(f'Atendimento encerrado. Duração: {att.duration}', 'success')
     return redirect(url_for('attendant.dashboard'))
@@ -222,7 +223,7 @@ def checkout():
 @login_required
 @attendant_required
 def renewals():
-    today = date.today()
+    today = today_br()
     month = request.args.get('month', today.strftime('%Y-%m'))
     status_filter = request.args.get('status', '')
 
@@ -295,6 +296,7 @@ def renewals():
     }
 
     my_clients = Client.query.filter_by(registered_by=current_user.id).order_by(Client.name).all()
+    price_items = PriceItem.query.filter_by(is_active=True).order_by(PriceItem.price).all()
 
     return render_template('attendant/renewals.html',
         renewals=all_renewals,
@@ -305,6 +307,7 @@ def renewals():
         chart_weekday=chart_weekday,
         chart_monthly=chart_monthly,
         my_clients=my_clients,
+        price_items=price_items,
     )
 
 
@@ -339,7 +342,7 @@ def att_renew(id):
             pass
 
     renewal.status = 'renewed'
-    renewal.renewed_at = datetime.now()
+    renewal.renewed_at = now_br()
     renewal.attendant_id = current_user.id
     renewal.comprovante_filename = fname
     db.session.commit()
@@ -433,7 +436,7 @@ def start_break():
     brk = AttendanceBreak(
         attendance_id=att.id,
         user_id=current_user.id,
-        started_at=datetime.now(),
+        started_at=now_br(),
         status='active'
     )
     db.session.add(brk)
@@ -451,7 +454,7 @@ def end_break():
         flash('Nenhuma pausa ativa.', 'warning')
         return redirect(url_for('attendant.dashboard'))
     brk = att.active_break
-    brk.ended_at = datetime.now()
+    brk.ended_at = now_br()
     brk.status = 'completed'
     duration = int((brk.ended_at - brk.started_at).total_seconds() / 60)
     brk.extra_minutes = max(0, duration - BREAK_ALLOWED_MINUTES)
@@ -473,7 +476,7 @@ def request_overtime():
     if not can_request_overtime_now():
         flash('Solicitação de hora extra só pode ser enviada a partir das 21h.', 'danger')
         return redirect(url_for('attendant.dashboard'))
-    today = date.today()
+    today = today_br()
     existing = OvertimeRequest.query.filter(
         OvertimeRequest.user_id == current_user.id,
         db.func.date(OvertimeRequest.requested_at) == today
@@ -481,7 +484,7 @@ def request_overtime():
     if existing:
         flash('Você já enviou uma solicitação hoje.', 'warning')
         return redirect(url_for('attendant.dashboard'))
-    req = OvertimeRequest(user_id=current_user.id, requested_at=datetime.now(), status='pending')
+    req = OvertimeRequest(user_id=current_user.id, requested_at=now_br(), status='pending')
     db.session.add(req)
     db.session.commit()
     flash('Solicitação de hora extra enviada! Aguarde aprovação do administrador.', 'info')
@@ -509,7 +512,7 @@ def new_client():
     overtime = is_overtime_now()
 
     def _chart_data():
-        today = date.today()
+        today = today_br()
         week_start = today - timedelta(days=6)
         sales_7d = Sale.query.filter(
             Sale.attendant_id == current_user.id,
@@ -656,7 +659,7 @@ def new_sale():
     overtime = is_overtime_now()
 
     if overtime:
-        today = date.today()
+        today = today_br()
         approved = OvertimeRequest.query.filter(
             OvertimeRequest.user_id == current_user.id,
             db.func.date(OvertimeRequest.requested_at) == today,

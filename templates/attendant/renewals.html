@@ -256,16 +256,31 @@
             <small style="color:var(--text-muted);">Não encontrou? <a href="{{ url_for('attendant.new_client') }}" style="color:var(--accent);">Cadastrar novo cliente</a></small>
           </div>
 
+          {% if price_items %}
+          <div class="mb-3">
+            <label class="form-label small" style="color:var(--text-muted);">Selecionar plano</label>
+            <div class="d-flex flex-wrap gap-2">
+              {% for p in price_items %}
+              <button type="button" class="btn btn-sm plan-btn-new"
+                      style="background:rgba(124,58,237,.15);color:#c4b5fd;border:1px solid rgba(124,58,237,.35);font-size:.75rem;"
+                      data-plan="{{ p.name }}" data-price="{{ p.price }}">
+                {{ p.name }}<br><span style="color:#6ee7b7;font-size:.8rem;">R$ {{ "%.2f"|format(p.price) }}</span>
+              </button>
+              {% endfor %}
+            </div>
+          </div>
+          {% endif %}
+
           <div class="mb-3">
             <label class="form-label">Plano / Descrição <span class="text-danger">*</span></label>
-            <input type="text" name="plan_name" class="form-control"
+            <input type="text" name="plan_name" id="newPlanName" class="form-control"
                    placeholder="Ex: Plano mensal, Netflix..." required>
           </div>
 
           <div class="row g-3 mb-3">
             <div class="col-6">
               <label class="form-label">Valor (R$)</label>
-              <input type="number" name="amount" step="0.01" min="0"
+              <input type="number" name="amount" id="newPlanAmount" step="0.01" min="0"
                      class="form-control" placeholder="0,00" value="0">
             </div>
             <div class="col-6">
@@ -317,6 +332,21 @@
           <p class="mb-3" style="color:var(--text-muted);font-size:.88rem;">
             Cliente: <strong id="renewClientName" style="color:#e0e0f0;"></strong>
           </p>
+
+          {% if price_items %}
+          <div class="mb-3">
+            <label class="form-label small" style="color:var(--text-muted);">Selecionar plano (altera o valor)</label>
+            <div class="d-flex flex-wrap gap-2">
+              {% for p in price_items %}
+              <button type="button" class="btn btn-sm plan-btn-renew"
+                      style="background:rgba(124,58,237,.15);color:#c4b5fd;border:1px solid rgba(124,58,237,.35);font-size:.75rem;"
+                      data-price="{{ p.price }}">
+                {{ p.name }}<br><span style="color:#6ee7b7;font-size:.8rem;">R$ {{ "%.2f"|format(p.price) }}</span>
+              </button>
+              {% endfor %}
+            </div>
+          </div>
+          {% endif %}
 
           <div class="mb-3">
             <label class="form-label">Valor Recebido (R$)</label>
@@ -405,6 +435,25 @@
     document.getElementById('formRenovar').action = '/renovacoes/' + renewalId + '/renovar';
     new bootstrap.Modal(document.getElementById('modalRenovar')).show();
   }
+
+  // Botões de plano — modal Nova Renovação
+  document.querySelectorAll('.plan-btn-new').forEach(btn => {
+    btn.addEventListener('click', function(){
+      document.getElementById('newPlanName').value   = this.dataset.plan;
+      document.getElementById('newPlanAmount').value = parseFloat(this.dataset.price).toFixed(2);
+      document.querySelectorAll('.plan-btn-new').forEach(b => b.style.background = 'rgba(124,58,237,.15)');
+      this.style.background = 'rgba(124,58,237,.45)';
+    });
+  });
+
+  // Botões de plano — modal Confirmar Renovação
+  document.querySelectorAll('.plan-btn-renew').forEach(btn => {
+    btn.addEventListener('click', function(){
+      document.getElementById('renewAmount').value = parseFloat(this.dataset.price).toFixed(2);
+      document.querySelectorAll('.plan-btn-renew').forEach(b => b.style.background = 'rgba(124,58,237,.15)');
+      this.style.background = 'rgba(124,58,237,.45)';
+    });
+  });
 
   // Busca de cliente no modal
   document.getElementById('clientSearch').addEventListener('input', function(){

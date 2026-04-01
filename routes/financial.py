@@ -95,7 +95,7 @@ def _month_data(year, month):
 @login_required
 @financial_or_admin
 def index():
-    today = date.today()
+    today = today_br()
 
     # Mês selecionado (padrão: atual)
     sel = request.args.get('m', f"{today.year}-{today.month:02d}")

@@ -2,6 +2,7 @@ from datetime import datetime, date
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
+from utils import now_br, today_br
 
 db = SQLAlchemy()
 
@@ -18,7 +19,7 @@ class User(db.Model, UserMixin):
     monthly_salary     = db.Column(db.Float,   nullable=True, default=0.0)  # salário mensal em R$
     work_hours_per_day = db.Column(db.Integer, nullable=True, default=8)   # carga horária diária esperada
     work_days_per_month = db.Column(db.Integer, nullable=True, default=22) # dias trabalhados por mês
-    created_at = db.Column(db.DateTime, default=datetime.now)
+    created_at = db.Column(db.DateTime, default=now_br)
 
     attendances = db.relationship('Attendance', backref='user', lazy=True, foreign_keys='Attendance.user_id')
     sales = db.relationship('Sale', backref='attendant', lazy=True, foreign_keys='Sale.attendant_id')
@@ -134,15 +135,15 @@ class Attendance(db.Model):
     __tablename__ = 'attendances'
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    check_in = db.Column(db.DateTime, nullable=False, default=datetime.now)
+    check_in = db.Column(db.DateTime, nullable=False, default=now_br)
     check_out = db.Column(db.DateTime, nullable=True)
-    date = db.Column(db.Date, nullable=False, default=date.today)
+    date = db.Column(db.Date, nullable=False, default=today_br)
 
     breaks = db.relationship('AttendanceBreak', backref='attendance', lazy=True)
 
     @property
     def duration(self):
-        end = self.check_out or datetime.now()
+        end = self.check_out or now_br()
         delta = end - self.check_in
         hours, remainder = divmod(int(delta.total_seconds()), 3600)
         minutes = remainder // 60
@@ -155,7 +156,7 @@ class Attendance(db.Model):
     @property
     def net_minutes(self):
         """Minutos trabalhados líquidos (descontando pausas)."""
-        end = self.check_out or datetime.now()
+        end = self.check_out or now_br()
         total = int((end - self.check_in).total_seconds() / 60)
         return max(0, total - self.total_break_minutes)
 
@@ -173,7 +174,7 @@ class Attendance(db.Model):
             if b.ended_at:
                 total += int((b.ended_at - b.started_at).total_seconds() / 60)
             elif b.status == 'active':
-                total += int((datetime.now() - b.started_at).total_seconds() / 60)
+                total += int((now_br() - b.started_at).total_seconds() / 60)
         return total
 
     @property
@@ -183,7 +184,7 @@ class Attendance(db.Model):
             if b.extra_minutes:
                 extra += b.extra_minutes
             elif b.status == 'active':
-                elapsed = int((datetime.now() - b.started_at).total_seconds() / 60)
+                elapsed = int((now_br() - b.started_at).total_seconds() / 60)
                 extra += max(0, elapsed - BREAK_ALLOWED_MINUTES)
         return extra
 
@@ -193,14 +194,14 @@ class AttendanceBreak(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     attendance_id = db.Column(db.Integer, db.ForeignKey('attendances.id'), nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    started_at = db.Column(db.DateTime, nullable=False, default=datetime.now)
+    started_at = db.Column(db.DateTime, nullable=False, default=now_br)
     ended_at = db.Column(db.DateTime, nullable=True)
     extra_minutes = db.Column(db.Integer, nullable=True, default=0)
     status = db.Column(db.String(20), nullable=False, default='active')  # active, completed
 
     @property
     def duration_minutes(self):
-        end = self.ended_at or datetime.now()
+        end = self.ended_at or now_br()
         return int((end - self.started_at).total_seconds() / 60)
 
     @property
@@ -218,7 +219,7 @@ class OvertimeRequest(db.Model):
     __tablename__ = 'overtime_requests'
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    requested_at = db.Column(db.DateTime, nullable=False, default=datetime.now)
+    requested_at = db.Column(db.DateTime, nullable=False, default=now_br)
     status = db.Column(db.String(20), nullable=False, default='pending')
     approved_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
     approved_at = db.Column(db.DateTime, nullable=True)
@@ -241,7 +242,7 @@ class Client(db.Model):
     state = db.Column(db.String(50), nullable=True)
     notes = db.Column(db.Text, nullable=True)
     registered_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.now)
+    created_at = db.Column(db.DateTime, default=now_br)
 
     sales = db.relationship('Sale', backref='client', lazy=True)
     contacts = db.relationship('ClientContact', backref='client', lazy=True,
@@ -254,10 +255,10 @@ class Client(db.Model):
     @property
     def days_without_contact(self):
         if self.last_contact:
-            delta = datetime.now() - self.last_contact.contacted_at
+            delta = now_br() - self.last_contact.contacted_at
             return delta.days
         # sem nenhum contato — usa data de cadastro
-        delta = datetime.now() - self.created_at
+        delta = now_br() - self.created_at
         return delta.days
 
     @property
@@ -286,7 +287,7 @@ class ClientContact(db.Model):
     id           = db.Column(db.Integer, primary_key=True)
     client_id    = db.Column(db.Integer, db.ForeignKey('clients.id'), nullable=False)
     attendant_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    contacted_at = db.Column(db.DateTime, nullable=False, default=datetime.now)
+    contacted_at = db.Column(db.DateTime, nullable=False, default=now_br)
     direction    = db.Column(db.String(20), nullable=False, default='incoming')
     channel      = db.Column(db.String(20), nullable=False, default='whatsapp')
     tag          = db.Column(db.String(30), nullable=True)
@@ -322,7 +323,7 @@ class Renewal(db.Model):
     attendant_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
     notes = db.Column(db.Text, nullable=True)
     comprovante_filename = db.Column(db.String(255), nullable=True)
-    created_at = db.Column(db.DateTime, default=datetime.now)
+    created_at = db.Column(db.DateTime, default=now_br)
 
     client = db.relationship('Client', backref='renewals', foreign_keys=[client_id])
     attendant = db.relationship('User', foreign_keys=[attendant_id])
@@ -349,7 +350,7 @@ class Message(db.Model):
     # sempre identifica o atendente da conversa (mesmo quando admin envia)
     attendant_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     content    = db.Column(db.Text, nullable=True, default='')
-    created_at = db.Column(db.DateTime, default=datetime.now)
+    created_at = db.Column(db.DateTime, default=now_br)
     read_at       = db.Column(db.DateTime, nullable=True)
     file_name     = db.Column(db.String(255), nullable=True)   # nome salvo em disco
     file_type     = db.Column(db.String(20),  nullable=True)   # 'image' | 'audio'
@@ -385,7 +386,7 @@ class AbsenceRecord(db.Model):
     type         = db.Column(db.String(20), nullable=False, default='unjustified')  # unjustified | justified | vacation
     notes        = db.Column(db.Text, nullable=True)
     created_by   = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
-    created_at   = db.Column(db.DateTime, default=datetime.now)
+    created_at   = db.Column(db.DateTime, default=now_br)
 
     user    = db.relationship('User', foreign_keys=[user_id])
     creator = db.relationship('User', foreign_keys=[created_by])
@@ -412,7 +413,7 @@ class SalaryPayment(db.Model):
     year         = db.Column(db.Integer, nullable=False)
     month        = db.Column(db.Integer, nullable=False)
     amount       = db.Column(db.Float, nullable=False)
-    paid_at      = db.Column(db.DateTime, nullable=False, default=datetime.now)
+    paid_at      = db.Column(db.DateTime, nullable=False, default=now_br)
     paid_by      = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     notes        = db.Column(db.Text, nullable=True)
 
@@ -427,7 +428,7 @@ class CommissionPayment(db.Model):
     year         = db.Column(db.Integer, nullable=False)
     month        = db.Column(db.Integer, nullable=False)
     amount       = db.Column(db.Float, nullable=False)
-    paid_at      = db.Column(db.DateTime, nullable=False, default=datetime.now)
+    paid_at      = db.Column(db.DateTime, nullable=False, default=now_br)
     paid_by      = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     notes        = db.Column(db.Text, nullable=True)
 
@@ -444,7 +445,7 @@ class PriceItem(db.Model):
     screens      = db.Column(db.Integer, nullable=True, default=1)   # quantidade de telas
     period_label = db.Column(db.String(30), nullable=True)           # ex: "15 dias", "1 mês"
     is_active    = db.Column(db.Boolean, default=True)
-    created_at   = db.Column(db.DateTime, default=datetime.now)
+    created_at   = db.Column(db.DateTime, default=now_br)
 
 
 PAYMENT_METHODS = {
@@ -470,7 +471,7 @@ class Sale(db.Model):
     is_overtime = db.Column(db.Boolean, default=False)
     screens     = db.Column(db.Integer, nullable=True, default=1)    # telas vendidas
     adjustment  = db.Column(db.Float, nullable=True, default=0.0)    # desconto (neg) / acréscimo (pos)
-    created_at = db.Column(db.DateTime, nullable=False, default=datetime.now)
+    created_at = db.Column(db.DateTime, nullable=False, default=now_br)
 
     @property
     def payment_display(self):

@@ -3,6 +3,7 @@ from flask_login import login_required, current_user
 from functools import wraps
 from models import db, User, Client, Renewal, Message, DAYS_AT_RISK
 from datetime import datetime, date, timedelta
+from utils import now_br, today_br
 from collections import Counter
 
 automations_bp = Blueprint('automations', __name__)
@@ -24,7 +25,7 @@ def admin_required(f):
 @login_required
 @admin_required
 def index():
-    today    = date.today()
+    today    = today_br()
     week_end = today + timedelta(days=7)
 
     # Renovações desta semana (próximos 7 dias, pendentes)
@@ -80,7 +81,7 @@ def send_reminder(renewal_id):
         flash('Selecione um atendente para enviar o lembrete.', 'warning')
         return redirect(url_for('automations.index'))
 
-    days_left   = (renewal.due_date - date.today()).days
+    days_left   = (renewal.due_date - today_br()).days
     client_name = renewal.client_display
 
     if days_left < 0:
@@ -193,7 +194,7 @@ def message_template():
     if renewal_id:
         renewal     = Renewal.query.get_or_404(renewal_id)
         client_name = renewal.client_display
-        days_left   = (renewal.due_date - date.today()).days
+        days_left   = (renewal.due_date - today_br()).days
 
         if days_left < 0:
             timing = f"venceu há {abs(days_left)} dia(s) e está em atraso"

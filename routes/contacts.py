@@ -2,6 +2,7 @@ from flask import Blueprint, render_template, redirect, url_for, flash, request,
 from flask_login import login_required, current_user
 from models import db, Client, ClientContact, User, DAYS_AT_RISK, CONTACT_TAGS
 from datetime import datetime, date, timedelta
+from utils import now_br, today_br
 from functools import wraps
 from sqlalchemy import func
 
@@ -32,7 +33,7 @@ def register_contact(client_id):
     contact = ClientContact(
         client_id    = client_id,
         attendant_id = current_user.id,
-        contacted_at = datetime.now(),
+        contacted_at = now_br(),
         direction    = direction,
         channel      = channel,
         tag          = tag,
@@ -59,7 +60,7 @@ def client_detail(client_id):
         view = ClientContact(
             client_id    = client_id,
             attendant_id = current_user.id,
-            contacted_at = datetime.now(),
+            contacted_at = now_br(),
             direction    = 'outgoing',
             channel      = 'system',
             event_type   = 'view',
@@ -81,7 +82,7 @@ def client_detail(client_id):
 @login_required
 @admin_required
 def audit():
-    today      = date.today()
+    today      = today_br()
     date_from  = request.args.get('from', (today - timedelta(days=6)).strftime('%Y-%m-%d'))
     date_to    = request.args.get('to', today.strftime('%Y-%m-%d'))
     att_filter = request.args.get('attendant', 0, type=int)

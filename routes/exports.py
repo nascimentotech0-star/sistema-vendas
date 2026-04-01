@@ -12,6 +12,7 @@ import csv
 import io
 from datetime import date, datetime, timedelta
 from functools import wraps
+from utils import now_br, today_br
 
 from flask import Blueprint, request, Response, redirect, url_for, flash
 from flask_login import login_required, current_user
@@ -59,7 +60,7 @@ def _csv_response(filename, rows, headers):
 @login_required
 @export_required
 def sales():
-    today     = date.today()
+    today     = today_br()
     date_from = request.args.get('from', (today.replace(day=1)).strftime('%Y-%m-%d'))
     date_to   = request.args.get('to',   today.strftime('%Y-%m-%d'))
     att_id    = request.args.get('attendant', 0, type=int)
@@ -104,7 +105,7 @@ def sales():
 @login_required
 @export_required
 def renewals():
-    today    = date.today()
+    today    = today_br()
     d_from   = request.args.get('from', today.replace(day=1).strftime('%Y-%m-%d'))
     d_to     = request.args.get('to',   today.strftime('%Y-%m-%d'))
     status   = request.args.get('status', '')
@@ -189,7 +190,7 @@ def clients():
         ]
         for c in records
     ]
-    fname = f'clientes_{date.today()}.csv'
+    fname = f'clientes_{today_br()}.csv'
     return _csv_response(fname, rows, headers)
 
 
@@ -199,7 +200,7 @@ def clients():
 @login_required
 @export_required
 def audit():
-    today     = date.today()
+    today     = today_br()
     date_from = request.args.get('from', (today - timedelta(days=29)).strftime('%Y-%m-%d'))
     date_to   = request.args.get('to',   today.strftime('%Y-%m-%d'))
     att_id    = request.args.get('attendant', 0, type=int)
@@ -251,7 +252,7 @@ def audit():
 @login_required
 @export_required
 def financial():
-    today = date.today()
+    today = today_br()
 
     headers = ['Mês', 'Vendas (Qtd)', 'Vendas (R$)',
                'Renovações (Qtd)', 'Renovações (R$)',
@@ -328,7 +329,7 @@ def financial():
 @login_required
 @export_required
 def salaries():
-    today     = date.today()
+    today     = today_br()
     month_str = request.args.get('m', today.strftime('%Y-%m'))
     try:
         year, month = int(month_str[:4]), int(month_str[5:7])

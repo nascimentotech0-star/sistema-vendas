@@ -3,6 +3,7 @@ from flask_login import login_required, current_user
 from functools import wraps
 from models import db, User, Client, Renewal
 from datetime import datetime, date, timedelta
+from utils import now_br, today_br
 import calendar
 
 renewals_bp = Blueprint('renewals', __name__)
@@ -24,7 +25,7 @@ def admin_required(f):
 @login_required
 @admin_required
 def index():
-    today = date.today()
+    today = today_br()
     month = request.args.get('month', today.strftime('%Y-%m'))
     status_filter = request.args.get('status', '')
 
@@ -209,7 +210,7 @@ def edit_renewal(id):
 def mark_renewed(id):
     renewal = Renewal.query.get_or_404(id)
     renewal.status = 'renewed'
-    renewal.renewed_at = datetime.now()
+    renewal.renewed_at = now_br()
     db.session.commit()
     flash(f'Renovação de "{renewal.client_display}" marcada como renovada!', 'success')
     return redirect(request.referrer or url_for('renewals.index'))

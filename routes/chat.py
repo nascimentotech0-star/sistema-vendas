@@ -34,7 +34,7 @@ def _mark_read(attendant_id):
     unread = Message.query.filter_by(attendant_id=attendant_id, read_at=None)\
         .filter(Message.sender_id != current_user.id).all()
     for m in unread:
-        m.read_at = datetime.now()
+        m.read_at = now_br()
     db.session.commit()
 
 
@@ -142,7 +142,7 @@ def poll():
         .filter(Message.id > after_id).order_by(Message.created_at).all()
     for m in msgs:
         if m.sender_id != current_user.id and not m.read_at:
-            m.read_at = datetime.now()
+            m.read_at = now_br()
     if msgs:
         db.session.commit()
 

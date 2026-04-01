@@ -6,6 +6,7 @@ from models import (db, User, Attendance, AttendanceBreak, OvertimeRequest,
                     AttendantGoal, CommissionPayment, PriceItem,
                     AbsenceRecord, SalaryPayment)
 from datetime import datetime, date, timedelta
+from utils import now_br, today_br
 from sqlalchemy import func
 import calendar as cal
 
@@ -39,7 +40,7 @@ def inject_pending_counts():
     overtime_count = OvertimeRequest.query.filter_by(status='pending').count()
     renewals_count = Renewal.query.filter(
         Renewal.status == 'pending',
-        Renewal.due_date <= date.today()
+        Renewal.due_date <= today_br()
     ).count()
     at_risk_count = sum(1 for c in Client.query.all() if c.is_at_risk)
     return dict(pending_overtime_count=overtime_count,
@@ -53,7 +54,7 @@ def inject_pending_counts():
 @login_required
 @manager_or_admin
 def dashboard():
-    today = date.today()
+    today = today_br()
 
     today_sales = Sale.query.filter(func.date(Sale.created_at) == today).all()
     today_total = sum(s.amount for s in today_sales)
@@ -313,7 +314,7 @@ def approve_overtime(id):
     req = OvertimeRequest.query.get_or_404(id)
     req.status = 'approved'
     req.approved_by = current_user.id
-    req.approved_at = datetime.now()
+    req.approved_at = now_br()
     db.session.commit()
     flash(f'Solicitação de {req.user.name} aprovada!', 'success')
     return redirect(url_for('admin.overtime_requests'))
@@ -326,7 +327,7 @@ def deny_overtime(id):
     req = OvertimeRequest.query.get_or_404(id)
     req.status = 'denied'
     req.approved_by = current_user.id
-    req.approved_at = datetime.now()
+    req.approved_at = now_br()
     db.session.commit()
     flash(f'Solicitação de {req.user.name} negada.', 'warning')
     return redirect(url_for('admin.overtime_requests'))
@@ -373,11 +374,11 @@ def sales():
 @login_required
 @manager_or_admin
 def cash():
-    date_str = request.args.get('date', date.today().strftime('%Y-%m-%d'))
+    date_str = request.args.get('date', today_br().strftime('%Y-%m-%d'))
     try:
         cash_date = datetime.strptime(date_str, '%Y-%m-%d').date()
     except Exception:
-        cash_date = date.today()
+        cash_date = today_br()
 
     sales = Sale.query.filter(func.date(Sale.created_at) == cash_date).all()
 
@@ -402,11 +403,11 @@ def cash():
 @login_required
 @manager_or_admin
 def reports():
-    date_str = request.args.get('date', date.today().strftime('%Y-%m-%d'))
+    date_str = request.args.get('date', today_br().strftime('%Y-%m-%d'))
     try:
         report_date = datetime.strptime(date_str, '%Y-%m-%d').date()
     except Exception:
-        report_date = date.today()
+        report_date = today_br()
 
     sales = Sale.query.filter(func.date(Sale.created_at) == report_date).all()
 
@@ -449,12 +450,12 @@ def reports():
 @login_required
 @manager_or_admin
 def attendance():
-    date_str = request.args.get('date', date.today().strftime('%Y-%m-%d'))
+    date_str = request.args.get('date', today_br().strftime('%Y-%m-%d'))
     attendant_filter = request.args.get('attendant', 0, type=int)
     try:
         att_date = datetime.strptime(date_str, '%Y-%m-%d').date()
     except Exception:
-        att_date = date.today()
+        att_date = today_br()
 
     query = Attendance.query.filter(func.date(Attendance.check_in) == att_date)
     if attendant_filter:
@@ -506,7 +507,7 @@ def attendance():
 @login_required
 @manager_or_admin
 def goals():
-    today = date.today()
+    today = today_br()
     month_str = request.args.get('month', today.strftime('%Y-%m'))
     try:
         year, mon = int(month_str.split('-')[0]), int(month_str.split('-')[1])
@@ -568,7 +569,7 @@ def goals():
 @login_required
 @manager_or_admin
 def commissions():
-    today = date.today()
+    today = today_br()
     month_str = request.args.get('month', today.strftime('%Y-%m'))
     try:
         year, mon = int(month_str.split('-')[0]), int(month_str.split('-')[1])
@@ -687,7 +688,7 @@ def api_prices():
 @login_required
 @admin_required
 def salaries():
-    today = date.today()
+    today = today_br()
     month_str = request.args.get('m', today.strftime('%Y-%m'))
     try:
         year, month = int(month_str[:4]), int(month_str[5:7])
@@ -780,7 +781,7 @@ def register_absence():
     absence_date = request.form.get('absence_date', '')
     abs_type     = request.form.get('type', 'unjustified')
     notes        = request.form.get('notes', '').strip() or None
-    month_str    = request.form.get('month_str', date.today().strftime('%Y-%m'))
+    month_str    = request.form.get('month_str', today_br().strftime('%Y-%m'))
     try:
         abs_date = datetime.strptime(absence_date, '%Y-%m-%d').date()
     except Exception:
@@ -818,7 +819,7 @@ def delete_absence(id):
 @login_required
 @manager_or_admin
 def commission_pdf():
-    today = date.today()
+    today = today_br()
     month_str = request.args.get('month', today.strftime('%Y-%m'))
     try:
         year, mon = int(month_str.split('-')[0]), int(month_str.split('-')[1])
@@ -853,4 +854,4 @@ def commission_pdf():
         total_earned=round(total_earned, 2),
         total_paid=round(total_paid, 2),
         total_balance=round(total_earned - total_paid, 2),
-        generated_at=datetime.now())
+        generated_at=now_br())
