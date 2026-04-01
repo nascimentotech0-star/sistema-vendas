@@ -448,6 +448,60 @@
 </div>
 {% endif %}
 
+<!-- ── POPUP PERMISSÃO DE NOTIFICAÇÃO ── -->
+<div id="notifBanner" style="
+  display:none;position:fixed;bottom:1.5rem;right:1.5rem;z-index:9999;
+  max-width:340px;width:calc(100vw - 3rem);
+  background:linear-gradient(135deg,rgba(30,27,75,.98),rgba(17,24,39,.98));
+  border:1px solid rgba(124,58,237,.4);border-radius:14px;
+  box-shadow:0 8px 32px rgba(0,0,0,.5),0 0 0 1px rgba(124,58,237,.15);
+  padding:1.1rem 1.2rem;animation:slideUp .35s ease;">
+  <div class="d-flex align-items-start gap-3">
+    <div style="width:42px;height:42px;border-radius:10px;flex-shrink:0;
+                background:rgba(124,58,237,.2);display:flex;align-items:center;justify-content:center;">
+      <i class="bi bi-bell-fill" style="color:#a78bfa;font-size:1.2rem;"></i>
+    </div>
+    <div style="flex:1;min-width:0;">
+      <p class="fw-semibold mb-1" style="color:var(--text);font-size:.92rem;line-height:1.3;">
+        Ativar notificações motivacionais?
+      </p>
+      <p class="mb-0" style="color:var(--text-muted);font-size:.78rem;line-height:1.4;">
+        Receba frases de incentivo direto no seu celular ou desktop enquanto atende.
+      </p>
+    </div>
+    <button onclick="dismissNotifBanner()" style="background:none;border:none;color:var(--text-muted);
+            cursor:pointer;padding:0;line-height:1;font-size:1.1rem;flex-shrink:0;">
+      <i class="bi bi-x-lg"></i>
+    </button>
+  </div>
+  <div class="d-flex gap-2 mt-3">
+    <button onclick="requestNotifPermission()"
+            style="flex:1;background:linear-gradient(135deg,#7c3aed,#6d28d9);color:#fff;
+                   border:none;border-radius:8px;padding:.5rem;font-size:.83rem;
+                   font-weight:600;cursor:pointer;transition:opacity .15s;"
+            onmouseover="this.style.opacity='.85'" onmouseout="this.style.opacity='1'">
+      <i class="bi bi-bell-fill me-1"></i> Permitir
+    </button>
+    <button onclick="dismissNotifBanner()"
+            style="flex:1;background:rgba(255,255,255,.06);color:var(--text-muted);
+                   border:1px solid var(--border);border-radius:8px;padding:.5rem;
+                   font-size:.83rem;cursor:pointer;">
+      Agora não
+    </button>
+  </div>
+</div>
+
+<style>
+@keyframes slideUp {
+  from { opacity:0; transform:translateY(20px); }
+  to   { opacity:1; transform:translateY(0); }
+}
+@keyframes fadeOut {
+  from { opacity:1; transform:translateY(0); }
+  to   { opacity:0; transform:translateY(16px); }
+}
+</style>
+
 {% endblock %}
 
 {% block scripts %}
@@ -495,6 +549,121 @@
         backgroundColor:grad(ctx,'rgba(16,185,129,.8)','rgba(16,185,129,.2)'), borderRadius:8, borderSkipped:false}]
     }, options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
       scales:{x:{grid:{color:grid}},y:{grid:{color:grid},ticks:{callback:v=>'R$'+v.toLocaleString('pt-BR')}}}}});
+  })();
+
+  // ── Notificações motivacionais ─────────────────────────────────────────────
+  const FRASES = [
+    "Cada venda é um passo mais perto da sua meta!",
+    "Você está construindo algo grande hoje. Continue!",
+    "Quanto mais você vende, mais sua comissão cresce. Bora!",
+    "Foco, energia e atitude — você tem os três. Use-os!",
+    "Um atendimento de qualidade abre portas para muitas renovações.",
+    "Não espere a motivação chegar. Aja e ela virá junto.",
+    "A persistência é a chave que abre portas que o talento sozinho não abre.",
+    "Cada contato pode ser o início de uma parceria longa. Capricha!",
+    "Clientes bem atendidos voltam e indicam outros. Faça a diferença!",
+    "Sua comissão cresce com cada venda. Cada R$ conta!",
+    "A meta de 10% de comissão está ao seu alcance — siga em frente!",
+    "O sucesso de hoje é a base do amanhã. Vamos nessa!",
+    "Você tem o poder de controlar quanto vai ganhar esse mês. Use-o!",
+    "Bater a meta não é o fim — é o começo de uma nova jornada.",
+    "Um dia produtivo começa com a decisão de torná-lo produtivo.",
+    "A comissão máxima está esperando por quem não desiste no meio do caminho.",
+    "Acredite no seu potencial — você tem tudo para superar a meta!",
+    "O cliente sente quando você realmente quer ajudá-lo. Seja genuíno!",
+    "Seja o atendimento que você gostaria de receber. Excelência sempre!",
+    "Construa relacionamentos, não só transações.",
+    "Grandes resultados começam com pequenas atitudes consistentes.",
+    "Você não está aqui para passar o tempo — está aqui para fazer história.",
+    "Cada 'não' superado te deixa mais preparado para o próximo 'sim'.",
+    "O esforço invisível de hoje será o resultado visível de amanhã.",
+    "Seu próximo cliente pode ser o início de uma virada no seu mês.",
+    "Pense no quanto você quer ganhar e trabalhe de acordo com isso.",
+    "Não existe teto para quem atende com qualidade e dedicação.",
+    "O sistema acompanha cada venda sua. Que tal surpreender hoje?",
+    "Você representa uma empresa que acredita no seu potencial. Honre isso!",
+    "A Nascimento Tech cresce quando cada atendente dá o seu melhor.",
+  ];
+
+  const NOTIF_KEY  = 'notifDismissed';
+  const INTERVAL_MS = 25 * 60 * 1000; // 25 minutos
+
+  function fraseAleatoria() {
+    return FRASES[Math.floor(Math.random() * FRASES.length)];
+  }
+
+  function enviarNotificacao() {
+    if (Notification.permission !== 'granted') return;
+    const frase = fraseAleatoria();
+    try {
+      const n = new Notification('Nascimento Tech 💜', {
+        body: frase,
+        tag: 'motivacional',  // substitui a anterior (não empilha)
+        renotify: true,
+        silent: false,
+      });
+      n.onclick = () => { window.focus(); n.close(); };
+    } catch(e) {}
+  }
+
+  function iniciarNotificacoes() {
+    enviarNotificacao();                          // imediata
+    setInterval(enviarNotificacao, INTERVAL_MS);  // periódica
+  }
+
+  function requestNotifPermission() {
+    Notification.requestPermission().then(perm => {
+      dismissNotifBanner();
+      if (perm === 'granted') {
+        localStorage.setItem(NOTIF_KEY, 'granted');
+        iniciarNotificacoes();
+      } else {
+        localStorage.setItem(NOTIF_KEY, 'denied');
+      }
+    });
+  }
+
+  function dismissNotifBanner() {
+    const b = document.getElementById('notifBanner');
+    if (!b) return;
+    b.style.animation = 'fadeOut .3s ease forwards';
+    setTimeout(() => b.style.display = 'none', 300);
+    if (localStorage.getItem(NOTIF_KEY) !== 'granted') {
+      localStorage.setItem(NOTIF_KEY, 'dismissed');
+    }
+  }
+
+  // Inicializar ao carregar a página
+  (function initNotif() {
+    if (!('Notification' in window)) return; // browser não suporta
+
+    const saved = localStorage.getItem(NOTIF_KEY);
+
+    if (Notification.permission === 'granted') {
+      // Já tinha permissão de sessão anterior — só iniciar
+      iniciarNotificacoes();
+      return;
+    }
+
+    if (Notification.permission === 'denied') return; // usuário bloqueou no browser
+
+    // Se dispensou antes, mostrar novamente após 3 dias
+    if (saved === 'dismissed') {
+      const dismissedAt = parseInt(localStorage.getItem('notifDismissedAt') || '0');
+      const tresDias = 3 * 24 * 60 * 60 * 1000;
+      if (Date.now() - dismissedAt < tresDias) return;
+    }
+
+    if (saved === 'denied') return;
+
+    // Mostrar banner após 3 segundos (não interrompe o carregamento)
+    setTimeout(() => {
+      const b = document.getElementById('notifBanner');
+      if (b) {
+        b.style.display = 'block';
+        localStorage.setItem('notifDismissedAt', Date.now());
+      }
+    }, 3000);
   })();
 </script>
 {% endblock %}
