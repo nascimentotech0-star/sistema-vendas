@@ -864,3 +864,33 @@ def commission_pdf():
         total_paid=round(total_paid, 2),
         total_balance=round(total_earned - total_paid, 2),
         generated_at=now_br())
+
+
+# ── Reset de dados (apenas admin) ─────────────────────────────────────────────
+
+@admin_bp.route('/reset-dados', methods=['GET', 'POST'])
+@login_required
+@admin_required
+def reset_data():
+    if request.method == 'POST':
+        confirm = request.form.get('confirm', '').strip()
+        if confirm != 'COMFIRMAR':
+            flash('Digite COMFIRMAR corretamente para prosseguir.', 'danger')
+            return redirect(url_for('admin.reset_data'))
+
+        # Apaga na ordem correta (filhos antes dos pais)
+        from models import ClientContact, Message
+        tables = [
+            CommissionPayment, SalaryPayment, AbsenceRecord,
+            OvertimeRequest, AttendantGoal,
+            AttendanceBreak, Attendance,
+            Sale, Renewal, ClientContact, Message, Client,
+        ]
+        for model in tables:
+            db.session.execute(db.text(f'DELETE FROM {model.__tablename__}'))
+        db.session.commit()
+
+        flash('Todos os dados foram apagados. Usuários e planos mantidos.', 'success')
+        return redirect(url_for('admin.dashboard'))
+
+    return render_template('admin/reset_data.html')

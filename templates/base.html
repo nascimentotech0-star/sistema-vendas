@@ -105,6 +105,11 @@
          href="{{ url_for('contacts.audit') }}">
         <i class="bi bi-shield-check"></i> Auditoria
       </a>
+      <a class="nt-nav-link {% if request.endpoint == 'admin.reset_data' %}active{% endif %}"
+         href="{{ url_for('admin.reset_data') }}"
+         style="color:#ef4444 !important;opacity:.75;">
+        <i class="bi bi-trash3-fill"></i> Zerar Dados
+      </a>
       <a class="nt-nav-link {% if request.endpoint and 'chat' in request.endpoint %}active{% endif %}"
          href="{{ url_for('chat.index') }}">
         <i class="bi bi-chat-dots-fill"></i> Chat

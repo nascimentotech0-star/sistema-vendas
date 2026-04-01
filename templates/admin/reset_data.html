@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% block title %}Zerar Dados — Nascimento Tech{% endblock %}
+{% block page_title %}Zerar Dados do Sistema{% endblock %}
+{% block content %}
+
+<div class="row justify-content-center">
+  <div class="col-12 col-lg-7">
+
+    <!-- Aviso de perigo -->
+    <div class="card mb-4" style="border:1px solid #ef4444;background:rgba(239,68,68,.07);">
+      <div class="card-body p-4">
+        <div class="d-flex align-items-center gap-3 mb-3">
+          <i class="bi bi-exclamation-triangle-fill" style="font-size:2rem;color:#ef4444;"></i>
+          <div>
+            <h5 class="mb-0 fw-bold" style="color:#ef4444;">Ação Irreversível</h5>
+            <small style="color:var(--text-muted);">Esta operação não pode ser desfeita.</small>
+          </div>
+        </div>
+        <p style="color:var(--text-muted);margin-bottom:0;">
+          Todos os dados operacionais serão permanentemente apagados do banco de dados.
+          Esta ação é indicada para reiniciar o sistema do zero antes de entrar em produção.
+        </p>
+      </div>
+    </div>
+
+    <!-- O que será apagado / mantido -->
+    <div class="row g-3 mb-4">
+      <div class="col-6">
+        <div class="card h-100" style="border:1px solid rgba(239,68,68,.3);background:rgba(239,68,68,.05);">
+          <div class="card-body">
+            <h6 class="fw-semibold mb-3" style="color:#ef4444;">
+              <i class="bi bi-trash3-fill me-1"></i> Será apagado
+            </h6>
+            <ul class="list-unstyled mb-0" style="color:var(--text-muted);font-size:.875rem;">
+              <li class="mb-1"><i class="bi bi-x-circle me-2" style="color:#ef4444;"></i>Clientes</li>
+              <li class="mb-1"><i class="bi bi-x-circle me-2" style="color:#ef4444;"></i>Vendas</li>
+              <li class="mb-1"><i class="bi bi-x-circle me-2" style="color:#ef4444;"></i>Renovações</li>
+              <li class="mb-1"><i class="bi bi-x-circle me-2" style="color:#ef4444;"></i>Registros de ponto</li>
+              <li class="mb-1"><i class="bi bi-x-circle me-2" style="color:#ef4444;"></i>Horas extras</li>
+              <li class="mb-1"><i class="bi bi-x-circle me-2" style="color:#ef4444;"></i>Contatos dos clientes</li>
+              <li class="mb-1"><i class="bi bi-x-circle me-2" style="color:#ef4444;"></i>Mensagens do chat</li>
+              <li class="mb-1"><i class="bi bi-x-circle me-2" style="color:#ef4444;"></i>Comissões e salários</li>
+              <li class="mb-1"><i class="bi bi-x-circle me-2" style="color:#ef4444;"></i>Metas e faltas</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <div class="col-6">
+        <div class="card h-100" style="border:1px solid rgba(16,185,129,.3);background:rgba(16,185,129,.05);">
+          <div class="card-body">
+            <h6 class="fw-semibold mb-3" style="color:#6ee7b7;">
+              <i class="bi bi-shield-check-fill me-1"></i> Será mantido
+            </h6>
+            <ul class="list-unstyled mb-0" style="color:var(--text-muted);font-size:.875rem;">
+              <li class="mb-1"><i class="bi bi-check-circle me-2" style="color:#6ee7b7;"></i>Usuários (admin e atendentes)</li>
+              <li class="mb-1"><i class="bi bi-check-circle me-2" style="color:#6ee7b7;"></i>Planos de preços</li>
+              <li class="mb-1"><i class="bi bi-check-circle me-2" style="color:#6ee7b7;"></i>Configurações do sistema</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Formulário de confirmação -->
+    <div class="card">
+      <div class="card-header d-flex align-items-center gap-2">
+        <i class="bi bi-keyboard" style="color:#ef4444;"></i>
+        <span class="fw-semibold">Confirmar operação</span>
+      </div>
+      <div class="card-body">
+        <form method="POST">
+          <p class="mb-3" style="color:var(--text-muted);">
+            Para confirmar, digite <strong style="color:var(--text);">COMFIRMAR</strong> no campo abaixo:
+          </p>
+          <div class="mb-4">
+            <input type="text" name="confirm" class="form-control"
+                   placeholder="Digite COMFIRMAR"
+                   autocomplete="off" autofocus
+                   style="font-size:1.05rem;letter-spacing:.03em;">
+          </div>
+          <div class="d-flex gap-2">
+            <button type="submit" class="btn px-4"
+                    style="background:#ef4444;color:#fff;border:none;">
+              <i class="bi bi-trash3-fill me-1"></i> Zerar todos os dados
+            </button>
+            <a href="{{ url_for('admin.dashboard') }}" class="btn btn-sm"
+               style="background:rgba(255,255,255,.08);color:var(--text);border:1px solid var(--border);">
+              Cancelar
+            </a>
+          </div>
+        </form>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+{% endblock %}
