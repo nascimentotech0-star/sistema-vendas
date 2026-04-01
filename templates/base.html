@@ -120,14 +120,26 @@
         {% endif %}
       </a>
       {% if current_user.is_manager() %}
-      <div class="nt-nav-label mt-2">Operacional</div>
-      <a class="nt-nav-link {% if request.endpoint in ['attendant.clients','attendant.new_client','attendant.edit_client','attendant.dashboard'] %}active{% endif %}"
+      <div class="nt-nav-label mt-2">Meu Painel</div>
+      <a class="nt-nav-link {% if request.endpoint == 'attendant.dashboard' %}active{% endif %}"
+         href="{{ url_for('attendant.dashboard') }}">
+        <i class="bi bi-house-fill"></i> Início / Ponto
+      </a>
+      <a class="nt-nav-link {% if request.endpoint in ['attendant.clients','attendant.new_client','attendant.edit_client'] or request.endpoint == 'contacts.client_detail' %}active{% endif %}"
+         href="{{ url_for('attendant.clients') }}">
+        <i class="bi bi-person-lines-fill"></i> Clientes
+      </a>
+      <a class="nt-nav-link {% if request.endpoint == 'attendant.new_client' %}active{% endif %}"
          href="{{ url_for('attendant.new_client') }}">
         <i class="bi bi-person-plus-fill"></i> Novo Cliente/Venda
       </a>
       <a class="nt-nav-link {% if request.endpoint == 'attendant.renewals' %}active{% endif %}"
          href="{{ url_for('attendant.renewals') }}">
-        <i class="bi bi-arrow-repeat"></i> Minhas Renovações
+        <i class="bi bi-arrow-repeat"></i> Renovações
+      </a>
+      <a class="nt-nav-link {% if request.endpoint == 'attendant.my_commissions' %}active{% endif %}"
+         href="{{ url_for('attendant.my_commissions') }}">
+        <i class="bi bi-cash-coin"></i> Minhas Comissões
       </a>
       {% endif %}
       <div style="border-top:1px solid var(--border);margin:10px 0;"></div>
