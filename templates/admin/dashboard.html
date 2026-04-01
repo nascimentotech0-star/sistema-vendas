@@ -391,7 +391,6 @@
 {% endblock %}
 
 {% block scripts %}
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
 <script>
 // Gira o chevron ao expandir/recolher
 document.getElementById('collapseCharts').addEventListener('show.bs.collapse', () => {
@@ -401,45 +400,46 @@ document.getElementById('collapseCharts').addEventListener('hide.bs.collapse', (
   document.getElementById('chevronCharts').style.transform = 'rotate(0deg)';
 });
 
-const gridColor = 'rgba(255,255,255,.06)', textColor = '#7b7b9e';
-Chart.defaults.color = textColor;
-Chart.defaults.font.family = "'Segoe UI', system-ui, sans-serif";
-Chart.defaults.font.size = 11;
-
-function makeGrad(ctx, c1, c2) {
-  const g = ctx.createLinearGradient(0,0,0,200);
-  g.addColorStop(0,c1); g.addColorStop(1,c2); return g;
-}
-
+// Admin dashboard — gráficos futuristas via helpers do chart-futuristic.js
 (function(){
-  const ctx = document.getElementById('chartWeekday').getContext('2d');
-  new Chart(ctx, { type:'bar', data:{
-    labels: {{ chart_weekday.labels|tojson }},
-    datasets:[{label:'R$',data:{{ chart_weekday.data|tojson }},
-      backgroundColor:'rgba(124,58,237,.7)',borderRadius:6,borderSkipped:false}]
-  }, options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
-    scales:{x:{grid:{color:gridColor}},y:{grid:{color:gridColor},ticks:{callback:v=>'R$'+v.toLocaleString('pt-BR')}}}}});
-})();
+  const c1 = document.getElementById('chartWeekday');
+  if (c1) {
+    const ctx = c1.getContext('2d');
+    const cols = [NT_COLORS.purple,'#8b5cf6',NT_COLORS.cyan,NT_COLORS.green,NT_COLORS.purple,NT_COLORS.cyan,NT_COLORS.pink];
+    new Chart(ctx, {
+      type:'bar',
+      data:{ labels:{{ chart_weekday.labels|tojson }}, datasets:[{
+        label:'R$', data:{{ chart_weekday.data|tojson }},
+        backgroundColor: cols.map(c=>ntBarGrad(ctx,c,.85,.2,200)),
+        borderColor: cols, borderWidth:1, borderRadius:10, borderSkipped:false,
+      }]},
+      options: ntOptions({ scales: ntScales() }),
+    });
+  }
 
-(function(){
-  const ctx = document.getElementById('chartWeekly').getContext('2d');
-  const grad = makeGrad(ctx,'rgba(6,182,212,.4)','rgba(6,182,212,.02)');
-  new Chart(ctx, { type:'line', data:{
-    labels: {{ chart_weekly.labels|tojson }},
-    datasets:[{label:'R$',data:{{ chart_weekly.data|tojson }},borderColor:'#06b6d4',
-      backgroundColor:grad,fill:true,tension:0.4,pointBackgroundColor:'#06b6d4',pointRadius:3}]
-  }, options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
-    scales:{x:{grid:{color:gridColor}},y:{grid:{color:gridColor},ticks:{callback:v=>'R$'+v.toLocaleString('pt-BR')}}}}});
-})();
+  const c2 = document.getElementById('chartWeekly');
+  if (c2) {
+    const ctx = c2.getContext('2d');
+    new Chart(ctx, {
+      type:'line',
+      data:{ labels:{{ chart_weekly.labels|tojson }}, datasets:[ ntLineDataset('R$', {{ chart_weekly.data|tojson }}, NT_COLORS.cyan, ctx, 200) ]},
+      options: ntOptions({ scales: ntScales() }),
+    });
+  }
 
-(function(){
-  const ctx = document.getElementById('chartMonthly').getContext('2d');
-  const grad = makeGrad(ctx,'rgba(16,185,129,.7)','rgba(16,185,129,.15)');
-  new Chart(ctx, { type:'bar', data:{
-    labels: {{ chart_monthly.labels|tojson }},
-    datasets:[{label:'R$',data:{{ chart_monthly.data|tojson }},backgroundColor:grad,borderRadius:6,borderSkipped:false}]
-  }, options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
-    scales:{x:{grid:{color:gridColor}},y:{grid:{color:gridColor},ticks:{callback:v=>'R$'+v.toLocaleString('pt-BR')}}}}});
+  const c3 = document.getElementById('chartMonthly');
+  if (c3) {
+    const ctx = c3.getContext('2d');
+    new Chart(ctx, {
+      type:'bar',
+      data:{ labels:{{ chart_monthly.labels|tojson }}, datasets:[{
+        label:'R$', data:{{ chart_monthly.data|tojson }},
+        backgroundColor: ntBarGrad(ctx, NT_COLORS.purple, .85, .15, 200),
+        borderColor: NT_COLORS.purple, borderWidth:1, borderRadius:10, borderSkipped:false,
+      }]},
+      options: ntOptions({ scales: ntScales() }),
+    });
+  }
 })();
 </script>
 {% endblock %}
