@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+{% block title %}Comprovantes Duplicados — Nascimento Tech{% endblock %}
+{% block page_title %}Comprovantes Duplicados{% endblock %}
+{% block content %}
+
+{% if not groups %}
+<div class="card">
+  <div class="card-body text-center py-5">
+    <div style="width:64px;height:64px;border-radius:50%;background:rgba(16,185,129,.15);
+                display:flex;align-items:center;justify-content:center;margin:0 auto 1rem;">
+      <i class="bi bi-shield-check" style="font-size:1.8rem;color:#6ee7b7;"></i>
+    </div>
+    <h5 class="fw-bold mb-1" style="color:#6ee7b7;">Nenhuma fraude detectada</h5>
+    <p style="color:var(--text-muted);">Todos os comprovantes enviados são únicos.</p>
+  </div>
+</div>
+
+{% else %}
+
+<div class="alert mb-4 d-flex align-items-center gap-3"
+     style="background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.3);border-radius:10px;">
+  <i class="bi bi-exclamation-triangle-fill" style="color:#fca5a5;font-size:1.3rem;flex-shrink:0;"></i>
+  <div>
+    <strong style="color:#fca5a5;">{{ groups|length }} grupo(s) de comprovante duplicado detectado(s).</strong>
+    <span style="color:var(--text-muted);"> Cada grupo abaixo representa o mesmo arquivo enviado em mais de uma venda.</span>
+  </div>
+</div>
+
+{% for hash, sales in groups.items() %}
+<div class="card mb-4" style="border:1px solid rgba(239,68,68,.25);">
+  <div class="card-header d-flex align-items-center gap-2"
+       style="background:rgba(239,68,68,.07);">
+    <i class="bi bi-files" style="color:#fca5a5;"></i>
+    <span class="fw-semibold" style="color:#fca5a5;">Comprovante duplicado</span>
+    <code style="font-size:.72rem;color:var(--text-muted);margin-left:.5rem;">
+      {{ hash[:16] }}…
+    </code>
+    <span class="badge ms-auto" style="background:rgba(239,68,68,.2);color:#fca5a5;">
+      {{ sales|length }} ocorrências
+    </span>
+  </div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Atendente</th>
+            <th>Cliente</th>
+            <th>Valor</th>
+            <th>Pagamento</th>
+            <th>Data / Hora</th>
+            <th>Comprovante</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for s in sales %}
+          <tr {% if not loop.first %}style="background:rgba(239,68,68,.04);"{% endif %}>
+            <td>
+              <span class="badge" style="background:rgba(255,255,255,.07);color:var(--text-muted);">
+                #{{ s.id }}
+              </span>
+              {% if not loop.first %}
+                <span class="badge ms-1" style="background:rgba(239,68,68,.2);color:#fca5a5;font-size:.68rem;">
+                  <i class="bi bi-exclamation-triangle-fill me-1"></i>Duplicata
+                </span>
+              {% else %}
+                <span class="badge ms-1" style="background:rgba(16,185,129,.15);color:#6ee7b7;font-size:.68rem;">Original</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if s.attendant %}
+                <span style="font-size:.85rem;">{{ s.attendant.name }}</span>
+              {% else %}
+                <span style="color:var(--text-muted);">—</span>
+              {% endif %}
+            </td>
+            <td style="font-size:.85rem;">{{ s.client_display }}</td>
+            <td class="fw-semibold">R$ {{ "%.2f"|format(s.amount) }}</td>
+            <td>
+              <span class="badge bg-secondary">{{ s.payment_display }}</span>
+            </td>
+            <td style="font-size:.82rem;color:var(--text-muted);">
+              {{ s.created_at.strftime('%d/%m/%Y') }}
+              <small class="d-block">{{ s.created_at.strftime('%H:%M') }}</small>
+            </td>
+            <td>
+              {% if s.comprovante_filename %}
+                <a href="{{ url_for('static', filename='uploads/' + s.comprovante_filename) }}"
+                   target="_blank"
+                   class="btn btn-sm"
+                   style="background:rgba(6,182,212,.15);color:#67e8f9;border:none;padding:3px 8px;font-size:.78rem;">
+                  <i class="bi bi-eye me-1"></i>Ver
+                </a>
+              {% else %}
+                <span style="color:var(--text-muted);font-size:.8rem;">—</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endfor %}
+
+{% endif %}
+
+{% endblock %}

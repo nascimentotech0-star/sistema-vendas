@@ -60,6 +60,14 @@
          href="{{ url_for('admin.sales') }}">
         <i class="bi bi-cart3"></i> Vendas
       </a>
+      <a class="nt-nav-link {% if request.endpoint == 'admin.fraud_list' %}active{% endif %}"
+         href="{{ url_for('admin.fraud_list') }}">
+        <i class="bi bi-shield-exclamation" style="color:#fca5a5;"></i>
+        <span style="color:#fca5a5;">Fraudes</span>
+        {% if fraud_count is defined and fraud_count %}
+          <span class="badge ms-auto rounded-pill" style="background:#ef4444;font-size:.65rem;">{{ fraud_count }}</span>
+        {% endif %}
+      </a>
       <a class="nt-nav-link {% if request.endpoint == 'admin.cash' %}active{% endif %}"
          href="{{ url_for('admin.cash') }}">
         <i class="bi bi-cash-coin"></i> Caixa

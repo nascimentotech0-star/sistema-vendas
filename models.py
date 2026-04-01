@@ -470,6 +470,7 @@ class Sale(db.Model):
     commission_amount = db.Column(db.Float, nullable=False)
     description = db.Column(db.Text, nullable=True)
     comprovante_filename = db.Column(db.String(255), nullable=True)
+    comprovante_hash     = db.Column(db.String(64),  nullable=True, index=True)  # SHA-256 para detecção de duplicata
     is_overtime = db.Column(db.Boolean, default=False)
     screens     = db.Column(db.Integer, nullable=True, default=1)    # telas vendidas
     adjustment  = db.Column(db.Float, nullable=True, default=0.0)    # desconto (neg) / acréscimo (pos)

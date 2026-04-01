@@ -531,6 +531,35 @@ def sales():
         payment_filter=payment_filter, payment_methods=PAYMENT_METHODS)
 
 
+# ── Fraudes / Comprovantes Duplicados ──────────────────────────────────────────
+
+@admin_bp.route('/fraudes')
+@login_required
+@manager_or_admin
+def fraud_list():
+    """Lista vendas com comprovante duplicado (mesmo hash em mais de uma venda)."""
+    # Subquery: hashes que aparecem em mais de uma venda
+    dup_hashes = (
+        db.session.query(Sale.comprovante_hash)
+        .filter(Sale.comprovante_hash.isnot(None))
+        .group_by(Sale.comprovante_hash)
+        .having(func.count(Sale.id) > 1)
+        .subquery()
+    )
+    fraud_sales = (
+        Sale.query
+        .filter(Sale.comprovante_hash.in_(db.session.query(dup_hashes)))
+        .order_by(Sale.comprovante_hash, Sale.created_at)
+        .all()
+    )
+    # Agrupar por hash para exibir pares/grupos
+    groups = {}
+    for s in fraud_sales:
+        groups.setdefault(s.comprovante_hash, []).append(s)
+
+    return render_template('admin/fraud_list.html', groups=groups)
+
+
 # ── Caixa ──────────────────────────────────────────────────────────────────────
 
 @admin_bp.route('/caixa')

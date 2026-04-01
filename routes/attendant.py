@@ -1,5 +1,6 @@
 import os
 import uuid
+import hashlib
 import calendar as cal
 from datetime import datetime, date, timedelta
 from utils import now_br, today_br
@@ -40,6 +41,41 @@ def attendant_required(f):
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+
+def _process_comprovante(file_field='comprovante'):
+    """Lê o comprovante do request, valida, salva e retorna (filename, sha256_hash).
+
+    Se nenhum arquivo for enviado devolve (None, None).
+    Se o arquivo for duplicado (hash já existe em outra venda) levanta ValueError
+    com mensagem descritiva para exibir ao atendente.
+    """
+    file = request.files.get(file_field)
+    if not file or not file.filename or not allowed_file(file.filename):
+        return None, None
+
+    raw = file.read()                          # lê bytes uma só vez
+    sha256 = hashlib.sha256(raw).hexdigest()   # fingerprint único do arquivo
+
+    # Verificar duplicata
+    dup = Sale.query.filter_by(comprovante_hash=sha256).first()
+    if dup:
+        when = dup.created_at.strftime('%d/%m/%Y às %H:%M')
+        who  = dup.attendant.name.split()[0] if dup.attendant else 'outro atendente'
+        raise ValueError(
+            f'Comprovante duplicado! Este arquivo já foi enviado em {when} '
+            f'por {who} (venda #{dup.id}). '
+            f'Se for um pagamento diferente, use outro comprovante.'
+        )
+
+    ext   = file.filename.rsplit('.', 1)[1].lower()
+    fname = f"{uuid.uuid4().hex}.{ext}"
+    path  = os.path.join(current_app.config['UPLOAD_FOLDER'], fname)
+
+    with open(path, 'wb') as f:
+        f.write(raw)   # já foi lido, gravar diretamente
+
+    return fname, sha256
 
 
 def _shift_end():
@@ -889,13 +925,18 @@ def new_client():
                     commission_rate = get_commission_rate(get_month_sales_count(current_user.id))
                     commission_amount = round(amount * commission_rate / 100, 2)
 
-                    comprovante_filename = None
-                    file = request.files.get('comprovante')
-                    if file and file.filename and allowed_file(file.filename):
-                        ext = file.filename.rsplit('.', 1)[1].lower()
-                        fname = f"{uuid.uuid4().hex}.{ext}"
-                        file.save(os.path.join(current_app.config['UPLOAD_FOLDER'], fname))
-                        comprovante_filename = fname
+                    try:
+                        comprovante_filename, comprovante_hash = _process_comprovante()
+                    except ValueError as dup_err:
+                        db.session.rollback()
+                        flash(f'⚠️ {dup_err}', 'danger')
+                        dl, dv, ct, st = _chart_data()
+                        return render_template('attendant/client_form.html',
+                                               client=None, payment_methods=PAYMENT_METHODS,
+                                               is_overtime=overtime,
+                                               commission_rate=get_commission_rate(),
+                                               chart_labels=dl, chart_vals=dv,
+                                               clients_today=ct, sales_today=st)
 
                     sale = Sale(
                         attendant_id=current_user.id,
@@ -906,6 +947,7 @@ def new_client():
                         commission_amount=commission_amount,
                         description=description,
                         comprovante_filename=comprovante_filename,
+                        comprovante_hash=comprovante_hash,
                         is_overtime=overtime,
                         screens=screens,
                         adjustment=adjustment,
@@ -1004,18 +1046,16 @@ def new_sale():
 
         screens    = int(request.form.get('screens', 1) or 1)
         adjustment = float(request.form.get('adjustment', 0) or 0)
-        amount = round(amount + adjustment, 2)  # valor final cobrado
+        amount = round(amount + adjustment, 2)
         commission_rate = get_commission_rate(get_month_sales_count(current_user.id))
         commission_amount = round(amount * (commission_rate / 100), 2)
 
-        # Comprovante opcional
-        comprovante_filename = None
-        file = request.files.get('comprovante')
-        if file and file.filename and allowed_file(file.filename):
-            ext = file.filename.rsplit('.', 1)[1].lower()
-            filename = f"{uuid.uuid4().hex}.{ext}"
-            file.save(os.path.join(current_app.config['UPLOAD_FOLDER'], filename))
-            comprovante_filename = filename
+        try:
+            comprovante_filename, comprovante_hash = _process_comprovante()
+        except ValueError as dup_err:
+            flash(f'⚠️ {dup_err}', 'danger')
+            return render_template('attendant/sale_form.html', clients=clients_list,
+                                   is_overtime=overtime, payment_methods=PAYMENT_METHODS)
 
         sale = Sale(
             attendant_id=current_user.id,
@@ -1027,6 +1067,7 @@ def new_sale():
             commission_amount=commission_amount,
             description=description,
             comprovante_filename=comprovante_filename,
+            comprovante_hash=comprovante_hash,
             is_overtime=is_overtime_now(),
             screens=screens,
             adjustment=adjustment,

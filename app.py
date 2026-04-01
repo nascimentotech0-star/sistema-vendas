@@ -32,7 +32,8 @@ def create_app():
     @app.context_processor
     def inject_globals():
         if current_user.is_authenticated:
-            from models import Message, Renewal
+            from models import Message, Renewal, Sale
+            from sqlalchemy import func as _func
             from datetime import date as _date
             if current_user.is_admin():
                 unread = Message.query.filter(
@@ -43,16 +44,27 @@ def create_app():
                     Renewal.status == 'pending',
                     Renewal.due_date < _date.today()
                 ).count()
+                # Hashes de comprovante que aparecem em mais de uma venda
+                dup_sub = (
+                    db.session.query(Sale.comprovante_hash)
+                    .filter(Sale.comprovante_hash.isnot(None))
+                    .group_by(Sale.comprovante_hash)
+                    .having(_func.count(Sale.id) > 1)
+                    .subquery()
+                )
+                fraud_count = db.session.query(_func.count()).select_from(dup_sub).scalar() or 0
             else:
                 unread = Message.query.filter_by(
                     attendant_id=current_user.id, read_at=None
                 ).filter(Message.sender_id != current_user.id).count()
                 overdue_count = 0
+                fraud_count   = 0
             return {
                 'unread_chat_count':      unread,
                 'renewals_overdue_count': overdue_count,
+                'fraud_count':            fraud_count,
             }
-        return {'unread_chat_count': 0, 'renewals_overdue_count': 0}
+        return {'unread_chat_count': 0, 'renewals_overdue_count': 0, 'fraud_count': 0}
 
     from routes.auth import auth_bp
     from routes.admin import admin_bp
@@ -103,6 +115,7 @@ def _upgrade_db():
         ('users',          'work_days_per_month',  'INTEGER DEFAULT 22'),
         ('users',          'shift_end_hour',        'INTEGER DEFAULT 22'),
         ('users',          'monthly_sales_target',  'INTEGER DEFAULT 700'),
+        ('sales',          'comprovante_hash',       'VARCHAR(64)'),
         ('absence_records','notes',                'TEXT'),
         ('salary_payments','notes',                'TEXT'),
     ]
