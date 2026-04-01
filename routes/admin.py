@@ -55,8 +55,13 @@ def inject_pending_counts():
 @manager_or_admin
 def dashboard():
     today = today_br()
+    day_start = datetime(today.year, today.month, today.day)
+    day_end   = day_start + timedelta(days=1)
 
-    today_sales = Sale.query.filter(func.date(Sale.created_at) == today).all()
+    today_sales = Sale.query.filter(
+        Sale.created_at >= day_start,
+        Sale.created_at < day_end,
+    ).all()
     today_total = sum(s.amount for s in today_sales)
     today_commissions = sum(s.commission_amount for s in today_sales)
 
@@ -65,7 +70,8 @@ def dashboard():
         payment_totals[s.payment_method] = payment_totals.get(s.payment_method, 0) + s.amount
 
     active_attendances = Attendance.query.filter(
-        func.date(Attendance.check_in) == today,
+        Attendance.check_in >= day_start,
+        Attendance.check_in < day_end,
         Attendance.check_out == None
     ).all()
 
@@ -76,8 +82,8 @@ def dashboard():
     recent_sales = Sale.query.order_by(Sale.created_at.desc()).limit(10).all()
 
     # ── Gráfico: vendas por dia da semana (últimas 4 semanas) ──
-    week_start = today - timedelta(days=27)
-    sales_4w = Sale.query.filter(func.date(Sale.created_at) >= week_start).all()
+    week_start = datetime(today.year, today.month, today.day) - timedelta(days=27)
+    sales_4w = Sale.query.filter(Sale.created_at >= week_start).all()
     day_names = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom']
     day_totals = [0.0] * 7
     for s in sales_4w:
@@ -85,8 +91,8 @@ def dashboard():
     chart_weekday = {'labels': day_names, 'data': [round(v, 2) for v in day_totals]}
 
     # ── Gráfico: vendas por semana (últimas 8 semanas) ──
-    week8_start = today - timedelta(weeks=8)
-    sales_8w = Sale.query.filter(func.date(Sale.created_at) >= week8_start).all()
+    week8_start = datetime(today.year, today.month, today.day) - timedelta(weeks=8)
+    sales_8w = Sale.query.filter(Sale.created_at >= week8_start).all()
     week_map = {}
     for s in sales_8w:
         d = s.created_at.date()
@@ -100,7 +106,7 @@ def dashboard():
     # ── Gráfico: vendas por mês (últimos 12 meses) ──
     month12_start = date(today.year - 1 if today.month == 1 else today.year,
                          1 if today.month == 1 else today.month, 1)
-    sales_12m = Sale.query.filter(func.date(Sale.created_at) >= month12_start).all()
+    sales_12m = Sale.query.filter(Sale.created_at >= datetime(month12_start.year, month12_start.month, month12_start.day)).all()
     month_map = {}
     month_labels_pt = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez']
     for s in sales_12m:
@@ -141,13 +147,16 @@ def dashboard():
 
     # Contatos registrados hoje
     contacts_today = ClientContact.query.filter(
-        func.date(ClientContact.contacted_at) == today
+        ClientContact.contacted_at >= day_start,
+        ClientContact.contacted_at < day_end,
     ).count()
 
     # Total recebido no mês (vendas)
+    month_start_dt = datetime(first_day_month.year, first_day_month.month, first_day_month.day)
+    month_end_dt   = datetime(last_day_month.year, last_day_month.month, last_day_month.day) + timedelta(days=1)
     month_sales = Sale.query.filter(
-        func.date(Sale.created_at) >= first_day_month,
-        func.date(Sale.created_at) <= last_day_month
+        Sale.created_at >= month_start_dt,
+        Sale.created_at < month_end_dt,
     ).all()
     month_total      = round(sum(s.amount for s in month_sales), 2)
     month_commission = round(sum(s.commission_amount for s in month_sales), 2)
