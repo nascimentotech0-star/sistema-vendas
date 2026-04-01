@@ -78,7 +78,9 @@
 </div>
 
 <!-- Form oculto para excluir -->
-<form id="formDelete" method="POST" style="display:none;"></form>
+<form id="formDelete" method="POST" style="display:none;">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+</form>
 
 <!-- Modal de confirmação -->
 <div class="modal fade" id="modalDelete" tabindex="-1">

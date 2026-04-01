@@ -304,22 +304,22 @@ def delete_attendant(id):
     client_ids = [c.id for c in Client.query.filter_by(registered_by=id).all()]
 
     # 1. ClientContacts: pelo atendente OU pelos clientes dele
-    ClientContact.query.filter(
-        db.or_(ClientContact.attendant_id == id,
-               ClientContact.client_id.in_(client_ids))
-    ).delete(synchronize_session=False)
+    cc_filter = ClientContact.attendant_id == id
+    if client_ids:
+        cc_filter = db.or_(cc_filter, ClientContact.client_id.in_(client_ids))
+    ClientContact.query.filter(cc_filter).delete(synchronize_session=False)
 
     # 2. Renovações: pelo atendente OU pelos clientes dele
-    Renewal.query.filter(
-        db.or_(Renewal.attendant_id == id,
-               Renewal.client_id.in_(client_ids))
-    ).delete(synchronize_session=False)
+    ren_filter = Renewal.attendant_id == id
+    if client_ids:
+        ren_filter = db.or_(ren_filter, Renewal.client_id.in_(client_ids))
+    Renewal.query.filter(ren_filter).delete(synchronize_session=False)
 
     # 3. Vendas: pelo atendente OU pelos clientes dele
-    Sale.query.filter(
-        db.or_(Sale.attendant_id == id,
-               Sale.client_id.in_(client_ids) if client_ids else False)
-    ).delete(synchronize_session=False)
+    sale_filter = Sale.attendant_id == id
+    if client_ids:
+        sale_filter = db.or_(sale_filter, Sale.client_id.in_(client_ids))
+    Sale.query.filter(sale_filter).delete(synchronize_session=False)
 
     # 4. Clientes cadastrados por ele
     Client.query.filter_by(registered_by=id).delete(synchronize_session=False)
@@ -421,6 +421,74 @@ def deny_overtime(id):
 
 # ── Vendas ─────────────────────────────────────────────────────────────────────
 
+@admin_bp.route('/vendas/nova', methods=['POST'])
+@login_required
+@manager_or_admin
+def admin_new_sale():
+    from models import Client
+    attendant_id   = request.form.get('attendant_id', type=int)
+    client_id      = request.form.get('client_id', type=int) or None
+    amount_str     = request.form.get('amount', '0').replace(',', '.')
+    adjustment_str = request.form.get('adjustment', '0').replace(',', '.')
+    payment_method = request.form.get('payment_method', '')
+    description    = request.form.get('description', '').strip() or None
+    commission_rate= float(request.form.get('commission_rate', 5) or 5)
+    date_str       = request.form.get('sale_date', '')
+    screens        = int(request.form.get('screens', 1) or 1)
+
+    try:
+        base   = float(amount_str)
+        adj    = float(adjustment_str)
+        amount = round(base + adj, 2)
+        if amount <= 0 or not payment_method or not attendant_id:
+            flash('Preencha atendente, valor e forma de pagamento.', 'danger')
+            return redirect(url_for('admin.sales'))
+    except ValueError:
+        flash('Valor inválido.', 'danger')
+        return redirect(url_for('admin.sales'))
+
+    commission_amount = round(amount * commission_rate / 100, 2)
+
+    created_at = now_br()
+    if date_str:
+        try:
+            created_at = datetime.strptime(date_str, '%Y-%m-%dT%H:%M')
+        except Exception:
+            try:
+                created_at = datetime.strptime(date_str, '%Y-%m-%d')
+            except Exception:
+                pass
+
+    sale = Sale(
+        attendant_id=attendant_id,
+        client_id=client_id,
+        amount=amount,
+        adjustment=adj,
+        payment_method=payment_method,
+        commission_rate=commission_rate,
+        commission_amount=commission_amount,
+        description=description,
+        screens=screens,
+        is_overtime=False,
+        created_at=created_at,
+    )
+    db.session.add(sale)
+    db.session.commit()
+    flash(f'Venda de R$ {amount:.2f} registrada. Comissão: R$ {commission_amount:.2f}', 'success')
+    return redirect(url_for('admin.sales'))
+
+
+@admin_bp.route('/vendas/<int:sale_id>/excluir', methods=['POST'])
+@login_required
+@admin_required
+def admin_delete_sale(sale_id):
+    sale = Sale.query.get_or_404(sale_id)
+    db.session.delete(sale)
+    db.session.commit()
+    flash('Venda excluída.', 'success')
+    return redirect(url_for('admin.sales'))
+
+
 @admin_bp.route('/vendas')
 @login_required
 @manager_or_admin
@@ -446,10 +514,13 @@ def sales():
         query = query.filter_by(payment_method=payment_filter)
 
     sales = query.order_by(Sale.created_at.desc()).paginate(page=page, per_page=25)
-    attendants = User.query.filter_by(role='attendant').order_by(User.name).all()
+    attendants = User.query.filter(User.role.in_(['attendant','gerente'])).order_by(User.name).all()
+    from models import Client
+    all_clients = Client.query.order_by(Client.name).all()
 
     return render_template('admin/sales.html',
         sales=sales, attendants=attendants,
+        all_clients=all_clients,
         date_filter=date_filter, attendant_filter=attendant_filter,
         payment_filter=payment_filter, payment_methods=PAYMENT_METHODS)
 

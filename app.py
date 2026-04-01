@@ -101,6 +101,7 @@ def _upgrade_db():
         'ALTER TABLE users ADD COLUMN monthly_salary REAL DEFAULT 0',
         'ALTER TABLE users ADD COLUMN work_hours_per_day INTEGER DEFAULT 8',
         'ALTER TABLE users ADD COLUMN work_days_per_month INTEGER DEFAULT 22',
+        'ALTER TABLE users ADD COLUMN shift_end_hour INTEGER DEFAULT 22',
         # Novas tabelas criadas via db.create_all() — os ALTER TABLE abaixo são para
         # colunas adicionadas em tabelas já existentes em bancos antigos
         'ALTER TABLE absence_records ADD COLUMN notes TEXT',

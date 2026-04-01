@@ -1,7 +1,12 @@
 {% extends "base.html" %}
 {% block title %}Vendas — VendasPRO{% endblock %}
 {% block content %}
-<h4 class="fw-bold mb-4"><i class="bi bi-cart3 me-2 text-primary"></i>Todas as Vendas</h4>
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h4 class="fw-bold mb-0"><i class="bi bi-cart3 me-2 text-primary"></i>Todas as Vendas</h4>
+  <button class="btn btn-primary btn-sm" onclick="document.getElementById('modalNewSale').style.display='flex'">
+    <i class="bi bi-plus-lg me-1"></i> Nova Venda
+  </button>
+</div>
 
 <!-- Filtros -->
 <div class="card border-0 shadow-sm mb-4">
@@ -52,14 +57,14 @@
           <tr>
             <th>#</th><th>Atendente</th><th>Cliente</th><th>Valor</th>
             <th>Pagamento</th><th>Comissão</th><th>Tipo</th>
-            <th>Comprovante</th><th>Data/Hora</th>
+            <th>Comprovante</th><th>Data/Hora</th><th></th>
           </tr>
         </thead>
         <tbody>
           {% for s in sales.items %}
           <tr>
             <td class="text-muted small">{{ s.id }}</td>
-            <td>{{ s.attendant.name }}</td>
+            <td>{{ s.attendant.name if s.attendant else '—' }}</td>
             <td>{{ s.client_display }}</td>
             <td class="fw-semibold">R$ {{ "%.2f"|format(s.amount) }}</td>
             <td><span class="badge bg-secondary">{{ s.payment_display }}</span></td>
@@ -84,6 +89,16 @@
               {% endif %}
             </td>
             <td class="text-muted small">{{ s.created_at.strftime('%d/%m/%Y %H:%M') }}</td>
+            <td>
+              <form method="POST" action="{{ url_for('admin.admin_delete_sale', sale_id=s.id) }}" class="d-inline"
+                    onsubmit="return confirm('Excluir esta venda?')">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-sm py-0 px-2"
+                        style="background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.3);color:#fca5a5;">
+                  <i class="bi bi-trash3-fill"></i>
+                </button>
+              </form>
+            </td>
           </tr>
           {% endfor %}
         </tbody>
@@ -115,4 +130,94 @@
     {% endif %}
   </div>
 </div>
+
+<!-- Modal: Nova Venda -->
+<div id="modalNewSale" style="display:none;position:fixed;inset:0;z-index:1055;background:rgba(0,0,0,.6);align-items:center;justify-content:center;">
+  <div style="background:#1a1a35;border:1px solid rgba(124,58,237,.3);border-radius:12px;width:100%;max-width:520px;max-height:90vh;overflow-y:auto;margin:1rem;">
+    <form method="POST" action="{{ url_for('admin.admin_new_sale') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="p-4">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+          <h5 class="fw-bold mb-0" style="color:#a78bfa;"><i class="bi bi-plus-circle-fill me-2"></i>Nova Venda</h5>
+          <button type="button" onclick="document.getElementById('modalNewSale').style.display='none'"
+                  style="background:none;border:none;color:var(--text-muted);font-size:1.3rem;cursor:pointer;">&times;</button>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label small fw-semibold">Atendente <span class="text-danger">*</span></label>
+          <select name="attendant_id" class="form-select form-select-sm" required>
+            <option value="">— Selecionar —</option>
+            {% for a in attendants %}
+              <option value="{{ a.id }}">{{ a.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label small fw-semibold">Cliente</label>
+          <select name="client_id" class="form-select form-select-sm">
+            <option value="">— Sem vínculo —</option>
+            {% for c in all_clients %}
+              <option value="{{ c.id }}">{{ c.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="row g-3 mb-3">
+          <div class="col-6">
+            <label class="form-label small fw-semibold">Valor Base (R$) <span class="text-danger">*</span></label>
+            <input type="number" name="amount" step="0.01" min="0.01" class="form-control form-control-sm" required placeholder="0,00">
+          </div>
+          <div class="col-6">
+            <label class="form-label small fw-semibold">Ajuste (R$)</label>
+            <input type="number" name="adjustment" step="0.01" class="form-control form-control-sm" value="0">
+          </div>
+        </div>
+
+        <div class="row g-3 mb-3">
+          <div class="col-6">
+            <label class="form-label small fw-semibold">Forma de Pagamento <span class="text-danger">*</span></label>
+            <select name="payment_method" class="form-select form-select-sm" required>
+              <option value="">— Selecionar —</option>
+              {% for key, label in payment_methods.items() %}
+                <option value="{{ key }}">{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-3">
+            <label class="form-label small fw-semibold">Comissão (%)</label>
+            <input type="number" name="commission_rate" step="0.1" min="0" class="form-control form-control-sm" value="5">
+          </div>
+          <div class="col-3">
+            <label class="form-label small fw-semibold">Telas</label>
+            <input type="number" name="screens" min="1" class="form-control form-control-sm" value="1">
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label small fw-semibold">Data/Hora da Venda</label>
+          <input type="datetime-local" name="sale_date" class="form-control form-control-sm">
+          <div class="form-text" style="font-size:.72rem;">Deixe em branco para usar o horário atual.</div>
+        </div>
+
+        <div class="mb-4">
+          <label class="form-label small fw-semibold">Descrição</label>
+          <input type="text" name="description" class="form-control form-control-sm" placeholder="Ex: Plano mensal 1 tela">
+        </div>
+
+        <div class="d-flex gap-2">
+          <button type="submit" class="btn btn-primary btn-sm px-4">
+            <i class="bi bi-check-lg me-1"></i> Registrar
+          </button>
+          <button type="button" class="btn btn-sm"
+                  onclick="document.getElementById('modalNewSale').style.display='none'"
+                  style="background:rgba(255,255,255,.08);color:var(--text);border:1px solid var(--border);">
+            Cancelar
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
 {% endblock %}
