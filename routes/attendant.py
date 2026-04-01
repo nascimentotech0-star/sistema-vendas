@@ -574,12 +574,10 @@ def new_client():
                         file.save(os.path.join(current_app.config['UPLOAD_FOLDER'], fname))
                         comprovante_filename = fname
                     else:
-                        db.session.rollback()
-                        flash('Comprovante de pagamento é obrigatório para registrar a venda.', 'danger')
-                        return render_template('attendant/client_form.html',
-                            client=None, payment_methods=PAYMENT_METHODS,
-                            commission_rate=get_commission_rate(), is_overtime=overtime,
-                            clients_today=0, sales_today=0, chart_labels=[], chart_vals=[])
+                        # Salva o cliente mas não cria a venda
+                        db.session.commit()
+                        flash(f'Cliente {name} cadastrado! Mas o comprovante é obrigatório para registrar a venda — adicione a venda separadamente.', 'warning')
+                        return redirect(url_for('attendant.dashboard'))
 
                     sale = Sale(
                         attendant_id=current_user.id,
