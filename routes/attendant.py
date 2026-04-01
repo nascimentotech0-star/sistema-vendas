@@ -50,9 +50,262 @@ def _shift_end():
         return 22
 
 
-def get_commission_rate():
+COMMISSION_TARGET = 2000.0   # R$ meta mensal para atingir 10%
+COMMISSION_MIN    = 5.0      # % mínima (início do mês)
+COMMISSION_MAX    = 10.0     # % máxima (quando bate a meta)
+
+_MOTIVATIONAL = [
+    # Foco e determinação
+    "Cada cliente atendido é um passo mais perto da sua meta!",
+    "Você está construindo algo grande hoje. Continue!",
+    "O sucesso de hoje é a base do amanhã. Vamos nessa!",
+    "Cada 'sim' que você recebe representa o seu esforço e dedicação.",
+    "Acredite no seu potencial — você tem tudo para superar a meta!",
+    "Seja o atendimento que você gostaria de receber. Excelência sempre!",
+    "Quanto mais você se dedica, mais a sua comissão cresce. Bora vender!",
+    "A sua persistência de hoje faz a diferença no seu bolso amanhã.",
+    "Foco, energia e atitude — você tem os três. Use-os!",
+    "Um atendimento de qualidade abre portas para muitas renovações.",
+    "Cada contato pode ser o início de uma parceria longa. Capricha!",
+    "Não é sorte — é preparação + esforço + momento. Você está pronto!",
+    "A meta não espera. Mas você também não precisa esperar — comece agora!",
+    "Clientes bem atendidos voltam e indicam outros. Faça a diferença!",
+    "Sua comissão cresce com suas vendas. Cada R$ conta!",
+    "Grandes resultados começam com pequenas atitudes consistentes.",
+    "A diferença entre o comum e o extraordinário é um esforço a mais.",
+    "Você não está aqui para passar o tempo — está aqui para fazer história.",
+    "Cada ligação é uma oportunidade que só existe uma vez. Aproveite!",
+    "Quem atende bem hoje constrói a carteira do futuro.",
+    "A persistência é a chave que abre portas que o talento sozinho não abre.",
+    "O cliente não compra produto — compra confiança. Seja digno dela.",
+    "Não espere a motivação chegar. Aja e ela virá junto.",
+    "Um dia produtivo começa com a decisão de torná-lo produtivo.",
+    "Você está mais perto da sua meta do que estava ontem. Continue!",
+    # Crescimento e comissão
+    "Cada venda é um tijolo na construção do seu sucesso financeiro.",
+    "Sua comissão de hoje paga o seu amanhã. Bora!",
+    "Quanto mais você vende, mais sua porcentagem cresce. Estratégia!",
+    "A meta de 10% de comissão está ao seu alcance — siga em frente!",
+    "Pense no quanto você quer ganhar e trabalhe de acordo com isso.",
+    "O esforço de hoje já está sendo contabilizado na sua comissão.",
+    "Cada R$ vendido é um R$ a mais na sua conta. Foco!",
+    "Você tem o poder de controlar quanto vai ganhar esse mês. Use-o!",
+    "Não existe teto para quem atende com qualidade e dedicação.",
+    "A comissão máxima está esperando por quem não desiste no meio do caminho.",
+    "Pequenas vendas constantes constroem grandes comissões mensais.",
+    "O sistema acompanha cada venda sua. Que tal surpreender hoje?",
+    "Quanto mais você atende, mais o sistema trabalha a seu favor.",
+    "Bater a meta não é o fim — é o começo de uma nova jornada.",
+    "Você cresceu junto com o sistema. O sistema cresceu por causa de você.",
+    # Atendimento e relacionamento
+    "Um sorriso no atendimento vale mais do que qualquer script.",
+    "O cliente sente quando você realmente quer ajudá-lo. Seja genuíno!",
+    "Construa relacionamentos, não só transações.",
+    "Um cliente satisfeito não precisa de desconto para voltar.",
+    "Ouça mais, fale menos — e venda muito mais.",
+    "A empatia é a ferramenta mais poderosa de um bom atendente.",
+    "Resolva o problema do cliente antes de pensar na venda.",
+    "Clientes não compram de empresas — compram de pessoas.",
+    "O seu nome está por trás de cada venda. Honre-o.",
+    "Atender bem é respeitar o tempo e a confiança do cliente.",
+    "O pós-venda começa no momento da venda. Cuide desde o início.",
+    "Um cliente que confia em você indica outros sem que você peça.",
+    "Seja a razão pela qual o cliente escolhe a Nascimento Tech.",
+    "A consistência no atendimento cria uma base sólida de clientes fiéis.",
+    "Trate cada cliente como o mais importante — porque para ele, você é.",
+    # Tecnologia e inovação
+    "O sistema que você usa é tão poderoso quanto quem o opera. Seja o melhor!",
+    "Tecnologia e dedicação juntos: essa é a fórmula do nosso sucesso.",
+    "Cada recurso do sistema foi pensado para facilitar o seu trabalho.",
+    "Use todas as ferramentas disponíveis — elas existem para você brilhar.",
+    "Dados + atitude = resultado. Você tem os dois aqui.",
+    "O sistema registra cada conquista sua. Que conquista vai ter hoje?",
+    "Conectado, organizado e focado — assim é o atendente de alta performance.",
+    "A tecnologia tira o trabalho braçal. Sobra mais tempo para você encantar.",
+    "Cada venda registrada aqui é uma prova do seu trabalho. Orgulhe-se!",
+    "O futuro do atendimento é digital. Você já está nele.",
+    # Equipe e crescimento coletivo
+    "Crescer junto é mais poderoso do que crescer sozinho.",
+    "Quando você bate sua meta, inspira toda a equipe a bater a dela.",
+    "Seu sucesso individual fortalece o time inteiro.",
+    "Seja o atendente que os outros querem ser.",
+    "A energia que você traz para o trabalho é contagiante. Use isso a seu favor.",
+    "Equipes de alta performance são feitas de indivíduos comprometidos como você.",
+    "O seu crescimento aqui é parte do crescimento de todos.",
+    "Compartilhe o que funciona — equipes que aprendem juntas vencem juntas.",
+    "Cada um de nós tem um papel. O seu é fundamental.",
+    "O que você constrói hoje, a equipe colhe amanhã.",
+    # Resiliência e superação
+    "Um 'não' hoje pode ser o 'sim' de amanhã. Não desanime!",
+    "Dias difíceis não duram, mas pessoas determinadas sim.",
+    "O cansaço de hoje é o combustível do orgulho de amanhã.",
+    "Tropeçar faz parte — levantar é o que define o campeão.",
+    "Cada objeção do cliente é uma chance de mostrar seu valor.",
+    "Não existe fracasso, apenas aprendizado que ainda não virou resultado.",
+    "O mais difícil não é começar — é continuar quando fica difícil. Continue!",
+    "Grandes profissionais são forjados nos dias mais desafiadores.",
+    "O desconforto de hoje é a zona de conforto de amanhã.",
+    "Quando a vontade supera o obstáculo, o obstáculo some.",
+    "Resista à tentação de desistir — o resultado está mais perto do que parece.",
+    "Cada desafio superado te deixa mais preparado para o próximo.",
+    "A sua história de sucesso está sendo escrita agora, neste momento.",
+    "Não compare seu começo com o meio da jornada de outro.",
+    "Seja paciente com o processo e implacável com o esforço.",
+    # Propósito e missão
+    "Você não está só vendendo — está transformando a vida de cada cliente.",
+    "Conectar pessoas a soluções é uma missão nobre. Seja orgulhoso disso.",
+    "Por trás de cada venda há uma família que vai sorrir. Pense nisso.",
+    "O trabalho com propósito nunca parece trabalho.",
+    "Você é a ponte entre o problema do cliente e a solução que ele precisa.",
+    "Cada cliente bem atendido é uma contribuição real para a sociedade.",
+    "Faça seu trabalho de um jeito que valha a pena ser lembrado.",
+    "A excelência não é um destino — é um hábito que você constrói dia a dia.",
+    "Trabalhar com propósito é a forma mais eficiente de crescer.",
+    "Quando você acredita no que vende, o cliente também acredita.",
+    # Manhã / início de turno
+    "Bom dia! O dia começa aqui — e pode ser incrível. Depende só de você.",
+    "A primeira venda do dia é sempre a mais especial. Vai em busca dela!",
+    "Comece o dia com intenção e termine com resultado.",
+    "Hoje é mais uma chance de superar quem você foi ontem.",
+    "Abriu o painel, já ganhou — agora é só converter o potencial em resultado.",
+    "O dia ainda está em branco. Você escreve a história.",
+    "Cada manhã é um reset. Use esse novo começo com inteligência.",
+    "A melhor hora de plantar era ontem. A segunda melhor hora é agora.",
+    "Acorde, organize, atenda, venda. Simples assim.",
+    "Novos clientes estão esperando por alguém como você. Vai lá!",
+    # Tarde / meio de turno
+    "Já fez boas vendas? Ótimo — mas o dia ainda não acabou!",
+    "Mantenha o ritmo. Os melhores resultados chegam para quem não para.",
+    "Se ainda não bateu a meta, o turno ainda não acabou. Continue!",
+    "A energia do meio do turno é o que separa os bons dos grandes.",
+    "Não olhe para o relógio — olhe para a próxima oportunidade.",
+    "Cada hora do seu turno tem valor. Não desperdice nenhuma.",
+    "O melhor atendimento do dia pode ser o próximo. Esteja pronto.",
+    "Você ainda tem tempo para virar o jogo. Use-o!",
+    "Consistência no meio do turno é o que gera grandes resultados no fim do mês.",
+    "Respire fundo, foque e vai. Você consegue!",
+    # Fim de turno / motivação final
+    "O esforço de hoje já está gerando frutos que você vai colher em breve.",
+    "Encerre o turno com a certeza de que deu o seu melhor.",
+    "Cada dia bem trabalhado é um depósito na conta do seu sucesso.",
+    "Fechar o dia com resultado é a melhor sensação. Corra atrás!",
+    "O que você fez hoje ficou registrado. Amanhã, supere!",
+    # Frases curtas e diretas
+    "Vá em frente. O sucesso não espera.",
+    "Foco. Força. Resultado.",
+    "Atenda. Encante. Fidelize.",
+    "Um cliente de cada vez. Com atenção total.",
+    "Hoje é o dia. Você é a pessoa. O momento é agora.",
+    "Meta. Foco. Ação.",
+    "Cada 'oi' pode virar uma venda. Atenda com excelência.",
+    "Aqui não há limite — só o que você impõe a si mesmo.",
+    "Você foi feito para isso. Vá fundo.",
+    "A comissão não vem sem o esforço. O esforço não fica sem recompensa.",
+    "Bora! A meta não vai bater sozinha.",
+    "Foco no cliente. Resultado no bolso.",
+    "Mais um atendimento. Mais um passo.",
+    "Hoje é diferente porque você decidiu que seria.",
+    "Não existe 'mais tarde' em vendas. Existe agora.",
+    # Frases sobre aprendizado
+    "Cada cliente ensina algo novo. Aprenda com todos.",
+    "Os melhores vendedores são os melhores ouvintes.",
+    "Estude o cliente antes de apresentar a solução.",
+    "Quem aprende rápido, cresce rápido. Esteja sempre aberto.",
+    "O mercado muda. Quem se adapta, prospera.",
+    "Feedback do cliente é ouro. Use-o para melhorar.",
+    "Observe os melhores e adote o que funciona. Sem orgulho.",
+    "Perguntas certas abrem mais portas do que argumentos perfeitos.",
+    "Conhecimento do produto + empatia = venda garantida.",
+    "Quanto mais você aprende, mais confiante você atende.",
+    # Inspiração financeira
+    "Seus sonhos têm um preço — e suas vendas pagam por eles.",
+    "Cada venda te aproxima de um objetivo pessoal. Lembre-se dele!",
+    "Trabalhe hoje pelo estilo de vida que você quer ter amanhã.",
+    "O dinheiro da comissão representa tempo, esforço e dedicação. Valorize!",
+    "Pense na sua meta financeira e deixe ela te guiar durante o turno.",
+    "Grandes comissões não caem do céu — são construídas venda a venda.",
+    "O que você faz hoje define o extrato bancário do próximo mês.",
+    "Invista no seu resultado — ele investe de volta em você.",
+    "A independência financeira começa com atitudes consistentes no dia a dia.",
+    "Você merece o sucesso que está construindo. Não pare agora.",
+    # Frases motivacionais clássicas adaptadas
+    "A única maneira de fazer um grande trabalho é amar o que você faz.",
+    "O caminho para o sucesso está sempre em construção.",
+    "Não desista. O começo é sempre o mais difícil.",
+    "Acredite que você pode e já está na metade do caminho.",
+    "O sucesso é a soma de pequenos esforços repetidos dia após dia.",
+    "A excelência nunca é um acidente — é sempre resultado de intenção.",
+    "Grandes conquistas exigem grande comprometimento.",
+    "Você não precisa ser perfeito — precisa ser consistente.",
+    "Cada passo conta, mesmo quando o destino parece longe.",
+    "Inspire-se, foque-se, aja. Sempre nessa ordem.",
+    # Sobre o negócio Nascimento Tech
+    "Você representa uma empresa que acredita no seu potencial. Honre isso.",
+    "A Nascimento Tech cresce quando cada atendente dá o seu melhor.",
+    "O nome da empresa está em cada atendimento seu. Deixe-o brilhar.",
+    "Clientes satisfeitos são o maior patrimônio que construímos juntos.",
+    "Cada venda fortalece o time, a empresa e o seu futuro aqui.",
+    "Somos uma equipe — e você é uma peça essencial dela.",
+    "A reputação da empresa é construída atendimento a atendimento.",
+    "O crescimento coletivo começa com a excelência individual de cada um.",
+    "Você faz parte de algo que está crescendo. Cresça junto!",
+    "Aqui, o seu esforço é reconhecido e recompensado. Vale a pena!",
+    # Mindset vencedor
+    "Campeões não nascem prontos — são construídos no dia a dia.",
+    "Pense grande, aja agora, ajuste no caminho.",
+    "O limite está na sua mente. Quebre-o todos os dias.",
+    "Alta performance não é dom — é disciplina aplicada com consistência.",
+    "Se você quer resultados diferentes, comece com atitudes diferentes.",
+    "Não espere condições perfeitas. Aja nas condições que você tem.",
+    "O sucesso ama quem se prepara e respeita quem persiste.",
+    "Você é mais forte do que qualquer obstáculo que aparecer hoje.",
+    "Cada dia é uma nova oportunidade de ser o melhor versão de si mesmo.",
+    "Os resultados de amanhã são construídos pelas escolhas de hoje.",
+    "A vitória tem gosto melhor quando você sabe o quanto trabalhou por ela.",
+    "Quem planta com dedicação colhe com abundância.",
+    "Seu próximo cliente pode ser o início de uma virada no seu mês.",
+    "O esforço invisível de hoje será o resultado visível de amanhã.",
+    "Cada 'não' que você supera te deixa mais preparado para o próximo 'sim'.",
+    "Trabalhe enquanto outros dormem, atenda enquanto outros reclamam.",
+    "A motivação te faz começar — o hábito te faz continuar.",
+    "Você está exatamente onde precisa estar para crescer. Aproveite!",
+    "Cada notificação de venda no sistema é prova do seu esforço valendo.",
+    "Não meça o dia pelo cansaço — meça pelo quanto você entregou.",
+]
+
+
+def progressive_rate(month_total):
+    """Comissão progressiva de 5% a 10% com base no total vendido no mês."""
+    ratio = min(float(month_total) / COMMISSION_TARGET, 1.0)
+    return round(COMMISSION_MIN + ratio * (COMMISSION_MAX - COMMISSION_MIN), 2)
+
+
+def get_month_total(user_id):
+    """Total vendido pelo atendente no mês corrente."""
+    today = today_br()
+    month_start = datetime(today.year, today.month, 1)
+    month_end   = datetime(today.year, today.month,
+                           cal.monthrange(today.year, today.month)[1]) + timedelta(days=1)
+    total = db.session.query(db.func.sum(Sale.amount)).filter(
+        Sale.attendant_id == user_id,
+        Sale.created_at  >= month_start,
+        Sale.created_at  <  month_end,
+    ).scalar()
+    return float(total or 0.0)
+
+
+def get_commission_rate(month_total=None) -> float:
+    """Retorna a taxa de comissão.
+
+    Fora do horário comercial → 20% (hora extra).
+    Dentro do horário       → progressiva 5%–10%.
+    """
     hour = now_br().hour
-    return 5.0 if 8 <= hour < _shift_end() else 20.0
+    if not (8 <= hour < _shift_end()):
+        return 20.0  # hora extra
+    if month_total is None:
+        month_total = get_month_total(current_user.id)
+    return progressive_rate(month_total)
 
 
 def is_overtime_now():
@@ -94,7 +347,7 @@ def dashboard():
     ).first()
 
     overtime = is_overtime_now()
-    commission_rate = 20.0 if overtime else 5.0
+    commission_rate = 20.0 if overtime else None  # will be computed after month_total
 
     active_break = attendance.active_break if attendance else None
     can_request_overtime = can_request_overtime_now()
@@ -175,6 +428,14 @@ def dashboard():
     month_total      = sum(s.amount for s in month_sales)
     month_commission = sum(s.commission_amount for s in month_sales)
 
+    # Taxa progressiva atual e progresso para próxima faixa
+    current_rate     = get_commission_rate(month_total)
+    commission_progress = min(int(month_total / COMMISSION_TARGET * 100), 100)
+
+    # ── Mensagem motivacional aleatória ──────────────────────────────────────
+    import random
+    motivational_msg = random.choice(_MOTIVATIONAL)
+
     # ── Resumo salarial do mês ────────────────────────────────────────────────
     salary_summary = current_user.monthly_salary_summary(today.year, today.month)
 
@@ -212,6 +473,10 @@ def dashboard():
         today_net_mins=today_net_mins,
         month_total=month_total,
         month_commission=month_commission,
+        current_rate=current_rate,
+        commission_progress=commission_progress,
+        commission_target=COMMISSION_TARGET,
+        motivational_msg=motivational_msg,
     )
 
 
@@ -602,7 +867,7 @@ def new_client():
                 adjustment = float(request.form.get('adjustment', 0) or 0)
                 amount = round(amount + adjustment, 2)
                 if amount > 0:
-                    commission_rate = get_commission_rate()
+                    commission_rate = get_commission_rate(get_month_total(current_user.id))
                     commission_amount = round(amount * commission_rate / 100, 2)
 
                     comprovante_filename = None
@@ -721,7 +986,7 @@ def new_sale():
         screens    = int(request.form.get('screens', 1) or 1)
         adjustment = float(request.form.get('adjustment', 0) or 0)
         amount = round(amount + adjustment, 2)  # valor final cobrado
-        commission_rate = get_commission_rate()
+        commission_rate = get_commission_rate(get_month_total(current_user.id))
         commission_amount = round(amount * (commission_rate / 100), 2)
 
         # Comprovante opcional

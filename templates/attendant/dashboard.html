@@ -3,6 +3,13 @@
 {% block page_title %}Olá, {{ current_user.name.split()[0] }}!{% endblock %}
 {% block content %}
 
+<!-- Mensagem motivacional -->
+<div class="alert mb-3 d-flex align-items-center gap-2"
+     style="background:rgba(124,58,237,.1);border:1px solid rgba(124,58,237,.25);border-radius:10px;font-size:.88rem;">
+  <i class="bi bi-stars" style="color:#a78bfa;font-size:1.1rem;flex-shrink:0;"></i>
+  <span style="color:var(--text);">{{ motivational_msg }}</span>
+</div>
+
 <!-- Status header -->
 <div class="d-flex justify-content-between align-items-center mb-4">
   <small style="color:var(--text-muted);">{{ now.strftime('%d/%m/%Y') }}</small>
@@ -12,7 +19,7 @@
     </span>
   {% else %}
     <span class="badge px-3 py-2" style="background:rgba(16,185,129,.2);color:#6ee7b7;font-size:.8rem;">
-      <i class="bi bi-sun-fill me-1"></i> Horário Normal (5%)
+      <i class="bi bi-sun-fill me-1"></i> Horário Normal ({{ current_rate }}%)
     </span>
   {% endif %}
 </div>
@@ -206,7 +213,7 @@
 <!-- ── COMISSÃO DO MÊS ── -->
 <div class="card mb-4" style="border:1px solid rgba(16,185,129,.3);background:rgba(16,185,129,.06);">
   <div class="card-body py-3">
-    <div class="row g-0 align-items-center">
+    <div class="row g-0 align-items-center mb-2">
       <div class="col">
         <p class="mb-1" style="font-size:.7rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;">
           <i class="bi bi-percent me-1" style="color:#6ee7b7;"></i> Comissão acumulada este mês
@@ -223,6 +230,37 @@
         <div style="font-size:.75rem;color:var(--text-muted);">R$ {{ "%.2f"|format(today_total) }} vendido</div>
       </div>
     </div>
+
+    {# ── Barra de progressão de comissão ── #}
+    {% if not is_overtime %}
+    <div style="border-top:1px solid rgba(16,185,129,.2);padding-top:.75rem;">
+      <div class="d-flex justify-content-between align-items-center mb-1">
+        <span style="font-size:.72rem;color:var(--text-muted);">
+          <i class="bi bi-graph-up-arrow me-1" style="color:#6ee7b7;"></i>
+          Comissão atual:
+          <strong style="color:#6ee7b7;">{{ current_rate }}%</strong>
+          {% if current_rate < 10 %}
+            → meta 10% em R$ {{ "%.0f"|format(commission_target) }}
+          {% else %}
+            <span style="color:#fcd34d;"> — Meta atingida! 🏆</span>
+          {% endif %}
+        </span>
+        <span style="font-size:.72rem;color:var(--text-muted);">{{ commission_progress }}%</span>
+      </div>
+      <div style="background:rgba(255,255,255,.06);border-radius:6px;height:8px;overflow:hidden;">
+        <div style="height:100%;border-radius:6px;width:{{ commission_progress }}%;
+                    background:linear-gradient(90deg,#10b981,#6ee7b7);
+                    transition:width .6s ease;"></div>
+      </div>
+      {% if commission_progress < 100 %}
+      <div style="font-size:.7rem;color:var(--text-muted);margin-top:.3rem;">
+        {% set falta = commission_target - month_total %}
+        Faltam <strong style="color:#6ee7b7;">R$ {{ "%.2f"|format(falta if falta > 0 else 0) }}</strong>
+        para atingir a comissão máxima de 10%
+      </div>
+      {% endif %}
+    </div>
+    {% endif %}
   </div>
 </div>
 
