@@ -85,35 +85,36 @@ def create_app():
 
 
 def _upgrade_db():
-    """Adiciona colunas novas sem quebrar banco existente."""
+    """Adiciona colunas novas sem quebrar banco existente (compatível com PostgreSQL)."""
     new_cols = [
-        'ALTER TABLE renewals ADD COLUMN comprovante_filename VARCHAR(255)',
-        'ALTER TABLE messages ADD COLUMN read_at DATETIME',
-        'ALTER TABLE messages ADD COLUMN file_name VARCHAR(255)',
-        'ALTER TABLE messages ADD COLUMN file_type VARCHAR(20)',
-        'ALTER TABLE messages ADD COLUMN original_name VARCHAR(255)',
-        'ALTER TABLE client_contacts ADD COLUMN tag VARCHAR(30)',
-        'ALTER TABLE client_contacts ADD COLUMN event_type VARCHAR(20) DEFAULT "manual"',
-        'ALTER TABLE price_items ADD COLUMN screens INTEGER DEFAULT 1',
-        'ALTER TABLE price_items ADD COLUMN period_label VARCHAR(30)',
-        'ALTER TABLE sales ADD COLUMN screens INTEGER DEFAULT 1',
-        'ALTER TABLE sales ADD COLUMN adjustment REAL DEFAULT 0',
-        'ALTER TABLE users ADD COLUMN monthly_salary REAL DEFAULT 0',
-        'ALTER TABLE users ADD COLUMN work_hours_per_day INTEGER DEFAULT 8',
-        'ALTER TABLE users ADD COLUMN work_days_per_month INTEGER DEFAULT 22',
-        'ALTER TABLE users ADD COLUMN shift_end_hour INTEGER DEFAULT 22',
-        # Novas tabelas criadas via db.create_all() — os ALTER TABLE abaixo são para
-        # colunas adicionadas em tabelas já existentes em bancos antigos
-        'ALTER TABLE absence_records ADD COLUMN notes TEXT',
-        'ALTER TABLE salary_payments ADD COLUMN notes TEXT',
+        ('renewals',       'comprovante_filename', 'VARCHAR(255)'),
+        ('messages',       'read_at',              'TIMESTAMP'),
+        ('messages',       'file_name',            'VARCHAR(255)'),
+        ('messages',       'file_type',            'VARCHAR(20)'),
+        ('messages',       'original_name',        'VARCHAR(255)'),
+        ('client_contacts','tag',                  'VARCHAR(30)'),
+        ('client_contacts','event_type',           "VARCHAR(20) DEFAULT 'manual'"),
+        ('price_items',    'screens',              'INTEGER DEFAULT 1'),
+        ('price_items',    'period_label',         'VARCHAR(30)'),
+        ('sales',          'screens',              'INTEGER DEFAULT 1'),
+        ('sales',          'adjustment',           'REAL DEFAULT 0'),
+        ('users',          'monthly_salary',       'REAL DEFAULT 0'),
+        ('users',          'work_hours_per_day',   'INTEGER DEFAULT 8'),
+        ('users',          'work_days_per_month',  'INTEGER DEFAULT 22'),
+        ('users',          'shift_end_hour',       'INTEGER DEFAULT 22'),
+        ('absence_records','notes',                'TEXT'),
+        ('salary_payments','notes',                'TEXT'),
     ]
-    with db.engine.connect() as conn:
-        for sql in new_cols:
-            try:
-                conn.execute(db.text(sql))
+    for table, column, col_def in new_cols:
+        # Cada ALTER TABLE em sua própria conexão isolada — evita aborto em cascata
+        try:
+            with db.engine.connect() as conn:
+                conn.execute(db.text(
+                    f'ALTER TABLE {table} ADD COLUMN {column} {col_def}'
+                ))
                 conn.commit()
-            except Exception:
-                conn.rollback()
+        except Exception:
+            pass  # Coluna já existe — ignorar
     _seed_default_plans()
 
 
