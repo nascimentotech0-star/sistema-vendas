@@ -14,6 +14,10 @@ def create_app():
     csrf.init_app(app)
     limiter.init_app(app)
 
+    # Railway usa proxy reverso — necessário para HTTPS e CSRF funcionarem
+    from werkzeug.middleware.proxy_fix import ProxyFix
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
+
     login_manager = LoginManager()
     login_manager.init_app(app)
     login_manager.login_view = 'auth.login'
