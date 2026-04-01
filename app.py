@@ -101,7 +101,8 @@ def _upgrade_db():
         ('users',          'monthly_salary',       'REAL DEFAULT 0'),
         ('users',          'work_hours_per_day',   'INTEGER DEFAULT 8'),
         ('users',          'work_days_per_month',  'INTEGER DEFAULT 22'),
-        ('users',          'shift_end_hour',       'INTEGER DEFAULT 22'),
+        ('users',          'shift_end_hour',        'INTEGER DEFAULT 22'),
+        ('users',          'monthly_sales_target',  'INTEGER DEFAULT 700'),
         ('absence_records','notes',                'TEXT'),
         ('salary_payments','notes',                'TEXT'),
     ]

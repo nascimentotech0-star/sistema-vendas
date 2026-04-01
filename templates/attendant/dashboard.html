@@ -231,34 +231,42 @@
       </div>
     </div>
 
-    {# ── Barra de progressão de comissão ── #}
+    {# ── Barra de progressão de comissão progressiva ── #}
     {% if not is_overtime %}
     <div style="border-top:1px solid rgba(16,185,129,.2);padding-top:.75rem;">
       <div class="d-flex justify-content-between align-items-center mb-1">
         <span style="font-size:.72rem;color:var(--text-muted);">
           <i class="bi bi-graph-up-arrow me-1" style="color:#6ee7b7;"></i>
-          Comissão atual:
+          Próxima venda:
           <strong style="color:#6ee7b7;">{{ current_rate }}%</strong>
-          {% if current_rate < 10 %}
-            → meta 10% em R$ {{ "%.0f"|format(commission_target) }}
-          {% else %}
-            <span style="color:#fcd34d;"> — Meta atingida! 🏆</span>
+          &nbsp;·&nbsp;
+          <span style="color:var(--text-muted);">{{ month_sales_count }} de {{ sales_target }} vendas</span>
+          {% if current_rate >= 10 %}
+            &nbsp;<span style="color:#fcd34d;font-weight:600;">— Meta batida! 🏆</span>
           {% endif %}
         </span>
-        <span style="font-size:.72rem;color:var(--text-muted);">{{ commission_progress }}%</span>
+        <span style="font-size:.72rem;font-weight:600;color:#6ee7b7;">{{ commission_progress }}%</span>
       </div>
-      <div style="background:rgba(255,255,255,.06);border-radius:6px;height:8px;overflow:hidden;">
+      {# Barra de gradiente que vai do verde claro ao ouro ao bater a meta #}
+      <div style="background:rgba(255,255,255,.06);border-radius:6px;height:10px;overflow:hidden;position:relative;">
         <div style="height:100%;border-radius:6px;width:{{ commission_progress }}%;
-                    background:linear-gradient(90deg,#10b981,#6ee7b7);
-                    transition:width .6s ease;"></div>
+                    background:linear-gradient(90deg,
+                      #10b981 0%,
+                      #6ee7b7 {% if commission_progress > 60 %}60%{% else %}{{ commission_progress }}%{% endif %},
+                      {% if commission_progress >= 100 %}#fcd34d 100%{% else %}#6ee7b7 100%{% endif %});
+                    transition:width .8s ease;box-shadow:0 0 8px rgba(16,185,129,.4);"></div>
       </div>
-      {% if commission_progress < 100 %}
-      <div style="font-size:.7rem;color:var(--text-muted);margin-top:.3rem;">
-        {% set falta = commission_target - month_total %}
-        Faltam <strong style="color:#6ee7b7;">R$ {{ "%.2f"|format(falta if falta > 0 else 0) }}</strong>
-        para atingir a comissão máxima de 10%
+      <div class="d-flex justify-content-between mt-1">
+        <span style="font-size:.68rem;color:var(--text-muted);">5%</span>
+        <span style="font-size:.68rem;color:var(--text-muted);">
+          {% if sales_remaining > 0 %}
+            Faltam <strong style="color:#6ee7b7;">{{ sales_remaining }}</strong> venda{{ 's' if sales_remaining != 1 }} para 10%
+          {% else %}
+            Comissão máxima atingida!
+          {% endif %}
+        </span>
+        <span style="font-size:.68rem;color:var(--text-muted);">10%</span>
       </div>
-      {% endif %}
     </div>
     {% endif %}
   </div>

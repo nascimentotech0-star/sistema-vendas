@@ -19,7 +19,8 @@ class User(db.Model, UserMixin):
     monthly_salary     = db.Column(db.Float,   nullable=True, default=0.0)  # salário mensal em R$
     work_hours_per_day = db.Column(db.Integer, nullable=True, default=8)   # carga horária diária esperada
     work_days_per_month = db.Column(db.Integer, nullable=True, default=26) # dias trabalhados por mês
-    shift_end_hour      = db.Column(db.Integer, nullable=True, default=22)  # hora de término do turno (8–22 padrão, 14 para turno manhã)
+    shift_end_hour      = db.Column(db.Integer, nullable=True, default=22)   # hora de término do turno (8–22 padrão, 14 para turno manhã)
+    monthly_sales_target = db.Column(db.Integer, nullable=True, default=700) # meta mensal de vendas para comissão máxima (10%)
     created_at = db.Column(db.DateTime, default=now_br)
 
     attendances = db.relationship('Attendance', backref='user', lazy=True, foreign_keys='Attendance.user_id')

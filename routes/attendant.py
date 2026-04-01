@@ -50,9 +50,8 @@ def _shift_end():
         return 22
 
 
-COMMISSION_TARGET = 2000.0   # R$ meta mensal para atingir 10%
-COMMISSION_MIN    = 5.0      # % mínima (início do mês)
-COMMISSION_MAX    = 10.0     # % máxima (quando bate a meta)
+COMMISSION_MIN = 5.0   # % base (zero vendas no mês)
+COMMISSION_MAX = 10.0  # % máxima (ao bater a meta de vendas)
 
 _MOTIVATIONAL = [
     # Foco e determinação
@@ -274,38 +273,53 @@ _MOTIVATIONAL = [
 ]
 
 
-def progressive_rate(month_total):
-    """Comissão progressiva de 5% a 10% com base no total vendido no mês."""
-    ratio = min(float(month_total) / COMMISSION_TARGET, 1.0)
+def progressive_rate(sales_count, target):
+    """Comissão verdadeiramente progressiva: cada venda avança a taxa de forma suave.
+
+    - sales_count : vendas já feitas este mês ANTES da venda atual
+    - target      : meta mensal de vendas configurada para o atendente
+
+    Taxa cresce linearmente: venda 0 → 5.00%, venda target → 10.00%.
+    Exemplo com meta 700:
+      venda #1   → 5.00%   (0 anteriores)
+      venda #2   → 5.01%   (1 anterior  → 5 + 1/700*5 = 5.007 ≈ 5.01)
+      venda #350 → 7.49%
+      venda #700 → 9.99%
+      venda #701+→ 10.00%
+    """
+    if target <= 0:
+        return COMMISSION_MIN
+    ratio = min(sales_count / float(target), 1.0)
     return round(COMMISSION_MIN + ratio * (COMMISSION_MAX - COMMISSION_MIN), 2)
 
 
-def get_month_total(user_id):
-    """Total vendido pelo atendente no mês corrente."""
+def get_month_sales_count(user_id):
+    """Número de vendas realizadas pelo atendente no mês corrente."""
     today = today_br()
     month_start = datetime(today.year, today.month, 1)
     month_end   = datetime(today.year, today.month,
                            cal.monthrange(today.year, today.month)[1]) + timedelta(days=1)
-    total = db.session.query(db.func.sum(Sale.amount)).filter(
+    return Sale.query.filter(
         Sale.attendant_id == user_id,
         Sale.created_at  >= month_start,
         Sale.created_at  <  month_end,
-    ).scalar()
-    return float(total or 0.0)
+    ).count()
 
 
-def get_commission_rate(month_total=None) -> float:
-    """Retorna a taxa de comissão.
+def get_commission_rate(sales_count=None):
+    """Retorna a taxa de comissão para a PRÓXIMA venda a ser registrada.
 
     Fora do horário comercial → 20% (hora extra).
-    Dentro do horário       → progressiva 5%–10%.
+    Dentro do horário        → progressiva 5%–10% baseada em qtd de vendas no mês.
+
+    Parâmetro sales_count opcional: passa o count já calculado para evitar re-consulta.
     """
-    hour = now_br().hour
-    if not (8 <= hour < _shift_end()):
-        return 20.0  # hora extra
-    if month_total is None:
-        month_total = get_month_total(current_user.id)
-    return progressive_rate(month_total)
+    if not (8 <= now_br().hour < _shift_end()):
+        return 20.0
+    if sales_count is None:
+        sales_count = get_month_sales_count(current_user.id)
+    target = current_user.monthly_sales_target or 700
+    return progressive_rate(sales_count, target)
 
 
 def is_overtime_now():
@@ -428,9 +442,12 @@ def dashboard():
     month_total      = sum(s.amount for s in month_sales)
     month_commission = sum(s.commission_amount for s in month_sales)
 
-    # Taxa progressiva atual e progresso para próxima faixa
-    current_rate     = get_commission_rate(month_total)
-    commission_progress = min(int(month_total / COMMISSION_TARGET * 100), 100)
+    # Comissão progressiva: baseada em número de vendas (não em R$)
+    sales_target        = current_user.monthly_sales_target or 700
+    month_sales_count   = len(month_sales)   # vendas já feitas no mês
+    current_rate        = get_commission_rate(month_sales_count)
+    commission_progress = min(int(month_sales_count / sales_target * 100), 100)
+    sales_remaining     = max(sales_target - month_sales_count, 0)
 
     # ── Mensagem motivacional aleatória ──────────────────────────────────────
     import random
@@ -475,7 +492,9 @@ def dashboard():
         month_commission=month_commission,
         current_rate=current_rate,
         commission_progress=commission_progress,
-        commission_target=COMMISSION_TARGET,
+        month_sales_count=month_sales_count,
+        sales_target=sales_target,
+        sales_remaining=sales_remaining,
         motivational_msg=motivational_msg,
     )
 
@@ -867,7 +886,7 @@ def new_client():
                 adjustment = float(request.form.get('adjustment', 0) or 0)
                 amount = round(amount + adjustment, 2)
                 if amount > 0:
-                    commission_rate = get_commission_rate(get_month_total(current_user.id))
+                    commission_rate = get_commission_rate(get_month_sales_count(current_user.id))
                     commission_amount = round(amount * commission_rate / 100, 2)
 
                     comprovante_filename = None
@@ -986,7 +1005,7 @@ def new_sale():
         screens    = int(request.form.get('screens', 1) or 1)
         adjustment = float(request.form.get('adjustment', 0) or 0)
         amount = round(amount + adjustment, 2)  # valor final cobrado
-        commission_rate = get_commission_rate(get_month_total(current_user.id))
+        commission_rate = get_commission_rate(get_month_sales_count(current_user.id))
         commission_amount = round(amount * (commission_rate / 100), 2)
 
         # Comprovante opcional

@@ -236,13 +236,15 @@ def new_attendant():
         role = request.form.get('role', 'attendant')
         if role not in ('attendant', 'financial', 'gerente'):
             role = 'attendant'
-        salary    = float(request.form.get('monthly_salary', 0) or 0)
-        hours     = int(request.form.get('work_hours_per_day', 8) or 8)
-        days      = int(request.form.get('work_days_per_month', 26) or 26)
-        shift_end = int(request.form.get('shift_end_hour', 22) or 22)
+        salary       = float(request.form.get('monthly_salary', 0) or 0)
+        hours        = int(request.form.get('work_hours_per_day', 8) or 8)
+        days         = int(request.form.get('work_days_per_month', 26) or 26)
+        shift_end    = int(request.form.get('shift_end_hour', 22) or 22)
+        sales_target = int(request.form.get('monthly_sales_target', 700) or 700)
         user = User(username=username, name=name, email=email, role=role,
                     monthly_salary=salary, work_hours_per_day=hours,
-                    work_days_per_month=days, shift_end_hour=shift_end)
+                    work_days_per_month=days, shift_end_hour=shift_end,
+                    monthly_sales_target=sales_target)
         user.set_password(password)
         db.session.add(user)
         db.session.commit()
@@ -264,10 +266,11 @@ def edit_attendant(id):
         new_role = request.form.get('role', attendant.role)
         if new_role in ('attendant', 'financial', 'gerente'):
             attendant.role = new_role
-        attendant.monthly_salary     = float(request.form.get('monthly_salary', 0) or 0)
-        attendant.work_hours_per_day  = int(request.form.get('work_hours_per_day', 8) or 8)
-        attendant.work_days_per_month = int(request.form.get('work_days_per_month', 26) or 26)
-        attendant.shift_end_hour      = int(request.form.get('shift_end_hour', 22) or 22)
+        attendant.monthly_salary       = float(request.form.get('monthly_salary', 0) or 0)
+        attendant.work_hours_per_day   = int(request.form.get('work_hours_per_day', 8) or 8)
+        attendant.work_days_per_month  = int(request.form.get('work_days_per_month', 26) or 26)
+        attendant.shift_end_hour       = int(request.form.get('shift_end_hour', 22) or 22)
+        attendant.monthly_sales_target = int(request.form.get('monthly_sales_target', 700) or 700)
         new_password = request.form.get('password', '').strip()
         if new_password:
             attendant.set_password(new_password)
