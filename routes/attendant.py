@@ -591,17 +591,20 @@ def new_client():
         payment_method = request.form.get('payment_method', '')
         description = request.form.get('description', '').strip() or None
 
-        if amount_str and payment_method:
+        if amount_str:
+            if not payment_method:
+                db.session.commit()
+                flash(f'Cliente {name} cadastrado! Mas selecione a forma de pagamento para registrar a venda.', 'warning')
+                return redirect(url_for('attendant.dashboard'))
             try:
                 amount = float(amount_str)
                 screens    = int(request.form.get('screens', 1) or 1)
                 adjustment = float(request.form.get('adjustment', 0) or 0)
-                amount = round(amount + adjustment, 2)  # valor final cobrado
+                amount = round(amount + adjustment, 2)
                 if amount > 0:
                     commission_rate = get_commission_rate()
                     commission_amount = round(amount * commission_rate / 100, 2)
 
-                    # Comprovante opcional
                     comprovante_filename = None
                     file = request.files.get('comprovante')
                     if file and file.filename and allowed_file(file.filename):

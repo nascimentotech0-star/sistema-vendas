@@ -77,7 +77,9 @@ def dashboard():
 
     pending_overtime = OvertimeRequest.query.filter_by(status='pending').count()
 
-    total_attendants = User.query.filter_by(role='attendant', is_active=True).count()
+    total_attendants = User.query.filter(
+        User.role.in_(['attendant', 'gerente']), User.is_active == True
+    ).count()
 
     recent_sales = Sale.query.order_by(Sale.created_at.desc()).limit(10).all()
 

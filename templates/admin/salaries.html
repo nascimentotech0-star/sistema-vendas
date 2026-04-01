@@ -128,6 +128,7 @@
                 {% endif %}
                 <td>
                   <div class="d-flex gap-1">
+                    {% if current_user.is_admin() %}
                     <button class="btn btn-sm py-0 px-2"
                             style="background:rgba(124,58,237,.2);color:#a78bfa;border:1px solid rgba(124,58,237,.3);font-size:.75rem;"
                             onclick="openEdit({{ u.id }}, '{{ u.name|e }}', {{ u.monthly_salary or 0 }}, {{ u.work_hours_per_day or 8 }}, {{ u.work_days_per_month or 22 }})">
@@ -144,6 +145,7 @@
                             onclick="openAbsModal({{ u.id }}, '{{ u.name|e }}')">
                       <i class="bi bi-person-x"></i>
                     </button>
+                    {% endif %}
                     {% endif %}
                   </div>
                 </td>

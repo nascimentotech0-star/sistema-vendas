@@ -96,7 +96,7 @@
       </div>
 
       <!-- Registrar pagamento -->
-      {% if row.balance > 0 %}
+      {% if row.balance > 0 and current_user.is_admin() %}
       <div class="col-12 col-md-5">
         <p class="small fw-semibold mb-2" style="color:var(--text-muted);">Registrar pagamento</p>
         <form method="POST" action="{{ url_for('admin.pay_commission') }}">
