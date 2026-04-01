@@ -42,19 +42,29 @@ def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 
+def _shift_end():
+    """Retorna a hora de término do turno do usuário logado (padrão 22)."""
+    try:
+        return current_user.shift_end_hour or 22
+    except Exception:
+        return 22
+
+
 def get_commission_rate():
     hour = now_br().hour
-    return 5.0 if 8 <= hour < 22 else 20.0
+    return 5.0 if 8 <= hour < _shift_end() else 20.0
 
 
 def is_overtime_now():
     hour = now_br().hour
-    return not (8 <= hour < 22)
+    return not (8 <= hour < _shift_end())
 
 
 def can_request_overtime_now():
-    """Solicitação permitida apenas a partir das 21h."""
-    return now_br().hour >= 21
+    """Solicitação permitida 1h antes do fim do turno."""
+    hour = now_br().hour
+    end  = _shift_end()
+    return hour >= (end - 1)
 
 
 # ── Dashboard ──────────────────────────────────────────────────────────────────
@@ -153,6 +163,18 @@ def dashboard():
         key=lambda c: c.days_without_contact, reverse=True
     )
 
+    # ── Comissão acumulada no mês ─────────────────────────────────────────────
+    month_start = datetime(today.year, today.month, 1)
+    month_end   = datetime(today.year, today.month,
+                           cal.monthrange(today.year, today.month)[1]) + timedelta(days=1)
+    month_sales = Sale.query.filter(
+        Sale.attendant_id == current_user.id,
+        Sale.created_at >= month_start,
+        Sale.created_at < month_end,
+    ).all()
+    month_total      = sum(s.amount for s in month_sales)
+    month_commission = sum(s.commission_amount for s in month_sales)
+
     # ── Resumo salarial do mês ────────────────────────────────────────────────
     salary_summary = current_user.monthly_salary_summary(today.year, today.month)
 
@@ -188,6 +210,8 @@ def dashboard():
         salary_summary=salary_summary,
         today_deficit_mins=today_deficit_mins,
         today_net_mins=today_net_mins,
+        month_total=month_total,
+        month_commission=month_commission,
     )
 
 
@@ -471,7 +495,8 @@ def end_break():
 @attendant_required
 def request_overtime():
     if not can_request_overtime_now():
-        flash('Solicitação de hora extra só pode ser enviada a partir das 21h.', 'danger')
+        end = _shift_end()
+        flash(f'Solicitação de hora extra só pode ser enviada a partir das {end - 1}h.', 'danger')
         return redirect(url_for('attendant.dashboard'))
     today = today_br()
     day_start = datetime(today.year, today.month, today.day)
@@ -670,7 +695,7 @@ def new_sale():
             OvertimeRequest.status == 'approved'
         ).first()
         if not approved:
-            flash('Fora do horário comercial (08h–22h). Solicite aprovação de hora extra para registrar vendas.', 'warning')
+            flash(f'Fora do horário comercial (08h–{_shift_end():02d}h). Solicite aprovação de hora extra para registrar vendas.', 'warning')
             return redirect(url_for('attendant.dashboard'))
 
     clients_list = Client.query.filter_by(registered_by=current_user.id).order_by(Client.name).all()

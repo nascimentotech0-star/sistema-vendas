@@ -52,6 +52,17 @@
             </div>
           </div>
           <div class="mb-3">
+            <label class="form-label fw-semibold">Turno de trabalho</label>
+            <select name="shift_end_hour" class="form-select">
+              {% set cur_end = attendant.shift_end_hour if attendant and attendant.shift_end_hour else 22 %}
+              <option value="14" {% if cur_end == 14 %}selected{% endif %}>08h – 14h (turno manhã)</option>
+              <option value="18" {% if cur_end == 18 %}selected{% endif %}>08h – 18h (meio período tarde)</option>
+              <option value="22" {% if cur_end == 22 %}selected{% endif %}>08h – 22h (turno completo)</option>
+            </select>
+            <div class="form-text">Define quando começa a hora extra (comissão 20%).</div>
+          </div>
+
+          <div class="mb-3">
             <label class="form-label fw-semibold">Dias trabalhados/mês</label>
             <select name="work_days_per_month" class="form-select">
               {% set cur_days = attendant.work_days_per_month if attendant and attendant.work_days_per_month else 26 %}

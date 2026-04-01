@@ -162,7 +162,7 @@
             </button>
           </form>
         {% else %}
-          <span class="small" style="color:var(--text-muted);"><i class="bi bi-lock-fill me-1"></i> Disponível a partir das 21h</span>
+          <span class="small" style="color:var(--text-muted);"><i class="bi bi-lock-fill me-1"></i> Disponível próximo ao fim do turno</span>
         {% endif %}
       </div>
       {% endif %}
@@ -203,6 +203,29 @@
 </div>
 {% endif %}
 
+<!-- ── COMISSÃO DO MÊS ── -->
+<div class="card mb-4" style="border:1px solid rgba(16,185,129,.3);background:rgba(16,185,129,.06);">
+  <div class="card-body py-3">
+    <div class="row g-0 align-items-center">
+      <div class="col">
+        <p class="mb-1" style="font-size:.7rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;">
+          <i class="bi bi-percent me-1" style="color:#6ee7b7;"></i> Comissão acumulada este mês
+        </p>
+        <h2 class="fw-bold mb-0" style="color:#6ee7b7;">R$ {{ "%.2f"|format(month_commission) }}</h2>
+        <small style="color:var(--text-muted);">
+          sobre R$ {{ "%.2f"|format(month_total) }} em vendas ·
+          <span style="color:#6ee7b7;">{{ today_sales|length }} venda(s) hoje</span>
+        </small>
+      </div>
+      <div class="col-auto text-end">
+        <div style="font-size:.7rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;">Hoje</div>
+        <div style="font-size:1.4rem;font-weight:700;color:#a78bfa;">R$ {{ "%.2f"|format(today_commission) }}</div>
+        <div style="font-size:.75rem;color:var(--text-muted);">R$ {{ "%.2f"|format(today_total) }} vendido</div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- ── STAT CARDS ── -->
 <div class="row g-3 mb-4">
   <div class="col-6 col-lg-3">
@@ -216,7 +239,7 @@
   <div class="col-6 col-lg-3">
     <div class="card stat-card stat-card-green h-100">
       <div class="card-body text-center py-3">
-        <p class="mb-1" style="font-size:.72rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;">Comissão</p>
+        <p class="mb-1" style="font-size:.72rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;">Comissão Hoje</p>
         <h4 class="fw-bold mb-0" style="color:#6ee7b7;">R$ {{ "%.2f"|format(today_commission) }}</h4>
       </div>
     </div>

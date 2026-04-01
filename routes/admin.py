@@ -233,10 +233,13 @@ def new_attendant():
         role = request.form.get('role', 'attendant')
         if role not in ('attendant', 'financial', 'gerente'):
             role = 'attendant'
-        salary = float(request.form.get('monthly_salary', 0) or 0)
-        hours  = int(request.form.get('work_hours_per_day', 8) or 8)
+        salary    = float(request.form.get('monthly_salary', 0) or 0)
+        hours     = int(request.form.get('work_hours_per_day', 8) or 8)
+        days      = int(request.form.get('work_days_per_month', 26) or 26)
+        shift_end = int(request.form.get('shift_end_hour', 22) or 22)
         user = User(username=username, name=name, email=email, role=role,
-                    monthly_salary=salary, work_hours_per_day=hours)
+                    monthly_salary=salary, work_hours_per_day=hours,
+                    work_days_per_month=days, shift_end_hour=shift_end)
         user.set_password(password)
         db.session.add(user)
         db.session.commit()
@@ -260,7 +263,8 @@ def edit_attendant(id):
             attendant.role = new_role
         attendant.monthly_salary     = float(request.form.get('monthly_salary', 0) or 0)
         attendant.work_hours_per_day  = int(request.form.get('work_hours_per_day', 8) or 8)
-        attendant.work_days_per_month = int(request.form.get('work_days_per_month', 22) or 22)
+        attendant.work_days_per_month = int(request.form.get('work_days_per_month', 26) or 26)
+        attendant.shift_end_hour      = int(request.form.get('shift_end_hour', 22) or 22)
         new_password = request.form.get('password', '').strip()
         if new_password:
             attendant.set_password(new_password)
@@ -292,31 +296,62 @@ def delete_attendant(id):
         return redirect(url_for('admin.attendants'))
 
     name = attendant.name
+    from models import (Client, ClientContact, Message,
+                        CommissionPayment, SalaryPayment,
+                        AbsenceRecord, AttendantGoal)
 
-    # Nulifica referências em vendas e renovações (preserva os registros)
-    for s in Sale.query.filter_by(attendant_id=id).all():
-        s.attendant_id = None
-    for r in Renewal.query.filter_by(attendant_id=id).all():
-        r.attendant_id = None
+    # IDs de clientes cadastrados por este atendente
+    client_ids = [c.id for c in Client.query.filter_by(registered_by=id).all()]
 
-    # Nulifica clientes cadastrados por este usuário
-    from models import Client
-    for c in Client.query.filter_by(registered_by=id).all():
-        c.registered_by = None
+    # 1. ClientContacts: pelo atendente OU pelos clientes dele
+    ClientContact.query.filter(
+        db.or_(ClientContact.attendant_id == id,
+               ClientContact.client_id.in_(client_ids))
+    ).delete(synchronize_session=False)
 
-    # Remove registros vinculados ao usuário
-    from models import (AttendanceBreak, CommissionPayment,
-                        SalaryPayment, AbsenceRecord, AttendantGoal, Message)
+    # 2. Renovações: pelo atendente OU pelos clientes dele
+    Renewal.query.filter(
+        db.or_(Renewal.attendant_id == id,
+               Renewal.client_id.in_(client_ids))
+    ).delete(synchronize_session=False)
+
+    # 3. Vendas: pelo atendente OU pelos clientes dele
+    Sale.query.filter(
+        db.or_(Sale.attendant_id == id,
+               Sale.client_id.in_(client_ids) if client_ids else False)
+    ).delete(synchronize_session=False)
+
+    # 4. Clientes cadastrados por ele
+    Client.query.filter_by(registered_by=id).delete(synchronize_session=False)
+
+    # 5. Mensagens do chat (sender ou attendant)
+    Message.query.filter(
+        db.or_(Message.sender_id == id, Message.attendant_id == id)
+    ).delete(synchronize_session=False)
+
+    # 6. Pagamentos onde é o atendente ou quem pagou
+    CommissionPayment.query.filter(
+        db.or_(CommissionPayment.attendant_id == id,
+               CommissionPayment.paid_by == id)
+    ).delete(synchronize_session=False)
+    SalaryPayment.query.filter(
+        db.or_(SalaryPayment.attendant_id == id,
+               SalaryPayment.paid_by == id)
+    ).delete(synchronize_session=False)
+
+    # 7. Ponto (breaks primeiro)
     for att in Attendance.query.filter_by(user_id=id).all():
         for b in att.breaks:
             db.session.delete(b)
         db.session.delete(att)
-    for m in [OvertimeRequest, CommissionPayment, SalaryPayment,
-              AbsenceRecord, AttendantGoal]:
-        for rec in m.query.filter_by(user_id=id).all():
-            db.session.delete(rec)
-    for msg in Message.query.filter_by(sender_id=id).all():
-        db.session.delete(msg)
+
+    # 8. Demais registros do usuário
+    for model in [OvertimeRequest, AbsenceRecord, AttendantGoal]:
+        model.query.filter_by(user_id=id).delete(synchronize_session=False)
+
+    # 9. Faltas criadas por ele (created_by)
+    AbsenceRecord.query.filter_by(created_by=id).update(
+        {'created_by': None}, synchronize_session=False)
 
     db.session.delete(attendant)
     db.session.commit()
