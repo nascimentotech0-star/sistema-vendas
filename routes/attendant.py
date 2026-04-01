@@ -64,11 +64,14 @@ def can_request_overtime_now():
 @attendant_required
 def dashboard():
     today = today_br()
+    day_start = datetime(today.year, today.month, today.day, 0, 0, 0)
+    day_end   = day_start + timedelta(days=1)
     attendance = current_user.active_attendance
 
     today_sales = Sale.query.filter(
         Sale.attendant_id == current_user.id,
-        db.func.date(Sale.created_at) == today
+        Sale.created_at >= day_start,
+        Sale.created_at < day_end,
     ).order_by(Sale.created_at.desc()).all()
 
     today_total = sum(s.amount for s in today_sales)
@@ -76,7 +79,8 @@ def dashboard():
 
     overtime_req = OvertimeRequest.query.filter(
         OvertimeRequest.user_id == current_user.id,
-        db.func.date(OvertimeRequest.requested_at) == today
+        OvertimeRequest.requested_at >= day_start,
+        OvertimeRequest.requested_at < day_end,
     ).first()
 
     overtime = is_overtime_now()
@@ -470,9 +474,12 @@ def request_overtime():
         flash('Solicitação de hora extra só pode ser enviada a partir das 21h.', 'danger')
         return redirect(url_for('attendant.dashboard'))
     today = today_br()
+    day_start = datetime(today.year, today.month, today.day)
+    day_end   = day_start + timedelta(days=1)
     existing = OvertimeRequest.query.filter(
         OvertimeRequest.user_id == current_user.id,
-        db.func.date(OvertimeRequest.requested_at) == today
+        OvertimeRequest.requested_at >= day_start,
+        OvertimeRequest.requested_at < day_end,
     ).first()
     if existing:
         flash('Você já enviou uma solicitação hoje.', 'warning')
@@ -506,10 +513,12 @@ def new_client():
 
     def _chart_data():
         today = today_br()
-        week_start = today - timedelta(days=6)
+        day_start = datetime(today.year, today.month, today.day)
+        day_end   = day_start + timedelta(days=1)
+        week_start_dt = datetime(today.year, today.month, today.day) - timedelta(days=6)
         sales_7d = Sale.query.filter(
             Sale.attendant_id == current_user.id,
-            db.func.date(Sale.created_at) >= week_start
+            Sale.created_at >= week_start_dt,
         ).all()
         day_labels, day_vals = [], []
         for i in range(6, -1, -1):
@@ -518,11 +527,13 @@ def new_client():
             day_vals.append(round(sum(s.amount for s in sales_7d if s.created_at.date() == d), 2))
         clients_today = Client.query.filter(
             Client.registered_by == current_user.id,
-            db.func.date(Client.created_at) == today
+            Client.created_at >= day_start,
+            Client.created_at < day_end,
         ).count()
         sales_today = Sale.query.filter(
             Sale.attendant_id == current_user.id,
-            db.func.date(Sale.created_at) == today
+            Sale.created_at >= day_start,
+            Sale.created_at < day_end,
         ).count()
         return day_labels, day_vals, clients_today, sales_today
 
@@ -651,9 +662,11 @@ def new_sale():
 
     if overtime:
         today = today_br()
+        day_start = datetime(today.year, today.month, today.day)
         approved = OvertimeRequest.query.filter(
             OvertimeRequest.user_id == current_user.id,
-            db.func.date(OvertimeRequest.requested_at) == today,
+            OvertimeRequest.requested_at >= day_start,
+            OvertimeRequest.requested_at < day_start + timedelta(days=1),
             OvertimeRequest.status == 'approved'
         ).first()
         if not approved:
