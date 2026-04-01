@@ -282,6 +282,48 @@ def toggle_attendant(id):
     return redirect(url_for('admin.attendants'))
 
 
+@admin_bp.route('/atendentes/<int:id>/excluir', methods=['POST'])
+@login_required
+@admin_required
+def delete_attendant(id):
+    attendant = User.query.get_or_404(id)
+    if attendant.id == current_user.id:
+        flash('Você não pode excluir sua própria conta.', 'danger')
+        return redirect(url_for('admin.attendants'))
+
+    name = attendant.name
+
+    # Nulifica referências em vendas e renovações (preserva os registros)
+    for s in Sale.query.filter_by(attendant_id=id).all():
+        s.attendant_id = None
+    for r in Renewal.query.filter_by(attendant_id=id).all():
+        r.attendant_id = None
+
+    # Nulifica clientes cadastrados por este usuário
+    from models import Client
+    for c in Client.query.filter_by(registered_by=id).all():
+        c.registered_by = None
+
+    # Remove registros vinculados ao usuário
+    from models import (AttendanceBreak, CommissionPayment,
+                        SalaryPayment, AbsenceRecord, AttendantGoal, Message)
+    for att in Attendance.query.filter_by(user_id=id).all():
+        for b in att.breaks:
+            db.session.delete(b)
+        db.session.delete(att)
+    for m in [OvertimeRequest, CommissionPayment, SalaryPayment,
+              AbsenceRecord, AttendantGoal]:
+        for rec in m.query.filter_by(user_id=id).all():
+            db.session.delete(rec)
+    for msg in Message.query.filter_by(sender_id=id).all():
+        db.session.delete(msg)
+
+    db.session.delete(attendant)
+    db.session.commit()
+    flash(f'Usuário {name} excluído com sucesso.', 'success')
+    return redirect(url_for('admin.attendants'))
+
+
 @admin_bp.route('/atendentes/<int:id>/vendas')
 @login_required
 @manager_or_admin
@@ -508,6 +550,81 @@ def attendance():
         att_date=att_date, attendant_filter=attendant_filter,
         bank_hours=bank_hours, salary_summaries=salary_summaries,
         absent_today=absent_today, absences_today=absences_today)
+
+
+@admin_bp.route('/ponto/manual', methods=['POST'])
+@login_required
+@manager_or_admin
+def attendance_manual():
+    user_id   = request.form.get('user_id', type=int)
+    date_str  = request.form.get('date', '')
+    checkin_s = request.form.get('check_in', '')
+    checkout_s= request.form.get('check_out', '').strip()
+    redirect_date = date_str
+
+    try:
+        att_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+        check_in = datetime.strptime(f"{date_str} {checkin_s}", '%Y-%m-%d %H:%M')
+    except Exception:
+        flash('Data ou horário de entrada inválidos.', 'danger')
+        return redirect(url_for('admin.attendance', date=redirect_date))
+
+    check_out = None
+    if checkout_s:
+        try:
+            check_out = datetime.strptime(f"{date_str} {checkout_s}", '%Y-%m-%d %H:%M')
+        except Exception:
+            flash('Horário de saída inválido.', 'danger')
+            return redirect(url_for('admin.attendance', date=redirect_date))
+
+    rec = Attendance(user_id=user_id, check_in=check_in, check_out=check_out, date=att_date)
+    db.session.add(rec)
+    db.session.commit()
+    flash('Ponto lançado com sucesso.', 'success')
+    return redirect(url_for('admin.attendance', date=redirect_date))
+
+
+@admin_bp.route('/ponto/<int:att_id>/editar', methods=['POST'])
+@login_required
+@manager_or_admin
+def attendance_edit(att_id):
+    rec = Attendance.query.get_or_404(att_id)
+    date_str   = rec.date.strftime('%Y-%m-%d')
+    checkin_s  = request.form.get('check_in', '').strip()
+    checkout_s = request.form.get('check_out', '').strip()
+
+    try:
+        rec.check_in = datetime.strptime(f"{date_str} {checkin_s}", '%Y-%m-%d %H:%M')
+    except Exception:
+        flash('Horário de entrada inválido.', 'danger')
+        return redirect(url_for('admin.attendance', date=date_str))
+
+    if checkout_s:
+        try:
+            rec.check_out = datetime.strptime(f"{date_str} {checkout_s}", '%Y-%m-%d %H:%M')
+        except Exception:
+            flash('Horário de saída inválido.', 'danger')
+            return redirect(url_for('admin.attendance', date=date_str))
+    else:
+        rec.check_out = None
+
+    db.session.commit()
+    flash('Ponto atualizado.', 'success')
+    return redirect(url_for('admin.attendance', date=date_str))
+
+
+@admin_bp.route('/ponto/<int:att_id>/deletar', methods=['POST'])
+@login_required
+@manager_or_admin
+def attendance_delete(att_id):
+    rec = Attendance.query.get_or_404(att_id)
+    date_str = rec.date.strftime('%Y-%m-%d')
+    for b in rec.breaks:
+        db.session.delete(b)
+    db.session.delete(rec)
+    db.session.commit()
+    flash('Registro de ponto removido.', 'success')
+    return redirect(url_for('admin.attendance', date=date_str))
 
 
 # ── Metas mensais ──────────────────────────────────────────────────────────────

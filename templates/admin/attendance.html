@@ -210,6 +210,10 @@
     <i class="bi bi-calendar2-check" style="color:var(--accent);"></i>
     <span class="fw-semibold">Registros — {{ att_date.strftime('%d/%m/%Y') }}</span>
     <span class="badge ms-1" style="background:rgba(255,255,255,.1);color:var(--text-muted);">{{ records|length }}</span>
+    <button class="btn btn-sm ms-auto" onclick="openManualModal()"
+            style="background:rgba(124,58,237,.15);border:1px solid rgba(124,58,237,.3);color:#a78bfa;font-size:.78rem;">
+      <i class="bi bi-plus-circle me-1"></i> Lançar Ponto Manual
+    </button>
   </div>
   <div class="card-body p-0">
     {% if records %}
@@ -225,6 +229,7 @@
             <th>Tempo Pausa</th>
             <th>Excedente</th>
             <th>Status</th>
+            <th></th>
           </tr>
         </thead>
         <tbody>
@@ -273,6 +278,20 @@
                 <span class="badge" style="background:rgba(255,255,255,.08);color:var(--text-muted);">Encerrado</span>
               {% endif %}
             </td>
+            <td class="text-end">
+              <button class="btn btn-sm py-0 px-2 me-1"
+                      style="background:rgba(124,58,237,.15);border:1px solid rgba(124,58,237,.3);color:#a78bfa;font-size:.75rem;"
+                      onclick="openEditModal({{ r.id }}, '{{ r.check_in.strftime('%H:%M') }}', '{{ r.check_out.strftime('%H:%M') if r.check_out else '' }}')">
+                <i class="bi bi-pencil-fill"></i>
+              </button>
+              <form method="POST" action="{{ url_for('admin.attendance_delete', att_id=r.id) }}" class="d-inline"
+                    onsubmit="return confirm('Remover este registro de ponto?')">
+                <button type="submit" class="btn btn-sm py-0 px-2"
+                        style="background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.3);color:#fca5a5;font-size:.75rem;">
+                  <i class="bi bi-trash3-fill"></i>
+                </button>
+              </form>
+            </td>
           </tr>
           <!-- Detalhes das pausas -->
           {% if r.breaks %}
@@ -309,6 +328,90 @@
   </div>
 </div>
 
+<!-- Modal: Lançar Ponto Manual -->
+<div class="modal fade" id="modalManual" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content" style="background:#1a1a35;border:1px solid rgba(124,58,237,.3);">
+      <form method="POST" action="{{ url_for('admin.attendance_manual') }}">
+        <div class="modal-header" style="border-color:rgba(124,58,237,.2);">
+          <h5 class="modal-title" style="font-size:.9rem;color:#a78bfa;">
+            <i class="bi bi-plus-circle-fill me-2"></i>Lançar Ponto Manual
+          </h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label small">Atendente</label>
+            <select name="user_id" class="form-select form-select-sm" required>
+              <option value="">— Selecionar —</option>
+              {% for a in attendants_list %}
+                <option value="{{ a.id }}">{{ a.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label small">Data</label>
+            <input type="date" name="date" class="form-control form-control-sm"
+                   value="{{ att_date.strftime('%Y-%m-%d') }}" required>
+          </div>
+          <div class="row g-3">
+            <div class="col-6">
+              <label class="form-label small">Entrada</label>
+              <input type="time" name="check_in" class="form-control form-control-sm" required>
+            </div>
+            <div class="col-6">
+              <label class="form-label small">Saída <span style="color:var(--text-muted);font-size:.75rem;">(opcional)</span></label>
+              <input type="time" name="check_out" class="form-control form-control-sm">
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer" style="border-color:rgba(124,58,237,.2);">
+          <button type="button" class="btn btn-sm" data-bs-dismiss="modal"
+                  style="background:rgba(255,255,255,.08);color:var(--text);border:1px solid var(--border);">Cancelar</button>
+          <button type="submit" class="btn btn-sm px-4"
+                  style="background:rgba(124,58,237,.3);border:1px solid rgba(124,58,237,.5);color:#a78bfa;font-weight:600;">
+            <i class="bi bi-check-lg me-1"></i> Lançar
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Editar Ponto -->
+<div class="modal fade" id="modalEdit" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered modal-sm">
+    <div class="modal-content" style="background:#1a1a35;border:1px solid rgba(124,58,237,.3);">
+      <form id="formEdit" method="POST">
+        <div class="modal-header" style="border-color:rgba(124,58,237,.2);">
+          <h5 class="modal-title" style="font-size:.9rem;color:#a78bfa;">
+            <i class="bi bi-pencil-fill me-2"></i>Editar Registro
+          </h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label small">Entrada</label>
+            <input type="time" name="check_in" id="editCheckIn" class="form-control form-control-sm" required>
+          </div>
+          <div class="mb-2">
+            <label class="form-label small">Saída <span style="color:var(--text-muted);font-size:.75rem;">(opcional)</span></label>
+            <input type="time" name="check_out" id="editCheckOut" class="form-control form-control-sm">
+          </div>
+        </div>
+        <div class="modal-footer" style="border-color:rgba(124,58,237,.2);">
+          <button type="button" class="btn btn-sm" data-bs-dismiss="modal"
+                  style="background:rgba(255,255,255,.08);color:var(--text);border:1px solid var(--border);">Cancelar</button>
+          <button type="submit" class="btn btn-sm px-4"
+                  style="background:rgba(124,58,237,.3);border:1px solid rgba(124,58,237,.5);color:#a78bfa;font-weight:600;">
+            <i class="bi bi-check-lg me-1"></i> Salvar
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
 {% endblock %}
 {% block scripts %}
 <script>
@@ -317,6 +420,17 @@ function openAbsenceModal(userId, name, absDate) {
   document.getElementById('absName').textContent = name;
   document.getElementById('absDate').value = absDate;
   new bootstrap.Modal(document.getElementById('modalAbsence')).show();
+}
+
+function openManualModal() {
+  new bootstrap.Modal(document.getElementById('modalManual')).show();
+}
+
+function openEditModal(attId, checkIn, checkOut) {
+  document.getElementById('formEdit').action = '/admin/ponto/' + attId + '/editar';
+  document.getElementById('editCheckIn').value = checkIn;
+  document.getElementById('editCheckOut').value = checkOut;
+  new bootstrap.Modal(document.getElementById('modalEdit')).show();
 }
 </script>
 {% endblock %}

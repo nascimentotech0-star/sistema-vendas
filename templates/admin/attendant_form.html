@@ -54,12 +54,12 @@
           <div class="mb-3">
             <label class="form-label fw-semibold">Dias trabalhados/mês</label>
             <select name="work_days_per_month" class="form-select">
-              {% set cur_days = attendant.work_days_per_month if attendant and attendant.work_days_per_month else 22 %}
+              {% set cur_days = attendant.work_days_per_month if attendant and attendant.work_days_per_month else 26 %}
               <option value="22" {% if cur_days == 22 %}selected{% endif %}>22 dias — seg. a sex.</option>
               <option value="24" {% if cur_days == 24 %}selected{% endif %}>24 dias — + 2 sábados</option>
-              <option value="26" {% if cur_days == 26 %}selected{% endif %}>26 dias — + sábados</option>
-              <option value="27" {% if cur_days == 27 %}selected{% endif %}>27 dias — + sáb. e 1 dom.</option>
-              <option value="28" {% if cur_days == 28 %}selected{% endif %}>28 dias — + sáb. e 2 dom.</option>
+              <option value="26" {% if cur_days == 26 %}selected{% endif %}>26 dias — seg. a sáb.</option>
+              <option value="27" {% if cur_days == 27 %}selected{% endif %}>27 dias — seg. a sáb. + 1 dom.</option>
+              <option value="28" {% if cur_days == 28 %}selected{% endif %}>28 dias — seg. a sáb. + 2 dom.</option>
               <option value="30" {% if cur_days == 30 %}selected{% endif %}>30 dias — domingo a domingo</option>
             </select>
             <div class="form-text">Define a base de cálculo do valor por hora.</div>

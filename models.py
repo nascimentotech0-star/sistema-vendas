@@ -18,7 +18,7 @@ class User(db.Model, UserMixin):
     is_active = db.Column(db.Boolean, default=True)
     monthly_salary     = db.Column(db.Float,   nullable=True, default=0.0)  # salário mensal em R$
     work_hours_per_day = db.Column(db.Integer, nullable=True, default=8)   # carga horária diária esperada
-    work_days_per_month = db.Column(db.Integer, nullable=True, default=22) # dias trabalhados por mês
+    work_days_per_month = db.Column(db.Integer, nullable=True, default=26) # dias trabalhados por mês
     created_at = db.Column(db.DateTime, default=now_br)
 
     attendances = db.relationship('Attendance', backref='user', lazy=True, foreign_keys='Attendance.user_id')

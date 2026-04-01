@@ -60,6 +60,10 @@
                   <i class="bi {% if a.is_active %}bi-pause-circle{% else %}bi-play-circle{% endif %}"></i>
                 </button>
               </form>
+              <button class="btn btn-sm btn-outline-danger ms-1" title="Excluir usuário"
+                      onclick="confirmDelete({{ a.id }}, '{{ a.name|e }}')">
+                <i class="bi bi-trash3-fill"></i>
+              </button>
               {% endif %}
             </td>
           </tr>
@@ -72,4 +76,49 @@
     {% endif %}
   </div>
 </div>
+
+<!-- Form oculto para excluir -->
+<form id="formDelete" method="POST" style="display:none;"></form>
+
+<!-- Modal de confirmação -->
+<div class="modal fade" id="modalDelete" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered modal-sm">
+    <div class="modal-content" style="background:#1a1a35;border:1px solid rgba(239,68,68,.3);">
+      <div class="modal-header" style="border-color:rgba(239,68,68,.2);">
+        <h5 class="modal-title" style="font-size:.9rem;color:#fca5a5;">
+          <i class="bi bi-trash3-fill me-2"></i>Excluir Usuário
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p style="color:var(--text-muted);font-size:.875rem;">
+          Tem certeza que deseja excluir <strong id="deleteName" style="color:var(--text);"></strong>?<br>
+          <span style="font-size:.8rem;">Vendas e renovações serão mantidas sem vínculo ao atendente.</span>
+        </p>
+      </div>
+      <div class="modal-footer" style="border-color:rgba(239,68,68,.2);">
+        <button type="button" class="btn btn-sm" data-bs-dismiss="modal"
+                style="background:rgba(255,255,255,.08);color:var(--text);border:1px solid var(--border);">Cancelar</button>
+        <button type="button" class="btn btn-sm px-4" id="btnConfirmDelete"
+                style="background:rgba(239,68,68,.3);border:1px solid rgba(239,68,68,.5);color:#fca5a5;font-weight:600;">
+          <i class="bi bi-trash3-fill me-1"></i> Excluir
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+{% block scripts %}
+<script>
+function confirmDelete(userId, name) {
+  document.getElementById('deleteName').textContent = name;
+  document.getElementById('btnConfirmDelete').onclick = function() {
+    const form = document.getElementById('formDelete');
+    form.action = '/admin/atendentes/' + userId + '/excluir';
+    form.submit();
+  };
+  new bootstrap.Modal(document.getElementById('modalDelete')).show();
+}
+</script>
 {% endblock %}
