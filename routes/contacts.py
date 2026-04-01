@@ -19,6 +19,23 @@ def admin_required(f):
     return decorated
 
 
+# ── Atualizar dados de contato do cliente (whatsapp/phone) ────────────────────
+
+@contacts_bp.route('/cliente/<int:client_id>/atualizar-contato', methods=['POST'])
+@login_required
+def update_client_contact(client_id):
+    client = Client.query.get_or_404(client_id)
+    whatsapp = request.form.get('whatsapp', '').strip() or None
+    phone    = request.form.get('phone', '').strip() or None
+    if whatsapp is not None:
+        client.whatsapp = whatsapp
+    if phone is not None:
+        client.phone = phone
+    db.session.commit()
+    flash('Contato atualizado!', 'success')
+    return redirect(url_for('contacts.client_detail', client_id=client_id))
+
+
 # ── Registrar contato manual ───────────────────────────────────────────────────
 
 @contacts_bp.route('/cliente/<int:client_id>/registrar', methods=['POST'])

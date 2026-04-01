@@ -111,7 +111,7 @@ class User(db.Model, UserMixin):
 
     @property
     def approved_overtime_today(self):
-        today = date.today()
+        today = today_br()
         return OvertimeRequest.query.filter(
             OvertimeRequest.user_id == self.id,
             OvertimeRequest.status == 'approved',
@@ -120,7 +120,7 @@ class User(db.Model, UserMixin):
 
     @property
     def pending_overtime_today(self):
-        today = date.today()
+        today = today_br()
         return OvertimeRequest.query.filter(
             OvertimeRequest.user_id == self.id,
             OvertimeRequest.status == 'pending',
@@ -336,7 +336,7 @@ class Renewal(db.Model):
 
     @property
     def is_overdue(self):
-        return self.status == 'pending' and self.due_date < date.today()
+        return self.status == 'pending' and self.due_date < today_br()
 
     @property
     def status_label(self):

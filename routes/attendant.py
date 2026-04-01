@@ -237,11 +237,15 @@ def renewals():
 
     my_client_ids = [c.id for c in Client.query.filter_by(registered_by=current_user.id).all()]
 
+    # Mostra renovações dos clientes do atendente OU renovações que ele atendeu
     query = Renewal.query.filter(
-        Renewal.client_id.in_(my_client_ids),
         Renewal.due_date >= first_day,
-        Renewal.due_date <= last_day
-    ) if my_client_ids else Renewal.query.filter(db.false())
+        Renewal.due_date <= last_day,
+        db.or_(
+            Renewal.client_id.in_(my_client_ids) if my_client_ids else db.false(),
+            Renewal.attendant_id == current_user.id
+        )
+    )
 
     if status_filter:
         query = query.filter_by(status=status_filter)
@@ -295,7 +299,7 @@ def renewals():
         'pending':   [month_pending.get(k, 0) for k in month_keys],
     }
 
-    my_clients = Client.query.filter_by(registered_by=current_user.id).order_by(Client.name).all()
+    my_clients = Client.query.order_by(Client.name).all()
     price_items = PriceItem.query.filter_by(is_active=True).order_by(PriceItem.price).all()
 
     return render_template('attendant/renewals.html',
@@ -318,10 +322,6 @@ def renewals():
 @attendant_required
 def att_renew(id):
     renewal = Renewal.query.get_or_404(id)
-    my_ids = [c.id for c in Client.query.filter_by(registered_by=current_user.id).all()]
-    if renewal.client_id not in my_ids:
-        flash('Acesso negado.', 'danger')
-        return redirect(url_for('attendant.renewals'))
 
     # Comprovante obrigatório
     file = request.files.get('comprovante')
@@ -355,10 +355,6 @@ def att_renew(id):
 @attendant_required
 def att_cancel(id):
     renewal = Renewal.query.get_or_404(id)
-    my_ids = [c.id for c in Client.query.filter_by(registered_by=current_user.id).all()]
-    if renewal.client_id not in my_ids:
-        flash('Acesso negado.', 'danger')
-        return redirect(url_for('attendant.renewals'))
     renewal.status = 'cancelled'
     renewal.attendant_id = current_user.id
     db.session.commit()
@@ -380,8 +376,7 @@ def att_new_renewal():
         flash('Cliente, plano e data de vencimento são obrigatórios.', 'danger')
         return redirect(url_for('attendant.renewals'))
 
-    my_ids = [c.id for c in Client.query.filter_by(registered_by=current_user.id).all()]
-    if int(client_id) not in my_ids:
+    if not Client.query.get(int(client_id)):
         flash('Cliente não encontrado.', 'danger')
         return redirect(url_for('attendant.renewals'))
 
@@ -626,7 +621,7 @@ def new_client():
 @login_required
 @attendant_required
 def edit_client(id):
-    client = Client.query.filter_by(id=id, registered_by=current_user.id).first_or_404()
+    client = Client.query.get_or_404(id)
     if request.method == 'POST':
         client.name = request.form.get('name', '').strip()
         client.phone = request.form.get('phone', '').strip() or None

@@ -9,7 +9,7 @@
   <div class="col-12 col-lg-4">
 
     <!-- Botão de mensagem rápida -->
-    <div class="d-flex gap-2 mb-3">
+    <div class="d-flex gap-2 mb-3 flex-wrap">
       <button id="btnCopyMsg" class="btn btn-sm flex-fill"
               style="background:rgba(37,211,102,.15);color:#25d366;border:1px solid rgba(37,211,102,.3);">
         <i class="bi bi-clipboard me-1"></i>Copiar mensagem
@@ -21,6 +21,12 @@
         <i class="bi bi-whatsapp me-1"></i>WhatsApp
       </a>
       {% endif %}
+      <button type="button" class="btn btn-sm"
+              style="background:rgba(124,58,237,.15);color:#a78bfa;border:1px solid rgba(124,58,237,.3);"
+              data-bs-toggle="modal" data-bs-target="#modalEditContact"
+              title="Editar WhatsApp e telefone do cliente">
+        <i class="bi bi-pencil-fill me-1"></i>Editar contato
+      </button>
     </div>
 
     <!-- Card do cliente -->
@@ -48,6 +54,13 @@
             <i class="bi bi-telephone-fill" style="color:var(--accent2);width:18px;"></i>
             <span>{{ client.phone }}</span>
           </div>
+          {% endif %}
+          {% if not client.whatsapp and not client.phone %}
+          <button type="button" class="btn btn-sm w-100"
+                  style="background:rgba(245,158,11,.15);color:#fcd34d;border:1px solid rgba(245,158,11,.3);font-size:.78rem;"
+                  data-bs-toggle="modal" data-bs-target="#modalEditContact">
+            <i class="bi bi-plus-circle me-1"></i>Adicionar WhatsApp / Telefone
+          </button>
           {% endif %}
           {% if client.email %}
           <div class="d-flex align-items-center gap-2">
@@ -243,6 +256,48 @@
     </div>
   </div>
 
+</div>
+
+<!-- Modal: Editar contato do cliente -->
+<div class="modal fade" id="modalEditContact" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content" style="background:var(--bg-card);border:1px solid var(--border);">
+      <form method="POST" action="{{ url_for('contacts.update_client_contact', client_id=client.id) }}">
+        <div class="modal-header" style="border-color:var(--border);">
+          <h5 class="modal-title fw-semibold" style="font-size:.95rem;">
+            <i class="bi bi-person-lines-fill me-2" style="color:#a78bfa;"></i>Editar Contato — {{ client.name }}
+          </h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">
+              <i class="bi bi-whatsapp me-1" style="color:#25d366;"></i>WhatsApp
+            </label>
+            <input type="text" name="whatsapp" class="form-control"
+                   value="{{ client.whatsapp or '' }}"
+                   placeholder="(00) 00000-0000">
+          </div>
+          <div class="mb-1">
+            <label class="form-label">
+              <i class="bi bi-telephone-fill me-1" style="color:var(--accent2);"></i>Telefone
+            </label>
+            <input type="text" name="phone" class="form-control"
+                   value="{{ client.phone or '' }}"
+                   placeholder="(00) 0000-0000">
+          </div>
+        </div>
+        <div class="modal-footer" style="border-color:var(--border);">
+          <button type="button" class="btn btn-sm"
+                  style="background:rgba(255,255,255,.08);color:var(--text);border:1px solid var(--border);"
+                  data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary px-4">
+            <i class="bi bi-check-lg me-1"></i>Salvar
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
 </div>
 
 <!-- Toast copiado -->
