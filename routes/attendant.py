@@ -387,16 +387,14 @@ def att_new_renewal():
         flash('Data ou valor inválido.', 'danger')
         return redirect(url_for('attendant.renewals'))
 
-    # Comprovante obrigatório para nova renovação
+    # Comprovante opcional ao cadastrar (para migração de clientes existentes)
+    comprovante_filename = None
     file = request.files.get('comprovante')
-    if not file or not file.filename or not allowed_file(file.filename):
-        flash('Comprovante de pagamento é obrigatório para cadastrar a renovação.', 'danger')
-        return redirect(url_for('attendant.renewals'))
-
-    ext = file.filename.rsplit('.', 1)[1].lower()
-    fname = f"{uuid.uuid4().hex}.{ext}"
-    file.save(os.path.join(current_app.config['UPLOAD_FOLDER'], fname))
-    comprovante_filename = fname
+    if file and file.filename and allowed_file(file.filename):
+        ext = file.filename.rsplit('.', 1)[1].lower()
+        fname = f"{uuid.uuid4().hex}.{ext}"
+        file.save(os.path.join(current_app.config['UPLOAD_FOLDER'], fname))
+        comprovante_filename = fname
 
     renewal = Renewal(
         client_id=int(client_id),

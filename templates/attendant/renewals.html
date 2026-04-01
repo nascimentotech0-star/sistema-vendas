@@ -292,10 +292,14 @@
           <div class="mb-3">
             <label class="form-label">
               <i class="bi bi-image me-1" style="color:var(--accent2);"></i>
-              Comprovante de Pagamento <span class="text-danger">*</span>
+              Comprovante de Pagamento
+              <small style="color:var(--text-muted);">(opcional)</small>
             </label>
-            <input type="file" name="comprovante" class="form-control" accept="image/*,.pdf" required>
-            <small style="color:#fca5a5;"><i class="bi bi-exclamation-circle me-1"></i>Obrigatório — renovação só é válida com comprovante.</small>
+            <input type="file" name="comprovante" class="form-control" accept="image/*,.pdf">
+            <small style="color:var(--text-muted);">
+              <i class="bi bi-info-circle me-1"></i>Para clientes já existentes, pode deixar em branco.
+              O comprovante é exigido somente ao confirmar uma renovação.
+            </small>
           </div>
 
           <div class="mb-1">
