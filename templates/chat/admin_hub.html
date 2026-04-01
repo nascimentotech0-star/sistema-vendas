@@ -25,8 +25,15 @@
               </div>
               <small style="color:var(--text-muted);">
                 {% if last_msg_by[a.id] %}
-                  {{ last_msg_by[a.id].content[:50] }}{% if last_msg_by[a.id].content|length > 50 %}…{% endif %}
-                  <span class="ms-1">· {{ last_msg_by[a.id].created_at.strftime('%H:%M') }}</span>
+                  {% set lm = last_msg_by[a.id] %}
+                  {% if lm.file_type == 'image' %}
+                    <i class="bi bi-image me-1"></i>Imagem
+                  {% elif lm.file_type == 'audio' %}
+                    <i class="bi bi-mic-fill me-1"></i>Áudio
+                  {% else %}
+                    {{ (lm.content or '')[:50] }}{% if (lm.content or '')|length > 50 %}…{% endif %}
+                  {% endif %}
+                  <span class="ms-1">· {{ lm.created_at.strftime('%H:%M') }}</span>
                 {% else %}
                   Nenhuma mensagem ainda
                 {% endif %}

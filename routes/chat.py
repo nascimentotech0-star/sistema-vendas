@@ -6,6 +6,7 @@ from flask_login import login_required, current_user
 from extensions import csrf
 from models import db, User, Message
 from datetime import datetime
+from utils import now_br
 
 chat_bp = Blueprint('chat', __name__)
 
