@@ -3,25 +3,41 @@
 {% block page_title %}Olá, {{ current_user.name.split()[0] }}!{% endblock %}
 {% block content %}
 
-<!-- Mensagem motivacional -->
+<style>
+@keyframes nt-fadein{from{opacity:0;transform:translateY(5px);}to{opacity:1;transform:translateY(0);}}
+.nt-motiv-anim{animation:nt-fadein .7s ease;}
+@keyframes nt-blink{0%,100%{opacity:1;}50%{opacity:.2;}}
+.nt-livdot{display:inline-block;width:7px;height:7px;border-radius:50%;
+           background:#1D9E75;animation:nt-blink 1.6s infinite;vertical-align:middle;margin-right:4px;}
+</style>
+
+<!-- Mensagem motivacional (cicla a cada 6s) -->
 <div class="alert mb-3 d-flex align-items-center gap-2"
      style="background:rgba(124,58,237,.1);border:1px solid rgba(124,58,237,.25);border-radius:10px;font-size:.88rem;">
   <i class="bi bi-stars" style="color:#a78bfa;font-size:1.1rem;flex-shrink:0;"></i>
-  <span style="color:var(--text);">{{ motivational_msg }}</span>
+  <span id="nt-motiv" style="color:var(--text);" class="nt-motiv-anim">{{ motivational_msg }}</span>
 </div>
 
 <!-- Status header -->
 <div class="d-flex justify-content-between align-items-center mb-4">
-  <small style="color:var(--text-muted);">{{ now.strftime('%d/%m/%Y') }}</small>
-  {% if is_overtime %}
-    <span class="badge px-3 py-2" style="background:rgba(245,158,11,.2);color:#fcd34d;font-size:.8rem;">
-      <i class="bi bi-moon-stars-fill me-1"></i> Hora Extra (20%)
+  <div class="d-flex align-items-center gap-3">
+    <small style="color:var(--text-muted);">{{ now.strftime('%d/%m/%Y') }}</small>
+    <span style="font-size:.8rem;color:var(--text-muted);font-variant-numeric:tabular-nums;" id="nt-clk"></span>
+    <span style="font-size:.75rem;color:#1D9E75;">
+      <span class="nt-livdot"></span>Sistema ativo
     </span>
-  {% else %}
-    <span class="badge px-3 py-2" style="background:rgba(16,185,129,.2);color:#6ee7b7;font-size:.8rem;">
-      <i class="bi bi-sun-fill me-1"></i> Horário Normal ({{ current_rate }}%)
-    </span>
-  {% endif %}
+  </div>
+  <div class="d-flex align-items-center gap-2">
+    {% if is_overtime %}
+      <span class="badge px-3 py-2" style="background:rgba(245,158,11,.2);color:#fcd34d;font-size:.8rem;">
+        <i class="bi bi-moon-stars-fill me-1"></i> Hora Extra (20%)
+      </span>
+    {% else %}
+      <span class="badge px-3 py-2" style="background:rgba(16,185,129,.2);color:#6ee7b7;font-size:.8rem;">
+        <i class="bi bi-sun-fill me-1"></i> Horário Normal ({{ current_rate }}%)
+      </span>
+    {% endif %}
+  </div>
 </div>
 
 <!-- Ponto -->
@@ -278,7 +294,7 @@
     <div class="card stat-card stat-card-purple h-100">
       <div class="card-body text-center py-3">
         <p class="mb-1" style="font-size:.72rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;">Total Hoje</p>
-        <h4 class="fw-bold mb-0" style="color:#a78bfa;">R$ {{ "%.2f"|format(today_total) }}</h4>
+        <h4 class="fw-bold mb-0" style="color:#a78bfa;" id="nt-v-today-total" data-val="{{ today_total }}">R$ {{ "%.2f"|format(today_total) }}</h4>
       </div>
     </div>
   </div>
@@ -286,7 +302,7 @@
     <div class="card stat-card stat-card-green h-100">
       <div class="card-body text-center py-3">
         <p class="mb-1" style="font-size:.72rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;">Comissão Hoje</p>
-        <h4 class="fw-bold mb-0" style="color:#6ee7b7;">R$ {{ "%.2f"|format(today_commission) }}</h4>
+        <h4 class="fw-bold mb-0" style="color:#6ee7b7;" id="nt-v-today-comm" data-val="{{ today_commission }}">R$ {{ "%.2f"|format(today_commission) }}</h4>
       </div>
     </div>
   </div>
@@ -294,7 +310,7 @@
     <div class="card stat-card stat-card-cyan h-100">
       <div class="card-body text-center py-3">
         <p class="mb-1" style="font-size:.72rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;">Vendas Hoje</p>
-        <h4 class="fw-bold mb-0" style="color:#67e8f9;">{{ today_sales|length }}</h4>
+        <h4 class="fw-bold mb-0" style="color:#67e8f9;" id="nt-v-today-sales" data-val="{{ today_sales|length }}">{{ today_sales|length }}</h4>
       </div>
     </div>
   </div>
@@ -551,6 +567,60 @@
       scales:{x:{grid:{color:grid}},y:{grid:{color:grid},ticks:{callback:v=>'R$'+v.toLocaleString('pt-BR')}}}}});
   })();
 
+  // ── Relógio ao vivo ────────────────────────────────────────────────────────
+  (function ntClock(){
+    const el = document.getElementById('nt-clk');
+    if (!el) return;
+    function tick(){ el.textContent = new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit',second:'2-digit'}); }
+    tick(); setInterval(tick, 1000);
+  })();
+
+  // ── Motivacional ciclando (6s) — inicia após FRASES ser declarada ──────────
+  function ntMotivStart(){
+    const el = document.getElementById('nt-motiv');
+    if (!el) return;
+    let idx = 0;
+    function next(){
+      el.classList.remove('nt-motiv-anim');
+      void el.offsetWidth;
+      el.classList.add('nt-motiv-anim');
+      el.textContent = FRASES[idx % FRASES.length];
+      idx++;
+    }
+    setTimeout(()=>{ next(); setInterval(next, 6000); }, 6000);
+  }
+
+  // ── Contador animado nos stat cards ────────────────────────────────────────
+  (function ntCounters(){
+    function animVal(el, target, isCurrency){
+      const duration = 900, steps = 50, interval = duration / steps;
+      let step = 0;
+      const iv = setInterval(()=>{
+        step++;
+        const progress = step / steps;
+        // ease-out
+        const eased = 1 - Math.pow(1 - progress, 3);
+        const current = target * eased;
+        el.textContent = isCurrency
+          ? 'R$ ' + current.toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2})
+          : Math.round(current);
+        if (step >= steps) clearInterval(iv);
+      }, interval);
+    }
+    const cards = [
+      {id: 'nt-v-today-total', currency: true},
+      {id: 'nt-v-today-comm',  currency: true},
+      {id: 'nt-v-today-sales', currency: false},
+    ];
+    cards.forEach(({id, currency}) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      const val = parseFloat(el.dataset.val) || 0;
+      if (val === 0) return; // não anima zero
+      animVal(el, val, currency);
+    });
+  })();
+
   // ── Notificações motivacionais ─────────────────────────────────────────────
   const FRASES = [
     "Cada venda é um passo mais perto da sua meta!",
@@ -584,6 +654,8 @@
     "Você representa uma empresa que acredita no seu potencial. Honre isso!",
     "A Nascimento Tech cresce quando cada atendente dá o seu melhor.",
   ];
+
+  ntMotivStart(); // inicia ciclo agora que FRASES está definida
 
   const NOTIF_KEY  = 'notifDismissed';
   const INTERVAL_MS = 25 * 60 * 1000; // 25 minutos
