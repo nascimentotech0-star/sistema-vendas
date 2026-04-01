@@ -201,6 +201,7 @@ def dashboard():
         month_sales_count=month_sales_count,
         ranking=ranking,
         renewals_expiring_soon=renewals_expiring_soon,
+        manager_attendance=current_user.active_attendance if current_user.is_manager() else None,
     )
 
 

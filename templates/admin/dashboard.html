@@ -3,6 +3,58 @@
 {% block page_title %}Dashboard{% endblock %}
 {% block content %}
 
+{# ── PONTO DO GERENTE ────────────────────────────────────────────────────── #}
+{% if current_user.is_manager() %}
+<div class="card mb-4">
+  <div class="card-body">
+    <div class="row align-items-center g-2">
+      <div class="col">
+        <h6 class="fw-bold mb-1">
+          <i class="bi bi-clock me-1" style="color:var(--accent);"></i> Controle de Ponto
+        </h6>
+        {% if manager_attendance %}
+          <p class="mb-0 small" style="color:var(--text-muted);">
+            Entrada: <strong style="color:var(--text);">{{ manager_attendance.check_in.strftime('%H:%M') }}</strong>
+            — Duração: <strong style="color:var(--accent3);">{{ manager_attendance.duration }}</strong>
+          </p>
+        {% else %}
+          <p class="mb-0 small" style="color:var(--text-muted);">Você ainda não iniciou o atendimento hoje.</p>
+        {% endif %}
+      </div>
+      <div class="col-auto d-flex gap-2">
+        {% if not manager_attendance %}
+          <form method="POST" action="{{ url_for('attendant.checkin') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button class="btn btn-success px-4"><i class="bi bi-play-fill me-1"></i> Iniciar</button>
+          </form>
+        {% else %}
+          {% if not manager_attendance.active_break %}
+            <form method="POST" action="{{ url_for('attendant.start_break') }}">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button class="btn btn-sm px-3" style="background:rgba(245,158,11,.2);color:#fcd34d;border:1px solid rgba(245,158,11,.3);">
+                <i class="bi bi-pause-fill me-1"></i> Pausar
+              </button>
+            </form>
+          {% else %}
+            <form method="POST" action="{{ url_for('attendant.end_break') }}">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button class="btn btn-sm px-3" style="background:rgba(16,185,129,.2);color:#6ee7b7;border:1px solid rgba(16,185,129,.3);">
+                <i class="bi bi-play-fill me-1"></i> Voltar
+              </button>
+            </form>
+          {% endif %}
+          <form method="POST" action="{{ url_for('attendant.checkout') }}"
+                onsubmit="return confirm('Deseja encerrar o atendimento?')">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button class="btn btn-outline-danger btn-sm px-3"><i class="bi bi-stop-fill me-1"></i> Encerrar</button>
+          </form>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
 {# ── BARRA DE ALERTAS (só aparece quando há problemas) ──────────────────── #}
 {% if renewals_overdue or at_risk_count or renewals_expiring_soon %}
 <div class="alert-strip mb-4">
