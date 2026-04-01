@@ -601,7 +601,7 @@ def new_client():
                     commission_rate = get_commission_rate()
                     commission_amount = round(amount * commission_rate / 100, 2)
 
-                    # Comprovante obrigatório para registrar venda
+                    # Comprovante opcional
                     comprovante_filename = None
                     file = request.files.get('comprovante')
                     if file and file.filename and allowed_file(file.filename):
@@ -609,11 +609,6 @@ def new_client():
                         fname = f"{uuid.uuid4().hex}.{ext}"
                         file.save(os.path.join(current_app.config['UPLOAD_FOLDER'], fname))
                         comprovante_filename = fname
-                    else:
-                        # Salva o cliente mas não cria a venda
-                        db.session.commit()
-                        flash(f'Cliente {name} cadastrado! Mas o comprovante é obrigatório para registrar a venda — adicione a venda separadamente.', 'warning')
-                        return redirect(url_for('attendant.dashboard'))
 
                     sale = Sale(
                         attendant_id=current_user.id,
@@ -726,7 +721,7 @@ def new_sale():
         commission_rate = get_commission_rate()
         commission_amount = round(amount * (commission_rate / 100), 2)
 
-        # Comprovante obrigatório para registrar venda
+        # Comprovante opcional
         comprovante_filename = None
         file = request.files.get('comprovante')
         if file and file.filename and allowed_file(file.filename):
@@ -734,10 +729,6 @@ def new_sale():
             filename = f"{uuid.uuid4().hex}.{ext}"
             file.save(os.path.join(current_app.config['UPLOAD_FOLDER'], filename))
             comprovante_filename = filename
-        else:
-            flash('Comprovante de pagamento é obrigatório para registrar a venda.', 'danger')
-            return render_template('attendant/sale_form.html', clients=clients_list,
-                                   is_overtime=is_overtime_now(), payment_methods=PAYMENT_METHODS)
 
         sale = Sale(
             attendant_id=current_user.id,
