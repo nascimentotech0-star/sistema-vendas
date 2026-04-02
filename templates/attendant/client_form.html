@@ -13,7 +13,7 @@
         <span class="fw-semibold">{% if client %}Editar Cliente{% else %}Novo Cliente{% endif %}</span>
       </div>
       <div class="card-body">
-        <form method="POST" enctype="multipart/form-data">
+        <form method="POST" enctype="multipart/form-data" data-nt-validate>
 
           <!-- DADOS DO CLIENTE -->
           <h6 class="mb-3" style="color:var(--text-muted);font-size:.75rem;text-transform:uppercase;letter-spacing:.06em;">
@@ -32,13 +32,13 @@
                 <i class="bi bi-whatsapp me-1" style="color:#25d366;"></i>WhatsApp
               </label>
               <input type="text" name="whatsapp" class="form-control"
-                     placeholder="(00) 00000-0000"
+                     placeholder="(00) 00000-0000" data-phone="true"
                      value="{{ client.whatsapp if client else '' }}">
             </div>
             <div class="col-6">
               <label class="form-label">Telefone</label>
               <input type="text" name="phone" class="form-control"
-                     placeholder="(00) 0000-0000"
+                     placeholder="(00) 0000-0000" data-phone="true"
                      value="{{ client.phone if client else '' }}">
             </div>
           </div>
