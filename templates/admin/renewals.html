@@ -252,22 +252,8 @@
 
 {% block scripts %}
 <script>
-  const grid  = 'rgba(255,255,255,.06)';
-  const muted = '#7b7b9e';
-  Chart.defaults.color = muted;
-  Chart.defaults.font.family = "'Segoe UI', system-ui, sans-serif";
-  Chart.defaults.font.size = 11;
-
-  const C_GREEN  = 'rgba(16,185,129,.8)';
-  const C_PINK   = 'rgba(236,72,153,.8)';
-  const C_YELLOW = 'rgba(245,158,11,.6)';
-  const C_GREEN2 = 'rgba(16,185,129,.2)';
-  const C_PINK2  = 'rgba(236,72,153,.2)';
-
-  const scaleOpts = {
-    x: { grid: { color: grid } },
-    y: { grid: { color: grid }, ticks: { stepSize: 1 } }
-  };
+  var legendOpts = { display:true, position:'top', labels:{ boxWidth:12, padding:16, color:'#94a3b8' } };
+  var countScales = { y:{ ticks:{ callback: function(v){ return v; } } } };
 
   // Dia da semana (barras empilhadas)
   new Chart(document.getElementById('chartWeekday'), {
@@ -275,34 +261,30 @@
     data: {
       labels: {{ chart_weekday.labels | tojson }},
       datasets: [
-        { label: 'Renovados',  data: {{ chart_weekday.renewed   | tojson }}, backgroundColor: C_GREEN,  borderRadius: 4 },
-        { label: 'Cancelados', data: {{ chart_weekday.cancelled | tojson }}, backgroundColor: C_PINK,   borderRadius: 4 },
-        { label: 'Pendentes',  data: {{ chart_weekday.pending   | tojson }}, backgroundColor: C_YELLOW, borderRadius: 4 },
+        ntBarDataset('Renovados',  {{ chart_weekday.renewed   | tojson }}, NT_COLORS.green),
+        ntBarDataset('Cancelados', {{ chart_weekday.cancelled | tojson }}, NT_COLORS.pink),
+        ntBarDataset('Pendentes',  {{ chart_weekday.pending   | tojson }}, NT_COLORS.yellow),
       ]
     },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { position: 'top', labels: { boxWidth: 12, padding: 16 } } },
-      scales: { x: { ...scaleOpts.x, stacked: true }, y: { ...scaleOpts.y, stacked: true } }
-    }
+    options: ntOptions({ scales:{ x:{ stacked:true }, y:{ stacked:true, ticks:{ callback: function(v){ return v; } } } }, plugins:{ legend: legendOpts } })
   });
 
-  // Por semana (linha dupla)
-  new Chart(document.getElementById('chartWeekly'), {
-    type: 'line',
-    data: {
-      labels: {{ chart_weekly.labels | tojson }},
-      datasets: [
-        { label: 'Renovados',  data: {{ chart_weekly.renewed   | tojson }}, borderColor: '#10b981', backgroundColor: C_GREEN2, fill: true, tension: 0.4, pointRadius: 4 },
-        { label: 'Cancelados', data: {{ chart_weekly.cancelled | tojson }}, borderColor: '#ec4899', backgroundColor: C_PINK2,  fill: true, tension: 0.4, pointRadius: 4 },
-      ]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { position: 'top', labels: { boxWidth: 12, padding: 16 } } },
-      scales: scaleOpts,
-    }
-  });
+  // Por semana (linhas ECG duplas)
+  (function(){
+    var ctx = document.getElementById('chartWeekly').getContext('2d');
+    var h = document.getElementById('chartWeekly').parentElement.offsetHeight || 200;
+    new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: {{ chart_weekly.labels | tojson }},
+        datasets: [
+          ntLineDataset('Renovados',  {{ chart_weekly.renewed   | tojson }}, NT_COLORS.green, ctx, h),
+          ntLineDataset('Cancelados', {{ chart_weekly.cancelled | tojson }}, NT_COLORS.pink,  ctx, h),
+        ]
+      },
+      options: ntOptions({ scales: countScales, plugins:{ legend: legendOpts } })
+    });
+  })();
 
   // Por mês (barras agrupadas)
   new Chart(document.getElementById('chartMonthly'), {
@@ -310,15 +292,11 @@
     data: {
       labels: {{ chart_monthly.labels | tojson }},
       datasets: [
-        { label: 'Renovados',  data: {{ chart_monthly.renewed   | tojson }}, backgroundColor: C_GREEN, borderRadius: 6 },
-        { label: 'Cancelados', data: {{ chart_monthly.cancelled | tojson }}, backgroundColor: C_PINK,  borderRadius: 6 },
+        ntBarDataset('Renovados',  {{ chart_monthly.renewed   | tojson }}, NT_COLORS.green),
+        ntBarDataset('Cancelados', {{ chart_monthly.cancelled | tojson }}, NT_COLORS.pink),
       ]
     },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { position: 'top', labels: { boxWidth: 12, padding: 16 } } },
-      scales: scaleOpts,
-    }
+    options: ntOptions({ scales: countScales, plugins:{ legend: legendOpts } })
   });
 </script>
 {% endblock %}

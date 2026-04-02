@@ -267,68 +267,28 @@
 {% endif %}
 
 <script>
-const labels    = {{ chart_labels | tojson }};
-const dSales    = {{ chart_sales  | tojson }};
-const dRenewals = {{ chart_renewals | tojson }};
-const dPending  = {{ chart_pending  | tojson }};
+(function(){
+  var labels    = {{ chart_labels | tojson }};
+  var dSales    = {{ chart_sales  | tojson }};
+  var dRenewals = {{ chart_renewals | tojson }};
+  var dPending  = {{ chart_pending  | tojson }};
 
-const isDark = document.documentElement.getAttribute('data-bs-theme') !== 'light';
-const gridColor = 'rgba(255,255,255,.06)';
-const textColor = '#94a3b8';
+  var dsSales    = ntBarDataset('Vendas',    dSales,    NT_COLORS.purple);
+  var dsRenewals = ntBarDataset('Renovações',dRenewals, NT_COLORS.green);
+  var dsPending  = ntBarDataset('A Receber', dPending,  NT_COLORS.yellow);
+  dsSales.stack    = 'received';
+  dsRenewals.stack = 'received';
+  dsPending.stack  = 'pending';
+  dsPending.backgroundColor = 'rgba(251,191,36,.28)';
 
-new Chart(document.getElementById('chartEvolution'), {
-  type: 'bar',
-  data: {
-    labels,
-    datasets: [
-      {
-        label: 'Vendas',
-        data: dSales,
-        backgroundColor: 'rgba(99,102,241,.7)',
-        borderRadius: 4,
-        stack: 'received',
-      },
-      {
-        label: 'Renovações',
-        data: dRenewals,
-        backgroundColor: 'rgba(16,185,129,.7)',
-        borderRadius: 4,
-        stack: 'received',
-      },
-      {
-        label: 'A Receber',
-        data: dPending,
-        backgroundColor: 'rgba(245,158,11,.35)',
-        borderRadius: 4,
-        borderDash: [4,2],
-        stack: 'pending',
-      },
-    ],
-  },
-  options: {
-    responsive: true,
-    maintainAspectRatio: true,
-    interaction: { mode: 'index', intersect: false },
-    plugins: {
-      legend: { labels: { color: textColor, font: { size: 12 } } },
-      tooltip: {
-        callbacks: {
-          label: ctx => ` ${ctx.dataset.label}: R$ ${ctx.parsed.y.toFixed(2).replace('.',',')}`,
-        },
-      },
-    },
-    scales: {
-      x: { stacked: true, grid: { color: gridColor }, ticks: { color: textColor } },
-      y: {
-        stacked: true,
-        grid: { color: gridColor },
-        ticks: {
-          color: textColor,
-          callback: v => 'R$ ' + v.toLocaleString('pt-BR'),
-        },
-      },
-    },
-  },
-});
+  new Chart(document.getElementById('chartEvolution'), {
+    type: 'bar',
+    data: { labels: labels, datasets: [ dsSales, dsRenewals, dsPending ] },
+    options: ntOptions({
+      scales: { x:{ stacked:true }, y:{ stacked:true } },
+      plugins: { legend: { display:true, position:'top', labels:{ boxWidth:12, padding:14, color:'#94a3b8' } } }
+    })
+  });
+})();
 </script>
 {% endblock %}

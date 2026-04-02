@@ -386,49 +386,30 @@
 
 {% block scripts %}
 <script>
-  const grid = 'rgba(255,255,255,.06)', muted = '#7b7b9e';
-  Chart.defaults.color = muted;
-  Chart.defaults.font.family = "'Segoe UI', system-ui, sans-serif";
-  Chart.defaults.font.size = 11;
-
   // Por dia da semana (stacked)
   (function(){
-    const ctx = document.getElementById('chartWeekday').getContext('2d');
+    var ctx = document.getElementById('chartWeekday').getContext('2d');
     new Chart(ctx, { type:'bar', data:{
       labels: {{ chart_weekday.labels|tojson }},
       datasets:[
-        {label:'Renovados',  data:{{ chart_weekday.renewed|tojson }},   backgroundColor:'rgba(16,185,129,.7)',  borderRadius:4},
-        {label:'Cancelados', data:{{ chart_weekday.cancelled|tojson }}, backgroundColor:'rgba(236,72,153,.6)',  borderRadius:4},
-        {label:'Pendentes',  data:{{ chart_weekday.pending|tojson }},   backgroundColor:'rgba(245,158,11,.5)',  borderRadius:4},
+        ntBarDataset('Renovados',  {{ chart_weekday.renewed|tojson }},   NT_COLORS.green),
+        ntBarDataset('Cancelados', {{ chart_weekday.cancelled|tojson }}, NT_COLORS.pink),
+        ntBarDataset('Pendentes',  {{ chart_weekday.pending|tojson }},   NT_COLORS.yellow),
       ]
-    }, options:{
-      responsive:true, maintainAspectRatio:false,
-      plugins:{legend:{position:'bottom', labels:{boxWidth:12, padding:10}}},
-      scales:{
-        x:{stacked:true, grid:{color:grid}},
-        y:{stacked:true, grid:{color:grid}, ticks:{stepSize:1}}
-      }
-    }});
+    }, options: ntOptions({ scales:{ x:{ stacked:true }, y:{ stacked:true, ticks:{ callback: function(v){ return v; } } } }, plugins:{ legend:{ display:true, position:'bottom', labels:{ boxWidth:12, padding:10, color:'#94a3b8' } } } }) });
   })();
 
   // Por mês (grouped bars)
   (function(){
-    const ctx = document.getElementById('chartMonthly').getContext('2d');
+    var ctx = document.getElementById('chartMonthly').getContext('2d');
     new Chart(ctx, { type:'bar', data:{
       labels: {{ chart_monthly.labels|tojson }},
       datasets:[
-        {label:'Renovados',  data:{{ chart_monthly.renewed|tojson }},   backgroundColor:'rgba(16,185,129,.75)', borderRadius:6},
-        {label:'Cancelados', data:{{ chart_monthly.cancelled|tojson }}, backgroundColor:'rgba(236,72,153,.6)',  borderRadius:6},
-        {label:'Pendentes',  data:{{ chart_monthly.pending|tojson }},   backgroundColor:'rgba(245,158,11,.5)',  borderRadius:6},
+        ntBarDataset('Renovados',  {{ chart_monthly.renewed|tojson }},   NT_COLORS.green),
+        ntBarDataset('Cancelados', {{ chart_monthly.cancelled|tojson }}, NT_COLORS.pink),
+        ntBarDataset('Pendentes',  {{ chart_monthly.pending|tojson }},   NT_COLORS.yellow),
       ]
-    }, options:{
-      responsive:true, maintainAspectRatio:false,
-      plugins:{legend:{position:'bottom', labels:{boxWidth:12, padding:10}}},
-      scales:{
-        x:{grid:{color:grid}},
-        y:{grid:{color:grid}, ticks:{stepSize:1}}
-      }
-    }});
+    }, options: ntOptions({ scales:{ y:{ ticks:{ callback: function(v){ return v; } } } }, plugins:{ legend:{ display:true, position:'bottom', labels:{ boxWidth:12, padding:10, color:'#94a3b8' } } } }) });
   })();
 
   // Abre modal de confirmação de renovação

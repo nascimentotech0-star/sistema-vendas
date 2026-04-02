@@ -268,34 +268,15 @@
 
   // Gráfico 7 dias
   (function(){
-    const grid = 'rgba(255,255,255,.06)';
-    Chart.defaults.color = '#7b7b9e';
-    Chart.defaults.font.family = "'Segoe UI', system-ui, sans-serif";
-    Chart.defaults.font.size = 11;
-    const ctx = document.getElementById('chartWeek').getContext('2d');
-    const g = ctx.createLinearGradient(0,0,0,170);
-    g.addColorStop(0,'rgba(124,58,237,.75)');
-    g.addColorStop(1,'rgba(124,58,237,.05)');
+    var ctx = document.getElementById('chartWeek').getContext('2d');
+    var h = document.getElementById('chartWeek').parentElement.offsetHeight || 170;
     new Chart(ctx, {
-      type:'bar',
-      data:{
+      type: 'bar',
+      data: {
         labels: {{ chart_labels|tojson }},
-        datasets:[{
-          label:'R$ Vendido',
-          data: {{ chart_vals|tojson }},
-          backgroundColor: g,
-          borderRadius: 8,
-          borderSkipped: false
-        }]
+        datasets: [ ntBarDataset('R$ Vendido', {{ chart_vals|tojson }}, NT_COLORS.purple, ctx, h) ]
       },
-      options:{
-        responsive:true, maintainAspectRatio:false,
-        plugins:{legend:{display:false}},
-        scales:{
-          x:{grid:{color:grid}},
-          y:{grid:{color:grid}, ticks:{callback:v=>'R$'+v.toLocaleString('pt-BR')}}
-        }
-      }
+      options: ntOptions()
     });
   })();
 </script>

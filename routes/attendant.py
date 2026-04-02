@@ -10,7 +10,7 @@ from flask import Blueprint, render_template, redirect, url_for, flash, request,
 from flask_login import login_required, current_user
 from werkzeug.utils import secure_filename
 
-from models import (db, Attendance, AttendanceBreak, OvertimeRequest, Client, Sale, Renewal,
+from models import (db, User, Attendance, AttendanceBreak, OvertimeRequest, Client, Sale, Renewal,
                     PAYMENT_METHODS, BREAK_ALLOWED_MINUTES, DAYS_AT_RISK,
                     CommissionPayment, PriceItem)
 from flask import jsonify as _jsonify
@@ -306,6 +306,57 @@ _MOTIVATIONAL = [
     "Você está exatamente onde precisa estar para crescer. Aproveite!",
     "Cada notificação de venda no sistema é prova do seu esforço valendo.",
     "Não meça o dia pelo cansaço — meça pelo quanto você entregou.",
+    # Novas
+    "Cada cliente é uma história. Faça a dele ter um final feliz.",
+    "O seu melhor ainda está por vir — e começa neste exato momento.",
+    "Não existe atalho para o topo, mas existe consistência. Use-a.",
+    "Vendedores mediocres focam no produto. Grandes, focam no cliente.",
+    "Transforme cada 'posso te ajudar?' em uma conexão real.",
+    "Quem domina o atendimento, domina o resultado.",
+    "Seja a diferença que o cliente não esperava — e vai lembrar para sempre.",
+    "O entusiasmo é contagioso. Leve-o para cada conversa.",
+    "Sua voz carrega a marca da empresa. Deixe-a soar com confiança.",
+    "Cada renovação é prova de que você fez um bom trabalho antes.",
+    "A segunda venda é mais fácil quando a primeira foi perfeita.",
+    "Ganhar a confiança do cliente vale mais do que ganhar a discussão.",
+    "Não venda um plano — venda tranquilidade, solução, futuro.",
+    "O melhor fechamento é aquele que o cliente não percebe como pressão.",
+    "Você é o principal ativo dessa operação. Invista em você.",
+    "Sua atitude na segunda-feira define o ritmo da semana inteira.",
+    "Metas existem para ser batidas — não admiradas de longe.",
+    "Quando o cliente diz 'vou pensar', você ainda tem uma chance. Use-a!",
+    "Cada script é um ponto de partida, não um roteiro fixo. Adapte-se.",
+    "A persistência gentil vence a insistência agressiva sempre.",
+    "O cliente mais difícil de conquistar é o mais fiel quando conquistado.",
+    "Cuide bem de quem já é seu cliente — ele é seu melhor vendedor.",
+    "Seja lembrado pela qualidade, não pelo preço.",
+    "Você constrói a sua carteira de clientes tijolo a tijolo. Continue!",
+    "Superar a meta não é sorte — é a soma de dias como este aqui.",
+    "O cliente quer solução, não desculpa. Entregue sempre a solução.",
+    "Quando o trabalho tem significado, o cansaço tem menos peso.",
+    "Cada ponto percentual de comissão que sobe é fruto do seu esforço.",
+    "Produtividade não é velocidade — é fazer o certo no tempo certo.",
+    "O momento de se destacar é quando os outros estão reclamando.",
+    "Cada conquista começa com a decisão de tentar mais uma vez.",
+    "Você tem hoje o que pediu ontem. O que está pedindo para amanhã?",
+    "Resultado é reflexo de escolhas. Escolha bem o que vai fazer agora.",
+    "A próxima venda é a mais importante. Foque nela agora.",
+    "Seja o atendente que o cliente conta para os amigos. Isso vale ouro.",
+    "O sistema apoia. O produto é bom. O que falta é você ir lá. Vai!",
+    "Fechar uma venda é a consequência de um ótimo atendimento.",
+    "O cliente que hesita precisa de segurança. Transmita isso com confiança.",
+    "Cada 'obrigado' do cliente é a confirmação de que você fez certo.",
+    "Não existe dia fraco para quem tem propósito forte.",
+    "Seu trabalho hoje tem impacto direto no seu bolso no fim do mês.",
+    "Não espere inspiração para agir — aja e a inspiração aparece.",
+    "Cada mês é uma nova temporada. Comece esta com tudo!",
+    "Você tem em mãos as ferramentas — e o talento para usá-las bem.",
+    "Seja o profissional que, ao fim do mês, não precisa de desculpas.",
+    "Todo grande resultado começa com uma decisão simples: começar.",
+    "A consistência bate o talento quando o talento não é consistente.",
+    "Pense no que você quer realizar — depois aja como se já fosse possível.",
+    "Quem celebra as pequenas vitórias tem energia para as grandes.",
+    "Cada cliente bem atendido é um voto de confiança na Nascimento Tech.",
 ]
 
 
@@ -485,6 +536,27 @@ def dashboard():
     commission_progress = min(int(month_sales_count / sales_target * 100), 100)
     sales_remaining     = max(sales_target - month_sales_count, 0)
 
+    # ── Ranking do mês (todos os atendentes) ─────────────────────────────────
+    ranking_rows = (
+        db.session.query(
+            User.id,
+            User.name,
+            db.func.sum(Sale.amount).label('total'),
+            db.func.count(Sale.id).label('count'),
+        )
+        .join(Sale, Sale.attendant_id == User.id)
+        .filter(Sale.created_at >= month_start, Sale.created_at < month_end)
+        .group_by(User.id, User.name)
+        .order_by(db.func.sum(Sale.amount).desc())
+        .all()
+    )
+    ranking_all = [
+        {'id': r.id, 'name': r.name.split()[0], 'total': float(r.total), 'count': r.count}
+        for r in ranking_rows
+    ]
+    my_rank_pos = next((i + 1 for i, r in enumerate(ranking_all) if r['id'] == current_user.id), None)
+    ranking_top = ranking_all[:5]
+
     # ── Mensagem motivacional aleatória ──────────────────────────────────────
     import random
     motivational_msg = random.choice(_MOTIVATIONAL)
@@ -532,6 +604,8 @@ def dashboard():
         sales_target=sales_target,
         sales_remaining=sales_remaining,
         motivational_msg=motivational_msg,
+        ranking=ranking_top,
+        my_rank_pos=my_rank_pos,
     )
 
 
@@ -845,7 +919,13 @@ def clients():
     search = request.args.get('q', '').strip()
     query = Client.query
     if search:
-        query = query.filter(Client.name.ilike(f'%{search}%'))
+        query = query.filter(
+            db.or_(
+                Client.name.ilike(f'%{search}%'),
+                Client.phone.ilike(f'%{search}%'),
+                Client.whatsapp.ilike(f'%{search}%'),
+            )
+        )
     clients_list = query.order_by(Client.name).all()
     return render_template('attendant/clients.html', clients=clients_list, search=search)
 

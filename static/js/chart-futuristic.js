@@ -1,71 +1,66 @@
 /**
  * chart-futuristic.js — Nascimento Tech
- * Configuração global do Chart.js com visual neon/futurista.
- * Carregado uma vez via base.html, aplica-se a todos os gráficos.
+ * Configuração global Chart.js estilo trader/ECG.
+ * Carregado uma vez via base.html — aplica-se a todos os gráficos.
  */
 
 (function () {
+
   /* ── Paleta neon ── */
-  const N = {
+  var N = {
     purple:  '#a78bfa',
     cyan:    '#22d3ee',
     green:   '#34d399',
     pink:    '#f472b6',
     yellow:  '#fbbf24',
     blue:    '#60a5fa',
-    gridLine:'rgba(167,139,250,.08)',
-    gridDot: 'rgba(34,211,238,.06)',
+    gridLine:'rgba(167,139,250,.07)',
     tick:    '#475569',
-    bg:      'rgba(8,10,20,.0)',
   };
 
-  /* ── Gradiente vertical helper ── */
+  /* ── Utilidade: hex → rgba ── */
+  function hexAlpha(hex, a) {
+    var c = hex.replace('#','');
+    var r = parseInt(c.slice(0,2),16);
+    var g = parseInt(c.slice(2,4),16);
+    var b = parseInt(c.slice(4,6),16);
+    return 'rgba('+r+','+g+','+b+','+a+')';
+  }
+
+  /* ── Gradiente vertical ── */
   window.ntGrad = function (ctx, colorTop, colorBot, h) {
-    const g = ctx.createLinearGradient(0, 0, 0, h || 200);
+    var g = ctx.createLinearGradient(0, 0, 0, h || 200);
     g.addColorStop(0, colorTop);
     g.addColorStop(1, colorBot);
     return g;
   };
 
-  /* ── Plugin: glow nos elementos desenhados ── */
-  const glowPlugin = {
-    id: 'nt-glow',
-    beforeDatasetsDraw(chart) {
-      chart.ctx.save();
-    },
-    afterDatasetsDraw(chart) {
-      chart.ctx.restore();
-    },
-    /* Aplica sombra colorida em cada dataset */
-    beforeDraw(chart) {
-      const ctx = chart.ctx;
-      ctx.save();
-      ctx.shadowBlur   = 18;
-      ctx.shadowOffsetX = 0;
-      ctx.shadowOffsetY = 0;
-    },
-    afterDraw(chart) {
-      chart.ctx.restore();
-    },
+  /* ── Gradiente para barras ── */
+  window.ntBarGrad = function (ctx, color, alpha1, alpha2, height) {
+    var h = height || 200;
+    var g = ctx.createLinearGradient(0, 0, 0, h);
+    g.addColorStop(0, hexAlpha(color, alpha1 !== undefined ? alpha1 : .85));
+    g.addColorStop(1, hexAlpha(color, alpha2 !== undefined ? alpha2 : .15));
+    return g;
   };
 
-  /* ── Plugin: fundo escuro com grid de pontos no canvas ── */
-  const bgPlugin = {
+  /* ── Plugin: fundo escuro com grade de pontos ── */
+  var bgPlugin = {
     id: 'nt-bg',
-    beforeDraw(chart) {
-      const { ctx, width, height } = chart;
+    beforeDraw: function(chart) {
+      var ctx = chart.ctx, w = chart.width, h = chart.height;
       ctx.save();
-      ctx.fillStyle = 'rgba(8,10,22,.55)';
-      ctx.roundRect(0, 0, width, height, 12);
+      ctx.fillStyle = 'rgba(6,9,20,.6)';
+      if (ctx.roundRect) ctx.roundRect(0, 0, w, h, 10);
+      else ctx.rect(0, 0, w, h);
       ctx.fill();
-
-      /* Grade de pontos */
-      const step = 22;
-      ctx.fillStyle = 'rgba(99,102,241,.07)';
-      for (let x = step; x < width; x += step) {
-        for (let y = step; y < height; y += step) {
+      // grade de pontos roxa
+      var step = 22;
+      ctx.fillStyle = 'rgba(99,102,241,.06)';
+      for (var x = step; x < w; x += step) {
+        for (var y = step; y < h; y += step) {
           ctx.beginPath();
-          ctx.arc(x, y, .8, 0, Math.PI * 2);
+          ctx.arc(x, y, .7, 0, Math.PI * 2);
           ctx.fill();
         }
       }
@@ -73,134 +68,127 @@
     },
   };
 
-  Chart.register(bgPlugin);
+  /* ── Plugin: glow real na linha (sombra colorida) ── */
+  var lineGlowPlugin = {
+    id: 'nt-line-glow',
+    beforeDatasetDraw: function(chart, args) {
+      var ds = chart.data.datasets[args.index];
+      if (!ds || ds.type === 'bar') return;
+      var ctx = chart.ctx;
+      ctx.save();
+      ctx.shadowColor  = ds.borderColor || '#22d3ee';
+      ctx.shadowBlur   = 14;
+      ctx.shadowOffsetX = 0;
+      ctx.shadowOffsetY = 0;
+    },
+    afterDatasetDraw: function(chart, args) {
+      var ds = chart.data.datasets[args.index];
+      if (!ds || ds.type === 'bar') return;
+      chart.ctx.restore();
+    },
+  };
+
+  Chart.register(bgPlugin, lineGlowPlugin);
 
   /* ── Defaults globais ── */
-  Chart.defaults.color                      = N.tick;
-  Chart.defaults.font.family                = "'JetBrains Mono','Fira Code',monospace";
-  Chart.defaults.font.size                  = 10;
-  Chart.defaults.borderColor                = N.gridLine;
-  Chart.defaults.animation.duration         = 900;
-  Chart.defaults.animation.easing           = 'easeOutQuart';
+  Chart.defaults.color               = N.tick;
+  Chart.defaults.font.family         = "'JetBrains Mono','Fira Code',monospace";
+  Chart.defaults.font.size           = 10;
+  Chart.defaults.borderColor         = N.gridLine;
+  Chart.defaults.animation.duration  = 1100;
+  Chart.defaults.animation.easing    = 'easeOutQuart';
 
-  /* Escala padrão */
-  Chart.defaults.scale.grid.color           = N.gridLine;
-  Chart.defaults.scale.grid.borderColor     = 'transparent';
-  Chart.defaults.scale.ticks.color          = N.tick;
-  Chart.defaults.scale.ticks.padding        = 6;
+  Chart.defaults.scale.grid.color        = N.gridLine;
+  Chart.defaults.scale.grid.borderColor  = 'transparent';
+  Chart.defaults.scale.ticks.color       = N.tick;
+  Chart.defaults.scale.ticks.padding     = 6;
 
   /* Tooltip glassmorphism */
-  Chart.defaults.plugins.tooltip.backgroundColor = 'rgba(8,10,24,.92)';
-  Chart.defaults.plugins.tooltip.borderColor      = 'rgba(167,139,250,.35)';
+  Chart.defaults.plugins.tooltip.backgroundColor = 'rgba(6,9,20,.92)';
+  Chart.defaults.plugins.tooltip.borderColor      = 'rgba(167,139,250,.4)';
   Chart.defaults.plugins.tooltip.borderWidth      = 1;
   Chart.defaults.plugins.tooltip.titleColor       = '#c4b5fd';
   Chart.defaults.plugins.tooltip.bodyColor        = '#94a3b8';
   Chart.defaults.plugins.tooltip.padding          = 10;
   Chart.defaults.plugins.tooltip.cornerRadius     = 10;
-  Chart.defaults.plugins.tooltip.titleFont        = { family: "'Inter',sans-serif", weight: '600', size: 11 };
-  Chart.defaults.plugins.tooltip.bodyFont         = { family: "'JetBrains Mono',monospace", size: 10 };
-  Chart.defaults.plugins.tooltip.callbacks = {
-    ...Chart.defaults.plugins.tooltip.callbacks,
-    label: function (ctx) {
-      const v = ctx.parsed.y ?? ctx.parsed;
-      if (typeof v === 'number' && v > 10) {
-        return '  R$ ' + v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-      }
-      return '  ' + v;
-    },
+  Chart.defaults.plugins.tooltip.displayColors    = false;
+  Chart.defaults.plugins.tooltip.titleFont        = { family:"'Inter',sans-serif", weight:'600', size:11 };
+  Chart.defaults.plugins.tooltip.bodyFont         = { family:"'JetBrains Mono',monospace", size:10 };
+  Chart.defaults.plugins.tooltip.callbacks.label  = function(ctx) {
+    var v = ctx.parsed.y;
+    if (typeof v === 'number') {
+      return '  R$ ' + v.toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
+    }
+    return '  ' + v;
   };
 
-  /* ── Helpers públicos para criar gráficos futuristas ── */
-
-  /** Gradiente neon para barras */
-  window.ntBarGrad = function (ctx, color, alpha1, alpha2, height) {
-    const h = height || 200;
-    const g = ctx.createLinearGradient(0, 0, 0, h);
-    const c = color.replace('#', '');
-    const r = parseInt(c.slice(0,2),16), gb = parseInt(c.slice(2,4),16), b = parseInt(c.slice(4,6),16);
-    g.addColorStop(0, `rgba(${r},${gb},${b},${alpha1 ?? .9})`);
-    g.addColorStop(1, `rgba(${r},${gb},${b},${alpha2 ?? .2})`);
-    return g;
-  };
-
-  /** Dataset de linha neon padrão */
-  window.ntLineDataset = function (label, data, color, ctx, fillHeight) {
-    const fill = ctx ? ntGrad(ctx, hexAlpha(color, .35), hexAlpha(color, .02), fillHeight) : false;
+  /* ── Dataset trader/ECG — linha angular sem pontos ── */
+  window.ntLineDataset = function (label, data, color, ctx, fillHeight, opts) {
+    opts = opts || {};
+    var fill = ctx
+      ? ntGrad(ctx, hexAlpha(color, opts.fillAlpha || .22), hexAlpha(color, .0), fillHeight || 200)
+      : false;
     return {
-      label,
-      data,
-      borderColor:          color,
-      borderWidth:          2,
-      backgroundColor:      fill,
-      fill:                 !!ctx,
-      tension:              0.45,
-      pointBackgroundColor: color,
-      pointBorderColor:     'rgba(8,10,22,.8)',
-      pointBorderWidth:     1.5,
-      pointRadius:          4,
-      pointHoverRadius:     7,
+      label:                     label,
+      data:                      data,
+      borderColor:               color,
+      borderWidth:               opts.lineWidth || 1.8,
+      backgroundColor:           fill,
+      fill:                      !!ctx,
+      tension:                   opts.tension !== undefined ? opts.tension : 0,
+      pointRadius:               0,
+      pointHoverRadius:          5,
       pointHoverBackgroundColor: color,
       pointHoverBorderColor:     '#fff',
       pointHoverBorderWidth:     2,
-      shadowColor:          color,
-      shadowBlur:           10,
     };
   };
 
-  /** Dataset de barras neon padrão */
+  /* ── Dataset barras neon ── */
   window.ntBarDataset = function (label, data, color, ctx, fillHeight) {
-    const bg = ctx ? ntBarGrad(ctx, color, .85, .25, fillHeight) : color;
+    var bg = ctx ? ntBarGrad(ctx, color, .85, .2, fillHeight) : color;
     return {
-      label,
-      data,
-      backgroundColor:      bg,
-      borderColor:          color,
-      borderWidth:          1,
-      borderRadius:         8,
-      borderSkipped:        false,
-      hoverBackgroundColor: color,
-      hoverBorderWidth:     0,
+      label:               label,
+      data:                data,
+      backgroundColor:     bg,
+      borderColor:         color,
+      borderWidth:         1,
+      borderRadius:        9,
+      borderSkipped:       false,
+      hoverBackgroundColor:color,
+      hoverBorderWidth:    0,
     };
   };
 
-  /** Opções de escala padrão futurista */
+  /* ── Escalas padrão ── */
   window.ntScales = function (yCallback) {
-    const cb = yCallback || (v => 'R$' + (v >= 1000 ? (v/1000).toFixed(0)+'k' : v.toLocaleString('pt-BR')));
+    var cb = yCallback || function(v) {
+      return 'R$' + (v >= 1000 ? (v/1000).toFixed(0)+'k' : v.toLocaleString('pt-BR'));
+    };
     return {
-      x: {
-        grid:  { color: N.gridLine, lineWidth: 1 },
-        ticks: { color: N.tick },
-        border: { display: false },
-      },
-      y: {
-        grid:  { color: N.gridLine, lineWidth: 1 },
-        ticks: { color: N.tick, callback: cb },
-        border: { display: false },
-      },
+      x: { grid:{ color:N.gridLine, lineWidth:1 }, ticks:{ color:N.tick }, border:{ display:false } },
+      y: { grid:{ color:N.gridLine, lineWidth:1 }, ticks:{ color:N.tick, callback:cb }, border:{ display:false } },
     };
   };
 
-  /** Opções base para todos os gráficos */
+  /* ── Opções base ── */
   window.ntOptions = function (extra) {
-    return Object.assign({
-      responsive: true,
+    var base = {
+      responsive:          true,
       maintainAspectRatio: false,
-      interaction: { mode: 'index', intersect: false },
-      plugins: {
-        legend: { display: false },
-      },
-      scales: ntScales(),
-      animation: { duration: 1000, easing: 'easeOutQuart' },
-    }, extra || {});
+      interaction:         { mode:'index', intersect:false },
+      plugins:             { legend:{ display:false } },
+      scales:              ntScales(),
+      animation:           { duration:1100, easing:'easeOutQuart' },
+    };
+    if (!extra) return base;
+    // merge profundo apenas em plugins e scales
+    if (extra.scales)  base.scales  = Object.assign(base.scales,  extra.scales);
+    if (extra.plugins) base.plugins = Object.assign(base.plugins, extra.plugins);
+    return Object.assign(base, extra);
   };
-
-  /* Utilidade interna */
-  function hexAlpha(hex, a) {
-    const c = hex.replace('#','');
-    const r = parseInt(c.slice(0,2),16), g = parseInt(c.slice(2,4),16), b = parseInt(c.slice(4,6),16);
-    return `rgba(${r},${g},${b},${a})`;
-  }
 
   /* Expor paleta */
   window.NT_COLORS = N;
+
 })();
