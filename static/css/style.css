@@ -270,6 +270,11 @@ body {
 .nt-header-left  { display: flex; align-items: center; gap: 14px; }
 .nt-header-right { display: flex; align-items: center; gap: 10px; }
 
+.notif-item { transition: background .15s; }
+.notif-item:hover { background: rgba(255,255,255,.04); }
+.notif-unread { background: rgba(124,58,237,.07); }
+.notif-unread:hover { background: rgba(124,58,237,.12); }
+
 .nt-page-title {
   font-size: .95rem;
   font-weight: 700;

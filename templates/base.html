@@ -239,6 +239,38 @@
     <button id="darkToggle" title="Alternar tema">
       <i class="bi bi-sun-fill"></i>
     </button>
+
+    <!-- Sino de Notificações -->
+    <div class="dropdown" id="notif-dropdown">
+      <button class="btn btn-sm position-relative"
+              style="background:rgba(255,255,255,.08);border:1px solid var(--border);
+                     color:#fff;border-radius:10px;padding:6px 10px;"
+              data-bs-toggle="dropdown" aria-expanded="false"
+              id="notif-btn" title="Notificações">
+        <i class="bi bi-bell-fill"></i>
+        <span id="notif-badge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill"
+              style="background:#ef4444;font-size:.6rem;display:none;">0</span>
+      </button>
+      <div class="dropdown-menu dropdown-menu-end p-0"
+           style="min-width:320px;max-width:360px;border:1px solid var(--border);
+                  background:var(--card-bg);border-radius:12px;overflow:hidden;">
+        <div class="d-flex align-items-center justify-content-between px-3 py-2"
+             style="border-bottom:1px solid var(--border);">
+          <span class="fw-semibold" style="font-size:.85rem;">Notificações</span>
+          <button onclick="markAllRead()" class="btn btn-sm p-0"
+                  style="font-size:.75rem;color:var(--text-muted);background:none;border:none;">
+            Marcar todas lidas
+          </button>
+        </div>
+        <div id="notif-list" style="max-height:360px;overflow-y:auto;">
+          <div class="text-center py-4" style="color:var(--text-muted);font-size:.82rem;">
+            <i class="bi bi-bell-slash d-block mb-1" style="font-size:1.4rem;"></i>
+            Sem notificações
+          </div>
+        </div>
+      </div>
+    </div>
+
     <div class="dropdown">
       <button class="btn btn-sm d-flex align-items-center gap-2 dropdown-toggle"
               style="background:rgba(255,255,255,.08);border:1px solid var(--border);color:#fff;border-radius:10px;"
@@ -660,5 +692,90 @@ Tour.autoStart(TOUR_STEPS, 'nt_tour_atendente');
   }
 </script>
 {% block scripts %}{% endblock %}
+
+{% if current_user.is_authenticated %}
+<script>
+(function () {
+  const CSRF = document.querySelector('meta[name="csrf-token"]')?.content || '';
+
+  function renderNotifs(items) {
+    const list = document.getElementById('notif-list');
+    const badge = document.getElementById('notif-badge');
+    if (!list) return;
+    const unread = items.filter(n => !n.is_read).length;
+    if (unread > 0) {
+      badge.textContent = unread > 9 ? '9+' : unread;
+      badge.style.display = '';
+    } else {
+      badge.style.display = 'none';
+    }
+    if (items.length === 0) {
+      list.innerHTML = `<div class="text-center py-4" style="color:var(--text-muted);font-size:.82rem;">
+        <i class="bi bi-bell-slash d-block mb-1" style="font-size:1.4rem;"></i>Sem notificações</div>`;
+      return;
+    }
+    list.innerHTML = items.map(n => `
+      <div class="d-flex gap-2 px-3 py-2 notif-item ${n.is_read ? '' : 'notif-unread'}"
+           style="border-bottom:1px solid var(--border);cursor:pointer;"
+           onclick="openNotif(${n.id},'${n.link}')">
+        <div style="width:32px;height:32px;border-radius:50%;background:${n.color}22;
+                    display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;">
+          <i class="bi ${n.icon}" style="color:${n.color};font-size:.95rem;"></i>
+        </div>
+        <div style="flex:1;min-width:0;">
+          <div class="fw-semibold" style="font-size:.82rem;color:${n.is_read ? 'var(--text-muted)' : '#e2e8f0'};">
+            ${n.title}
+          </div>
+          ${n.body ? `<div style="font-size:.76rem;color:var(--text-muted);white-space:normal;">${n.body}</div>` : ''}
+          <div style="font-size:.7rem;color:var(--text-muted);margin-top:2px;">${n.time}</div>
+        </div>
+        ${!n.is_read ? `<span style="width:8px;height:8px;border-radius:50%;background:#7c3aed;
+                               flex-shrink:0;align-self:center;"></span>` : ''}
+      </div>`).join('');
+  }
+
+  function loadNotifs() {
+    fetch('/notificacoes/recentes')
+      .then(r => r.json()).then(renderNotifs).catch(() => {});
+  }
+
+  window.openNotif = function (id, link) {
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = `/notificacoes/${id}/ler`;
+    const t = document.createElement('input');
+    t.type = 'hidden'; t.name = 'csrf_token'; t.value = CSRF;
+    form.appendChild(t);
+    document.body.appendChild(form);
+    form.submit();
+  };
+
+  window.markAllRead = function () {
+    fetch('/notificacoes/ler-todas', {
+      method: 'POST',
+      headers: {'X-CSRFToken': CSRF, 'Content-Type': 'application/json'}
+    }).then(() => loadNotifs()).catch(() => {});
+  };
+
+  // Carrega ao abrir o dropdown
+  document.getElementById('notif-btn')?.addEventListener('click', loadNotifs);
+  // Polling a cada 60s para atualizar o badge
+  loadNotifs();
+  setInterval(function () {
+    fetch('/notificacoes/count')
+      .then(r => r.json()).then(d => {
+        const badge = document.getElementById('notif-badge');
+        if (!badge) return;
+        if (d.count > 0) {
+          badge.textContent = d.count > 9 ? '9+' : d.count;
+          badge.style.display = '';
+        } else {
+          badge.style.display = 'none';
+        }
+      }).catch(() => {});
+  }, 60000);
+})();
+</script>
+{% endif %}
 </body>
 </html>

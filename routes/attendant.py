@@ -906,6 +906,14 @@ def request_overtime():
         return redirect(url_for('attendant.dashboard'))
     req = OvertimeRequest(user_id=current_user.id, requested_at=now_br(), status='pending')
     db.session.add(req)
+    db.session.flush()
+    from notify import notify_admins
+    notify_admins(
+        f'Hora extra solicitada — {current_user.name}',
+        'Clique para aprovar ou negar a solicitação.',
+        link='/admin/hora-extra',
+        icon='bi-clock-history', color='#fcd34d'
+    )
     db.session.commit()
     flash('Solicitação de hora extra enviada! Aguarde aprovação do administrador.', 'info')
     return redirect(url_for('attendant.dashboard'))

@@ -438,6 +438,22 @@ class CommissionPayment(db.Model):
     payer     = db.relationship('User', foreign_keys=[paid_by])
 
 
+class Notification(db.Model):
+    """Notificações internas do sistema para um usuário específico."""
+    __tablename__ = 'notifications'
+    id           = db.Column(db.Integer, primary_key=True)
+    recipient_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    title        = db.Column(db.String(120), nullable=False)
+    body         = db.Column(db.Text, nullable=True)
+    link         = db.Column(db.String(255), nullable=True)   # URL para redirecionar ao clicar
+    icon         = db.Column(db.String(40), nullable=True, default='bi-bell-fill')
+    color        = db.Column(db.String(20), nullable=True, default='#a5b4fc')
+    is_read      = db.Column(db.Boolean, default=False)
+    created_at   = db.Column(db.DateTime, nullable=False, default=now_br)
+
+    recipient = db.relationship('User', foreign_keys=[recipient_id])
+
+
 class AuditLog(db.Model):
     """Trilha de auditoria para ações críticas no sistema."""
     __tablename__ = 'audit_logs'

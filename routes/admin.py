@@ -6,6 +6,7 @@ from models import (db, User, Attendance, AttendanceBreak, OvertimeRequest,
                     AttendantGoal, CommissionPayment, PriceItem,
                     AbsenceRecord, SalaryPayment, AuditLog)
 from audit import log_action
+from notify import notify, notify_admins
 from datetime import datetime, date, timedelta
 from utils import now_br, today_br
 from sqlalchemy import func
@@ -415,6 +416,10 @@ def approve_overtime(id):
     req.approved_by = current_user.id
     req.approved_at = now_br()
     log_action('overtime_approve', f'Hora extra aprovada para {req.user.name}', 'OvertimeRequest', req.id)
+    notify(req.user_id, 'Hora extra aprovada!',
+           f'Sua solicitação de hora extra foi aprovada por {current_user.name}.',
+           link=url_for('attendant.dashboard'),
+           icon='bi-check-circle-fill', color='#6ee7b7')
     db.session.commit()
     flash(f'Solicitação de {req.user.name} aprovada!', 'success')
     return redirect(url_for('admin.overtime_requests'))
@@ -429,6 +434,10 @@ def deny_overtime(id):
     req.approved_by = current_user.id
     req.approved_at = now_br()
     log_action('overtime_deny', f'Hora extra negada para {req.user.name}', 'OvertimeRequest', req.id)
+    notify(req.user_id, 'Hora extra negada',
+           f'Sua solicitação de hora extra foi negada por {current_user.name}.',
+           link=url_for('attendant.dashboard'),
+           icon='bi-x-circle-fill', color='#fca5a5')
     db.session.commit()
     flash(f'Solicitação de {req.user.name} negada.', 'warning')
     return redirect(url_for('admin.overtime_requests'))
@@ -921,8 +930,14 @@ def pay_commission():
     db.session.add(CommissionPayment(
         attendant_id=att_id, year=year, month=mon,
         amount=amount, paid_by=current_user.id, notes=notes))
-    db.session.commit()
+    db.session.flush()
     att = User.query.get(att_id)
+    month_names = ['','Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez']
+    notify(att_id, 'Comissão paga!',
+           f'R$ {amount:.2f} de comissão referente a {month_names[mon]}/{year} foi creditado.',
+           link=url_for('attendant.my_commissions'),
+           icon='bi-cash-coin', color='#6ee7b7')
+    db.session.commit()
     flash(f'Pagamento de R$ {amount:.2f} registrado para {att.name}!', 'success')
     return redirect(url_for('admin.commissions', month=f'{year}-{mon:02d}'))
 
@@ -1068,8 +1083,14 @@ def pay_salary():
     db.session.add(SalaryPayment(
         attendant_id=uid, year=year, month=month,
         amount=amount, paid_by=current_user.id, notes=notes))
-    db.session.commit()
+    db.session.flush()
     u = User.query.get(uid)
+    month_names = ['','Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez']
+    notify(uid, 'Salário pago!',
+           f'R$ {amount:.2f} referente a {month_names[month]}/{year} foi registrado.',
+           link=url_for('attendant.dashboard'),
+           icon='bi-wallet2', color='#fde68a')
+    db.session.commit()
     flash(f'Pagamento de R$ {amount:.2f} registrado para {u.name}!', 'success')
     return redirect(url_for('admin.salaries', m=f'{year}-{month:02d}'))
 

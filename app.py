@@ -88,6 +88,7 @@ def create_app():
     from routes.automations import automations_bp
     from routes.financial import financial_bp
     from routes.exports import exports_bp
+    from routes.notifications import notifications_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(admin_bp,        url_prefix='/admin')
@@ -97,7 +98,8 @@ def create_app():
     app.register_blueprint(chat_bp,         url_prefix='/chat')
     app.register_blueprint(automations_bp,  url_prefix='/automacoes')
     app.register_blueprint(financial_bp,    url_prefix='/financeiro')
-    app.register_blueprint(exports_bp,      url_prefix='/exportar')
+    app.register_blueprint(exports_bp,        url_prefix='/exportar')
+    app.register_blueprint(notifications_bp,  url_prefix='/notificacoes')
 
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
@@ -132,6 +134,25 @@ def _upgrade_db():
         ('absence_records','notes',                'TEXT'),
         ('salary_payments','notes',                'TEXT'),
     ]
+    # Cria tabela notifications se não existir (PostgreSQL)
+    try:
+        with db.engine.connect() as conn:
+            conn.execute(db.text("""
+                CREATE TABLE IF NOT EXISTS notifications (
+                    id SERIAL PRIMARY KEY,
+                    recipient_id INTEGER REFERENCES users(id),
+                    title VARCHAR(120) NOT NULL,
+                    body TEXT,
+                    link VARCHAR(255),
+                    icon VARCHAR(40) DEFAULT 'bi-bell-fill',
+                    color VARCHAR(20) DEFAULT '#a5b4fc',
+                    is_read BOOLEAN DEFAULT FALSE,
+                    created_at TIMESTAMP DEFAULT NOW()
+                )
+            """))
+            conn.commit()
+    except Exception:
+        pass
     # Cria tabela audit_logs se não existir (PostgreSQL)
     try:
         with db.engine.connect() as conn:
