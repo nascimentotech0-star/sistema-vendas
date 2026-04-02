@@ -192,6 +192,37 @@ def dashboard():
         att_month[s.attendant_id]['count'] += 1
     ranking = sorted(att_month.values(), key=lambda x: x['total'], reverse=True)[:5]
 
+    # ── Campeões por plano (mês atual) ────────────────────────────────────────
+    # Para cada plano ativo, encontra quem mais vendeu no mês
+    # Matching por (amount ≈ price ± R$5) + screens
+    active_plans = PriceItem.query.filter_by(is_active=True).order_by(PriceItem.price).all()
+    plan_champions = []
+    for plan in active_plans:
+        top = (
+            db.session.query(
+                User.id,
+                User.name,
+                func.count(Sale.id).label('cnt'),
+            )
+            .join(Sale, Sale.attendant_id == User.id)
+            .filter(
+                Sale.created_at >= month_start_dt,
+                Sale.created_at < month_end_dt,
+                func.abs(Sale.amount - plan.price) <= 5,
+                Sale.screens == (plan.screens or 1),
+            )
+            .group_by(User.id, User.name)
+            .order_by(func.count(Sale.id).desc())
+            .first()
+        )
+        if top and top.cnt > 0:
+            plan_champions.append({
+                'plan':  plan,
+                'name':  top.name.split()[0],
+                'count': top.cnt,
+                'uid':   top.id,
+            })
+
     return render_template('admin/dashboard.html',
         today=today,
         today_total=today_total,
@@ -221,6 +252,7 @@ def dashboard():
         ranking=ranking,
         renewals_expiring_soon=renewals_expiring_soon,
         manager_attendance=current_user.active_attendance if current_user.is_manager() else None,
+        plan_champions=plan_champions,
     )
 
 
