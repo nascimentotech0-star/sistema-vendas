@@ -275,6 +275,38 @@ body {
 .notif-unread { background: rgba(124,58,237,.07); }
 .notif-unread:hover { background: rgba(124,58,237,.12); }
 
+/* ── Barras de meta animadas ── */
+.nt-bar-track {
+  background: rgba(255,255,255,.06);
+  border-radius: 8px;
+  height: 12px;
+  overflow: hidden;
+  position: relative;
+}
+.nt-bar-fill {
+  height: 100%;
+  border-radius: 8px;
+  width: 0;                             /* começa em 0, JS anima para data-pct */
+  background: var(--bar-color);
+  box-shadow: 0 0 10px var(--bar-glow);
+  transition: width 1s cubic-bezier(.4,0,.2,1);
+  position: relative;
+  overflow: hidden;
+}
+/* shimmer que desliza sobre a barra */
+.nt-bar-fill::after {
+  content: '';
+  position: absolute;
+  top: 0; left: -60%;
+  width: 50%; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.25), transparent);
+  animation: nt-shimmer 2.2s infinite;
+}
+@keyframes nt-shimmer {
+  0%   { left: -60%; }
+  100% { left: 130%; }
+}
+
 @keyframes nt-shake {
   0%,100% { transform: translateX(0); }
   20%,60%  { transform: translateX(-6px); }

@@ -12,7 +12,7 @@ from werkzeug.utils import secure_filename
 
 from models import (db, User, Attendance, AttendanceBreak, OvertimeRequest, Client, Sale, Renewal,
                     PAYMENT_METHODS, BREAK_ALLOWED_MINUTES, DAYS_AT_RISK,
-                    CommissionPayment, PriceItem)
+                    CommissionPayment, PriceItem, AttendantGoal)
 from flask import jsonify as _jsonify
 from audit import log_action
 
@@ -537,6 +537,16 @@ def dashboard():
     commission_progress = min(int(month_sales_count / sales_target * 100), 100)
     sales_remaining     = max(sales_target - month_sales_count, 0)
 
+    # ── Metas do mês (AttendantGoal) ─────────────────────────────────────────
+    goal = AttendantGoal.query.filter_by(
+        user_id=current_user.id,
+        year=today.year, month=today.month
+    ).first()
+    goal_sales_target   = goal.sales_goal    if goal and goal.sales_goal    else 0.0
+    goal_renewal_target = goal.renewals_goal if goal and goal.renewals_goal else 0
+    goal_sales_pct      = min(int(month_total / goal_sales_target * 100), 100) if goal_sales_target > 0 else 0
+    goal_renewal_pct    = min(int(renewals_done / goal_renewal_target * 100), 100) if goal_renewal_target > 0 else 0
+
     # ── Ranking do mês (todos os atendentes) ─────────────────────────────────
     ranking_rows = (
         db.session.query(
@@ -606,6 +616,10 @@ def dashboard():
         sales_remaining=sales_remaining,
         motivational_msg=motivational_msg,
         ranking=ranking_top,
+        goal_sales_target=goal_sales_target,
+        goal_renewal_target=goal_renewal_target,
+        goal_sales_pct=goal_sales_pct,
+        goal_renewal_pct=goal_renewal_pct,
         my_rank_pos=my_rank_pos,
     )
 

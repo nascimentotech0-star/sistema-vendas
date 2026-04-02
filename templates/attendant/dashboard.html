@@ -282,9 +282,12 @@
 </div>
 
 <!-- ── COMISSÃO DO MÊS ── -->
-<div class="card mb-4" style="border:1px solid rgba(16,185,129,.3);background:rgba(16,185,129,.06);">
+<!-- ── Card de Metas e Comissão ───────────────────────────────────────────── -->
+<div class="card mb-4" style="border:1px solid rgba(16,185,129,.3);background:rgba(16,185,129,.04);">
   <div class="card-body py-3">
-    <div class="row g-0 align-items-center mb-2">
+
+    <!-- Cabeçalho: comissão total + hoje -->
+    <div class="row g-0 align-items-center mb-3">
       <div class="col">
         <p class="mb-1" style="font-size:.7rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;">
           <i class="bi bi-percent me-1" style="color:#6ee7b7;"></i> Comissão acumulada este mês
@@ -302,44 +305,106 @@
       </div>
     </div>
 
-    {# ── Barra de progressão de comissão progressiva ── #}
-    {% if not is_overtime %}
-    <div style="border-top:1px solid rgba(16,185,129,.2);padding-top:.75rem;">
-      <div class="d-flex justify-content-between align-items-center mb-1">
-        <span style="font-size:.72rem;color:var(--text-muted);">
-          <i class="bi bi-graph-up-arrow me-1" style="color:#6ee7b7;"></i>
-          Próxima venda:
-          <strong style="color:#6ee7b7;">{{ current_rate }}%</strong>
-          &nbsp;·&nbsp;
-          <span style="color:var(--text-muted);">{{ month_sales_count }} de {{ sales_target }} vendas</span>
-          {% if current_rate >= 10 %}
-            &nbsp;<span style="color:#fcd34d;font-weight:600;">— Meta batida! 🏆</span>
-          {% endif %}
-        </span>
-        <span style="font-size:.72rem;font-weight:600;color:#6ee7b7;">{{ commission_progress }}%</span>
+    <!-- Barras de metas -->
+    <div style="border-top:1px solid rgba(16,185,129,.15);padding-top:.85rem;display:flex;flex-direction:column;gap:14px;">
+
+      {# ── 1. Meta de vendas em R$ (definida pelo admin) ── #}
+      {% if goal_sales_target > 0 %}
+      {% set sp = goal_sales_pct %}
+      <div class="nt-goal-row">
+        <div class="d-flex justify-content-between align-items-center mb-1">
+          <span style="font-size:.75rem;color:var(--text-muted);">
+            <i class="bi bi-cash-stack me-1" style="color:#a78bfa;"></i>
+            Meta de Vendas (R$)
+            <span style="color:var(--text-muted);"> · R$ {{ "%.0f"|format(month_total) }} / R$ {{ "%.0f"|format(goal_sales_target) }}</span>
+          </span>
+          <span class="nt-goal-pct" style="font-size:.75rem;font-weight:700;
+            color:{% if sp >= 100 %}#fcd34d{% elif sp >= 60 %}#a78bfa{% else %}var(--text-muted){% endif %};">
+            {{ sp }}%{% if sp >= 100 %} 🏆{% endif %}
+          </span>
+        </div>
+        <div class="nt-bar-track">
+          <div class="nt-bar-fill" data-pct="{{ sp }}"
+               style="--bar-color:{% if sp >= 100 %}linear-gradient(90deg,#7c3aed,#fcd34d){% else %}linear-gradient(90deg,#7c3aed,#a78bfa){% endif %};
+                      --bar-glow:rgba(124,58,237,.5);">
+          </div>
+        </div>
+        <div class="d-flex justify-content-between mt-1">
+          <span style="font-size:.67rem;color:var(--text-muted);">R$ 0</span>
+          <span style="font-size:.67rem;color:var(--text-muted);">
+            {% if sp < 100 %}Faltam R$ {{ "%.0f"|format(goal_sales_target - month_total) }}{% else %}Meta atingida!{% endif %}
+          </span>
+          <span style="font-size:.67rem;color:var(--text-muted);">R$ {{ "%.0f"|format(goal_sales_target) }}</span>
+        </div>
       </div>
-      {# Barra de gradiente que vai do verde claro ao ouro ao bater a meta #}
-      <div style="background:rgba(255,255,255,.06);border-radius:6px;height:10px;overflow:hidden;position:relative;">
-        <div style="height:100%;border-radius:6px;width:{{ commission_progress }}%;
-                    background:linear-gradient(90deg,
-                      #10b981 0%,
-                      #6ee7b7 {% if commission_progress > 60 %}60%{% else %}{{ commission_progress }}%{% endif %},
-                      {% if commission_progress >= 100 %}#fcd34d 100%{% else %}#6ee7b7 100%{% endif %});
-                    transition:width .8s ease;box-shadow:0 0 8px rgba(16,185,129,.4);"></div>
+      {% endif %}
+
+      {# ── 2. Meta de renovações (count) ── #}
+      {% if goal_renewal_target > 0 %}
+      {% set rp = goal_renewal_pct %}
+      <div class="nt-goal-row">
+        <div class="d-flex justify-content-between align-items-center mb-1">
+          <span style="font-size:.75rem;color:var(--text-muted);">
+            <i class="bi bi-arrow-repeat me-1" style="color:#67e8f9;"></i>
+            Meta de Renovações
+            <span style="color:var(--text-muted);"> · {{ renewals_done }} / {{ goal_renewal_target }}</span>
+          </span>
+          <span class="nt-goal-pct" style="font-size:.75rem;font-weight:700;
+            color:{% if rp >= 100 %}#fcd34d{% elif rp >= 60 %}#67e8f9{% else %}var(--text-muted){% endif %};">
+            {{ rp }}%{% if rp >= 100 %} 🏆{% endif %}
+          </span>
+        </div>
+        <div class="nt-bar-track">
+          <div class="nt-bar-fill" data-pct="{{ rp }}"
+               style="--bar-color:{% if rp >= 100 %}linear-gradient(90deg,#0891b2,#fcd34d){% else %}linear-gradient(90deg,#0891b2,#67e8f9){% endif %};
+                      --bar-glow:rgba(6,182,212,.5);">
+          </div>
+        </div>
+        <div class="d-flex justify-content-between mt-1">
+          <span style="font-size:.67rem;color:var(--text-muted);">0</span>
+          <span style="font-size:.67rem;color:var(--text-muted);">
+            {% if rp < 100 %}Faltam {{ goal_renewal_target - renewals_done }} renovação{{ 'ões' if (goal_renewal_target - renewals_done) != 1 }}{% else %}Meta atingida!{% endif %}
+          </span>
+          <span style="font-size:.67rem;color:var(--text-muted);">{{ goal_renewal_target }}</span>
+        </div>
       </div>
-      <div class="d-flex justify-content-between mt-1">
-        <span style="font-size:.68rem;color:var(--text-muted);">5%</span>
-        <span style="font-size:.68rem;color:var(--text-muted);">
-          {% if sales_remaining > 0 %}
-            Faltam <strong style="color:#6ee7b7;">{{ sales_remaining }}</strong> venda{{ 's' if sales_remaining != 1 }} para 10%
-          {% else %}
-            Comissão máxima atingida!
-          {% endif %}
-        </span>
-        <span style="font-size:.68rem;color:var(--text-muted);">10%</span>
+      {% endif %}
+
+      {# ── 3. Meta de comissão progressiva (vendas count → taxa) ── #}
+      {% if not is_overtime %}
+      {% set cp = commission_progress %}
+      <div class="nt-goal-row">
+        <div class="d-flex justify-content-between align-items-center mb-1">
+          <span style="font-size:.75rem;color:var(--text-muted);">
+            <i class="bi bi-graph-up-arrow me-1" style="color:#6ee7b7;"></i>
+            Comissão Progressiva
+            <span style="color:var(--text-muted);"> · {{ month_sales_count }} / {{ sales_target }} vendas</span>
+            {% if current_rate >= 10 %}
+              <span style="color:#fcd34d;font-weight:600;"> — Máximo!</span>
+            {% endif %}
+          </span>
+          <span style="font-size:.75rem;font-weight:700;
+            color:{% if cp >= 100 %}#fcd34d{% else %}#6ee7b7{% endif %};">
+            {{ current_rate }}%{% if cp >= 100 %} 🏆{% endif %}
+          </span>
+        </div>
+        <div class="nt-bar-track">
+          <div class="nt-bar-fill" data-pct="{{ cp }}"
+               style="--bar-color:{% if cp >= 100 %}linear-gradient(90deg,#10b981,#fcd34d){% else %}linear-gradient(90deg,#10b981,#6ee7b7){% endif %};
+                      --bar-glow:rgba(16,185,129,.5);">
+          </div>
+        </div>
+        <div class="d-flex justify-content-between mt-1">
+          <span style="font-size:.67rem;color:var(--text-muted);">5%</span>
+          <span style="font-size:.67rem;color:var(--text-muted);">
+            {% if sales_remaining > 0 %}Faltam {{ sales_remaining }} venda{{ 's' if sales_remaining != 1 }}{% else %}Comissão máxima!{% endif %}
+          </span>
+          <span style="font-size:.67rem;color:var(--text-muted);">10%</span>
+        </div>
       </div>
-    </div>
-    {% endif %}
+      {% endif %}
+
+    </div><!-- /barras -->
   </div>
 </div>
 
@@ -572,6 +637,20 @@
   to   { opacity:0; transform:translateY(16px); }
 }
 </style>
+
+<script>
+// Anima as barras de meta ao carregar a página
+document.addEventListener('DOMContentLoaded', function () {
+  requestAnimationFrame(function () {
+    document.querySelectorAll('.nt-bar-fill').forEach(function (bar) {
+      var pct = parseInt(bar.dataset.pct || '0', 10);
+      setTimeout(function () {
+        bar.style.width = Math.min(pct, 100) + '%';
+      }, 120); // pequeno delay para o fade-in da página completar
+    });
+  });
+});
+</script>
 
 {% endblock %}
 
