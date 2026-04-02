@@ -1,9 +1,22 @@
 import os
+import sentry_sdk
+from sentry_sdk.integrations.flask import FlaskIntegration
 from flask import Flask
 from flask_login import LoginManager, current_user
 from models import db, User
 from config import Config
 from extensions import csrf, limiter
+
+# ── Sentry — monitoramento de erros em produção ──────────────────────────────
+_sentry_dsn = os.environ.get('SENTRY_DSN', '')
+if _sentry_dsn:
+    sentry_sdk.init(
+        dsn=_sentry_dsn,
+        integrations=[FlaskIntegration()],
+        traces_sample_rate=0.2,   # 20% das requisições para performance
+        send_default_pii=False,   # não envia dados pessoais
+        environment=os.environ.get('FLASK_ENV', 'production'),
+    )
 
 
 def create_app():
