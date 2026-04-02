@@ -154,6 +154,64 @@
 </div>
 {% endif %}
 
+{# ── FILA DO DIA ─────────────────────────────────────────────────────────── #}
+<div class="card mb-4" style="border-left:4px solid
+  {%- if priorities and priorities[0].urgency == 'danger' %} #ef4444
+  {%- elif priorities and priorities[0].urgency == 'warning' %} #f59e0b
+  {%- else %} #6366f1{% endif %} !important;">
+  <div class="card-header d-flex align-items-center gap-2 py-2" role="button"
+       data-bs-toggle="collapse" data-bs-target="#collapseQueue" style="cursor:pointer;">
+    <i class="bi bi-list-check" style="color:
+      {%- if priorities and priorities[0].urgency == 'danger' %}#fca5a5
+      {%- elif priorities and priorities[0].urgency == 'warning' %}#fcd34d
+      {%- else %}#a5b4fc{% endif %};"></i>
+    <span class="fw-semibold">Fila do Dia</span>
+    {% if priorities %}
+      <span class="badge ms-1 px-2 py-1" style="background:rgba(239,68,68,.2);color:#fca5a5;font-size:.72rem;">
+        {{ priorities|length }} pendência{{ 's' if priorities|length != 1 }}
+      </span>
+    {% else %}
+      <span class="badge ms-1 px-2 py-1" style="background:rgba(16,185,129,.2);color:#6ee7b7;font-size:.72rem;">
+        <i class="bi bi-check2-all me-1"></i>Tudo em dia
+      </span>
+    {% endif %}
+    <i class="bi bi-chevron-down ms-auto" id="chevronQueue" style="transition:.2s;transform:rotate(180deg);font-size:.8rem;"></i>
+  </div>
+  <div class="collapse show" id="collapseQueue">
+    <div class="card-body p-0">
+      {% if priorities %}
+        {% for p in priorities %}
+        <a href="{{ url_for('contacts.client_detail', client_id=p.client_id) }}"
+           class="d-flex align-items-center gap-3 px-4 py-3 text-decoration-none {% if not loop.last %}row-divider{% endif %}"
+           style="transition:background .15s;"
+           onmouseover="this.style.background='rgba(255,255,255,.04)'" onmouseout="this.style.background=''">
+          <div style="width:32px;height:32px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;
+            background:{% if p.urgency == 'danger' %}rgba(239,68,68,.15){% elif p.urgency == 'warning' %}rgba(245,158,11,.15){% else %}rgba(99,102,241,.15){% endif %};">
+            <i class="bi {{ p.icon }}" style="font-size:.78rem;color:
+              {%- if p.urgency == 'danger' %}#fca5a5
+              {%- elif p.urgency == 'warning' %}#fcd34d
+              {%- else %}#a5b4fc{% endif %};"></i>
+          </div>
+          <div class="flex-fill">
+            <div style="font-size:.85rem;font-weight:600;color:var(--text);">{{ p.client }}</div>
+            <div style="font-size:.73rem;color:
+              {%- if p.urgency == 'danger' %}#fca5a5
+              {%- elif p.urgency == 'warning' %}#fcd34d
+              {%- else %}#a5b4fc{% endif %};">{{ p.label }}</div>
+          </div>
+          <i class="bi bi-chevron-right" style="font-size:.7rem;color:var(--text-muted);"></i>
+        </a>
+        {% endfor %}
+      {% else %}
+        <div class="empty-state py-4">
+          <i class="bi bi-check2-circle" style="color:#6ee7b7;font-size:1.8rem;"></i>
+          <span style="color:#6ee7b7;">Sem pendências para hoje!</span>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
 {% if is_overtime or can_request_overtime %}
 <div class="card mb-4" style="border-left:4px solid var(--accent4) !important;">
   <div class="card-body">
@@ -639,6 +697,14 @@
 </style>
 
 <script>
+// Chevron da fila do dia
+document.getElementById('collapseQueue').addEventListener('show.bs.collapse', () => {
+  document.getElementById('chevronQueue').style.transform = 'rotate(180deg)';
+});
+document.getElementById('collapseQueue').addEventListener('hide.bs.collapse', () => {
+  document.getElementById('chevronQueue').style.transform = 'rotate(0deg)';
+});
+
 // Anima as barras de meta ao carregar a página
 document.addEventListener('DOMContentLoaded', function () {
   requestAnimationFrame(function () {

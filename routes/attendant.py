@@ -568,6 +568,55 @@ def dashboard():
     my_rank_pos = next((i + 1 for i, r in enumerate(ranking_all) if r['id'] == current_user.id), None)
     ranking_top = ranking_all[:5]
 
+    # ── Fila de prioridades do dia ─────────────────────────────────────────────
+    in_3_days = today + timedelta(days=3)
+    priorities = []
+
+    # 1. Renovações vencendo hoje (máxima urgência)
+    for r in renewals_pending:
+        if r.due_date == today:
+            priorities.append({
+                'urgency': 'danger',
+                'icon': 'bi-exclamation-circle-fill',
+                'label': 'Renova HOJE',
+                'client': r.client.name,
+                'client_id': r.client_id,
+            })
+
+    # 2. Renovações já vencidas
+    for r in renewals_overdue:
+        days_late = (today - r.due_date).days
+        priorities.append({
+            'urgency': 'danger',
+            'icon': 'bi-x-circle-fill',
+            'label': f'Vencida há {days_late} dia{"s" if days_late != 1 else ""}',
+            'client': r.client.name,
+            'client_id': r.client_id,
+        })
+
+    # 3. Clientes sem contato (próprios do atendente)
+    my_at_risk = [c for c in at_risk_clients if c.registered_by == current_user.id]
+    for c in my_at_risk[:8]:
+        priorities.append({
+            'urgency': 'warning',
+            'icon': 'bi-person-exclamation',
+            'label': f'{c.days_without_contact} dia{"s" if c.days_without_contact != 1 else ""} sem contato',
+            'client': c.name,
+            'client_id': c.id,
+        })
+
+    # 4. Renovações vencendo nos próximos 3 dias (preventivo)
+    for r in renewals_pending:
+        if today < r.due_date <= in_3_days:
+            days_until = (r.due_date - today).days
+            priorities.append({
+                'urgency': 'info',
+                'icon': 'bi-clock-fill',
+                'label': f'Renova em {days_until} dia{"s" if days_until != 1 else ""}',
+                'client': r.client.name,
+                'client_id': r.client_id,
+            })
+
     # ── Mensagem motivacional aleatória ──────────────────────────────────────
     import random
     motivational_msg = random.choice(_MOTIVATIONAL)
@@ -621,6 +670,7 @@ def dashboard():
         goal_sales_pct=goal_sales_pct,
         goal_renewal_pct=goal_renewal_pct,
         my_rank_pos=my_rank_pos,
+        priorities=priorities,
     )
 
 
