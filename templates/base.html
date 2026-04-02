@@ -338,97 +338,109 @@ const TOUR_STEPS = [
   {
     icon: '👋',
     title: 'Bem-vindo, Administrador!',
-    text: 'Este é o painel completo do <strong>Nascimento Tech</strong>. Você tem controle total: atendentes, salários, vendas, caixa, financeiro, automações e muito mais. Este tutorial vai te guiar por todas as funcionalidades.',
+    text: 'Este é o painel completo do <strong>Nascimento Tech</strong>. Você tem controle total: atendentes, salários, vendas, caixa, financeiro, automações, auditoria e muito mais. Este tutorial vai te guiar por todas as funcionalidades.',
     selector: null
   },
   {
     icon: '📊',
     title: 'Dashboard — Visão Geral',
-    text: 'O <strong>Dashboard</strong> é a central de informações em tempo real. Você vê: total de vendas do dia, comissões geradas, atendentes online agora, renovações vencidas (badge vermelho no menu), gráfico de vendas dos últimos 30 dias e ranking dos atendentes.',
+    text: 'O <strong>Dashboard</strong> é a central de informações em tempo real. Você vê: total de vendas do dia, comissões geradas, atendentes online, renovações vencidas, ranking do mês e o card <strong>Campeões por Plano</strong> — que mostra quem mais vendeu cada plano no mês atual.',
     selector: 'a[href*="dashboard"]'
   },
   {
     icon: '👥',
     title: 'Atendentes — Gestão de Equipe',
-    text: 'Em <strong>Atendentes</strong> você cria e gerencia toda a equipe. Perfis disponíveis: <strong>Atendente</strong> (vendas e renovações), <strong>Gerente</strong> (painel completo + operacional), <strong>Financeiro</strong> (leitura e exportação). Você também define salário base, carga horária/dia e dias trabalhados/mês de cada um.',
+    text: 'Em <strong>Atendentes</strong> você cria e gerencia toda a equipe. Perfis: <strong>Atendente</strong>, <strong>Gerente</strong> e <strong>Financeiro</strong>. Para gerentes, você define permissões granulares: editar ponto, pagar comissões, alterar preços e excluir vendas — cada permissão pode ser ativada ou desativada individualmente.',
     selector: 'a[href*="atendentes"]'
   },
   {
     icon: '💼',
     title: 'Salários — Controle de Ponto e Desconto',
-    text: 'Em <strong>Salários</strong> você acompanha o salário previsto de cada funcionário no mês. O sistema calcula automaticamente: <strong>Valor/hora</strong> = Salário ÷ (Dias/mês × h/dia). Se o atendente bater menos horas do que o esperado, o desconto é calculado sobre os minutos em falta. Turno em aberto não desconta — só turnos encerrados.',
+    text: 'Em <strong>Salários</strong> você acompanha o salário previsto de cada funcionário. O sistema calcula: <strong>Valor/hora</strong> = Salário ÷ (Dias/mês × h/dia). Minutos em falta em turnos encerrados geram desconto proporcional. Você pode exportar o resumo salarial em PDF pelo botão na tela.',
     selector: 'a[href*="salarios"]'
   },
   {
     icon: '🛒',
     title: 'Vendas — Histórico Completo',
-    text: 'Em <strong>Vendas</strong> você vê todas as vendas registradas pela equipe. Filtre por atendente, data, plano ou forma de pagamento. Cada registro mostra: cliente, plano, valor base, ajuste (desconto/acréscimo), valor final e comprovante em PDF/imagem. Vendas sem comprovante não são aceitas pelo sistema.',
+    text: 'Em <strong>Vendas</strong> você vê todas as vendas da equipe com filtros por atendente, data e plano. Vendas com comprovante duplicado são sinalizadas como <strong>fraude</strong> — o badge laranja no menu avisa quando há suspeita. Você pode exportar o relatório de vendas em PDF.',
     selector: 'a[href*="vendas"]'
   },
   {
     icon: '💰',
     title: 'Caixa — Conferência Diária',
-    text: 'O <strong>Caixa</strong> resume os recebimentos do dia separados por forma de pagamento: Pix, Cartão de Crédito, Cartão de Débito e Cakto. Use para conferir se o total fechado bate com o que foi recebido fisicamente. Você pode navegar por datas anteriores também.',
+    text: 'O <strong>Caixa</strong> resume os recebimentos do dia separados por forma de pagamento: Pix, Crédito, Débito e Cakto. Navegue por datas anteriores para conferências. Use em conjunto com o Financeiro para controle completo.',
     selector: 'a[href*="caixa"]'
   },
   {
     icon: '💳',
-    title: 'Financeiro — Controle de Entrada e Saída',
-    text: 'O módulo <strong>Financeiro</strong> permite registrar entradas e saídas manuais (ex: pagamento de comissão, despesas operacionais). Separa por categoria e mostra saldo do período. Use em conjunto com o Caixa para ter controle financeiro completo.',
+    title: 'Financeiro — Entradas e Saídas',
+    text: 'O módulo <strong>Financeiro</strong> permite registrar entradas e saídas manuais (ex: pagamento de comissão, despesas). Separa por categoria e mostra saldo do período. Relatório disponível em PDF para exportação.',
     selector: 'a[href*="financeiro"]'
   },
   {
     icon: '🔄',
     title: 'Renovações — Controle de Vencimentos',
-    text: 'Em <strong>Renovações</strong> você acompanha todos os vencimentos. Renovações vencidas aparecem em vermelho com badge no menu. Você pode criar renovações manualmente, editar datas e marcar como renovada ou cancelada. Cada renovação exige comprovante obrigatório.',
+    text: 'Em <strong>Renovações</strong> você acompanha todos os vencimentos da base de clientes. Vencidas aparecem com badge vermelho no menu. Você pode criar renovações avulsas, editar datas e marcar como renovada ou cancelada. Comprovante é obrigatório.',
     selector: 'a[href*="renovacoes"]'
   },
   {
     icon: '📞',
-    title: 'Clientes — Monitoramento e Auditoria',
-    text: 'Em <strong>Clientes</strong> você vê todos os clientes cadastrados no sistema. Clientes sem contato há mais de 5 dias aparecem destacados como <em>Em risco</em>. Ao clicar em um cliente, você vê o histórico completo de contatos, vendas e renovações — ótimo para auditoria de atendimento.',
+    title: 'Clientes — Monitoramento e Retenção',
+    text: 'Em <strong>Clientes</strong> você vê toda a base. Clientes sem contato há mais de 5 dias aparecem como <em>Em risco</em>. No perfil de cada cliente há uma <strong>timeline completa</strong>: vendas, renovações, contatos e registros automáticos de visualização — para auditoria do atendimento.',
     selector: 'a[href*="clientes"]'
   },
   {
     icon: '🏆',
-    title: 'Metas e Comissões',
-    text: 'Em <strong>Metas</strong> você define a meta mensal de vendas de cada atendente. O sistema calcula automaticamente as comissões: <strong>5%</strong> por venda normal e <strong>20%</strong> em hora extra. Em <strong>Comissões</strong> você registra os pagamentos para que o atendente veja o histórico do que foi pago.',
+    title: 'Metas e Comissões — Sistema Progressivo',
+    text: 'Em <strong>Metas</strong> você define a meta mensal de cada atendente. A comissão é <strong>progressiva</strong>: começa em <strong>5%</strong> (zero vendas) e sobe até <strong>10%</strong> ao bater a meta — cada venda aumenta a taxa proporcionalmente. Hora extra paga <strong>20%</strong>. Em Comissões você registra o que foi pago.',
     selector: 'a[href*="metas"]'
   },
   {
     icon: '💳',
     title: 'Tabela de Preços — Planos',
-    text: 'Em <strong>Tabela de Preços</strong> você cadastra os planos disponíveis com nome, valor, período (ex: 1 mês, 3 meses) e número de telas. Esses planos aparecem como botões de seleção rápida para os atendentes ao registrar uma venda. Mantenha sempre atualizado com os valores reais praticados.',
+    text: 'Em <strong>Preços</strong> você cadastra os planos com nome, valor, período e número de telas. Esses planos aparecem como botões rápidos para os atendentes ao vender. O sistema usa esses planos para calcular os <strong>Campeões por Plano</strong> no dashboard.',
     selector: 'a[href*="precos"]'
   },
   {
     icon: '⚡',
     title: 'Automações — Produtividade Automática',
-    text: '<strong>Automações</strong> inclui três ferramentas: (1) <strong>Lembrete de renovação</strong>: alerta automático para clientes próximos do vencimento; (2) <strong>Follow-up</strong>: mensagem automática para clientes em risco de churn; (3) <strong>Distribuição</strong>: divide clientes sem atendente entre a equipe automaticamente.',
+    text: '<strong>Automações</strong> inclui: (1) <strong>Lembrete de renovação</strong> para clientes próximos do vencimento; (2) <strong>Follow-up</strong> automático para clientes em risco de churn; (3) <strong>Distribuição</strong> de clientes sem atendente. Cada automação mostra quantos clientes serão impactados antes de executar.',
     selector: 'a[href*="automacoes"]'
   },
   {
     icon: '⏱️',
     title: 'Ponto — Controle de Presença',
-    text: 'Em <strong>Ponto</strong> você acompanha os registros de entrada/saída/pausas de cada atendente por dia. Turnos abertos aparecem em destaque. Veja o total de horas trabalhadas, pausas acumuladas e horas em falta no mês — vinculado diretamente ao cálculo de salário.',
+    text: 'Em <strong>Ponto</strong> você acompanha entradas/saídas/pausas de cada atendente. Gerentes com permissão <em>perm_edit_att</em> podem lançar, corrigir ou excluir registros de ponto manualmente. Turnos abertos são destacados — o sistema calcula o desconto só ao encerrar.',
     selector: 'a[href*="ponto"]'
   },
   {
     icon: '💬',
     title: 'Chat — Comunicação Direta',
-    text: 'O <strong>Chat</strong> permite comunicação privada entre você e cada atendente. Você pode enviar texto, imagens e áudios gravados pelo microfone. Mensagens não lidas aparecem com um badge numérico no ícone do chat no menu. O atendente também recebe notificação visual.',
+    text: 'O <strong>Chat</strong> permite comunicação privada com cada membro da equipe. Envie texto, imagens e áudios gravados pelo microfone. Mensagens não lidas aparecem com badge no ícone. O sino de notificações no topo também avisa sobre horas extras solicitadas e outras ações importantes.',
     selector: 'a[href*="chat"]'
   },
   {
+    icon: '🔍',
+    title: 'Auditoria — Rastreio de Ações',
+    text: 'Em <strong>Auditoria</strong> você vê o registro completo de todas as ações no sistema: quem criou, editou ou excluiu o quê, com horário e IP. Ideal para investigar divergências ou verificar o histórico de alterações feitas por gerentes.',
+    selector: 'a[href*="auditoria"]'
+  },
+  {
+    icon: '💾',
+    title: 'Backup — Segurança dos Dados',
+    text: 'Em <strong>Backup</strong> você baixa um arquivo JSON com todos os dados do sistema (clientes, vendas, renovações, usuários). Faça backup periodicamente. O backup automático via URL protegida por token pode ser agendado externamente — configure a variável <code>BACKUP_TOKEN</code> no servidor.',
+    selector: 'a[href*="backup"]'
+  },
+  {
     icon: '📤',
-    title: 'Exportações — Relatórios em Excel',
-    text: 'Em <strong>Exportações</strong> você baixa relatórios em Excel (.xlsx) de vendas, renovações, clientes e histórico de ponto. Ideal para enviar relatórios por período, fazer backup de dados ou análise em planilha. Selecione o período e o tipo de dado desejado.',
+    title: 'Exportações — Excel e PDF',
+    text: 'Em <strong>Exportações</strong> você baixa relatórios em Excel (.xlsx) de vendas, renovações, clientes e ponto. Os relatórios de <strong>Vendas, Ponto e Salários</strong> também têm versão em PDF — gerados diretamente pelo navegador, sem servidor.',
     selector: 'a[href*="exportar"]'
   },
   {
     icon: '🔐',
     title: 'Dica de Segurança',
-    text: 'Nunca compartilhe sua senha de administrador. Se precisar dar acesso a alguém de confiança, crie uma conta com perfil <strong>Gerente</strong> — ele acessa quase tudo, mas não cria nem exclui usuários. Troque sua senha regularmente em <em>Configurações</em>.',
+    text: 'Nunca compartilhe a senha de admin. Para dar acesso a alguém de confiança, crie um perfil <strong>Gerente</strong> com apenas as permissões necessárias. O sistema registra todas as ações na auditoria — qualquer alteração deixa rastro.',
     selector: null
   },
   {
@@ -443,85 +455,79 @@ const TOUR_STEPS = [
   {
     icon: '👋',
     title: 'Bem-vindo, Gerente!',
-    text: 'Você tem acesso ao painel de gestão completo <strong>E</strong> pode operar como atendente: cadastrar clientes, registrar vendas e fazer renovações. Suas vendas também geram comissão! Vou te mostrar tudo.',
+    text: 'Você tem acesso ao painel de gestão completo <strong>E</strong> pode operar como atendente: cadastrar clientes, registrar vendas e fazer renovações. Suas vendas também geram comissão progressiva! Vou te mostrar tudo.',
     selector: null
   },
   {
     icon: '📊',
     title: 'Dashboard — Central de Informações',
-    text: 'O <strong>Dashboard</strong> mostra o resumo do dia: total de vendas, comissões geradas, atendentes online, renovações vencidas e gráficos de desempenho da equipe inteira. Use para tomar decisões rápidas sobre o dia.',
+    text: 'O <strong>Dashboard</strong> mostra o resumo do dia: total de vendas, comissões, atendentes online, renovações vencidas, ranking e gráficos de desempenho da equipe. Também aparece o card <strong>Campeões por Plano</strong> — quem mais vendeu cada plano no mês.',
     selector: 'a[href*="dashboard"]'
   },
   {
+    icon: '📋',
+    title: 'Fila do Dia — Suas Prioridades',
+    text: 'No seu painel de atendente, o card <strong>Fila do Dia</strong> aparece no topo com as ações mais urgentes: renovações vencendo hoje, vencidas, clientes sem contato há dias e renovações próximas. Cada item é clicável e leva direto ao cliente. Comece sempre por ele!',
+    selector: null
+  },
+  {
     icon: '👤',
-    title: 'Novo Cliente / Venda — Sua Operação',
-    text: 'Em <strong>Novo Cliente/Venda</strong> (seção Operacional do menu) você cadastra novos clientes e registra vendas. Selecione o plano pelo botão rápido, informe o valor recebido, use o campo de ajuste para descontos ou acréscimos, e anexe o <strong>comprovante obrigatório</strong>. Sua comissão é calculada automaticamente (5%).',
-    selector: 'a[href*="novo-cliente"]'
+    title: 'Novo Cliente / Venda',
+    text: 'Clique em <strong>Clientes</strong> → <strong>Novo Cliente</strong> para cadastrar e já registrar a primeira venda. Selecione o plano pelo botão rápido, informe o valor, use o campo de ajuste para descontos/acréscimos e anexe o <strong>comprovante obrigatório</strong>. Sua comissão é calculada automaticamente.',
+    selector: 'a[href*="clientes"]'
   },
   {
     icon: '🔄',
-    title: 'Minhas Renovações — Gestão dos Seus Clientes',
-    text: 'Em <strong>Minhas Renovações</strong> você vê apenas os clientes que você cadastrou e que precisam renovar. Clique em <strong>Renovar</strong> para abrir o modal, informe o valor recebido e anexe o comprovante. A renovação sem comprovante não é registrada.',
+    title: 'Renovações — Seus Clientes e a Equipe',
+    text: 'No seu painel você vê as renovações dos seus clientes. No menu principal, o painel de <strong>Renovações</strong> mostra toda a base. Vencidas em vermelho, filtre por período e crie renovações avulsas quando necessário. Comprovante obrigatório em todas.',
     selector: 'a[href*="renovacoes"]'
   },
   {
     icon: '🛒',
-    title: 'Vendas — Histórico Geral da Equipe',
-    text: 'Em <strong>Vendas</strong> no menu principal você vê todas as vendas de toda a equipe. Filtre por atendente, data ou plano. Veja valor base, ajustes, valor final e comprovante de cada venda. Ideal para monitorar o desempenho da equipe.',
+    title: 'Vendas — Histórico Geral',
+    text: 'Em <strong>Vendas</strong> você vê todas as vendas de toda a equipe. Filtre por atendente, data ou plano. Vendas com comprovante duplicado são sinalizadas como fraude — fique atento ao badge laranja no menu.',
     selector: 'a[href*="vendas"]'
   },
   {
-    icon: '💰',
-    title: 'Caixa — Conferência do Dia',
-    text: 'O <strong>Caixa</strong> mostra o total recebido no dia por forma de pagamento (Pix, crédito, débito, Cakto). Use para conferir se o fechamento bate com o que foi recebido. Você pode navegar por datas anteriores.',
-    selector: 'a[href*="caixa"]'
-  },
-  {
     icon: '📞',
-    title: 'Clientes — Monitoramento da Base',
-    text: 'Em <strong>Clientes</strong> você monitora todos os clientes da empresa. Veja quais estão <em>em risco</em> (sem contato há mais de 5 dias), quem está com renovação próxima e o histórico completo de atendimento. Ótimo para supervisionar a equipe.',
-    selector: 'a[href*="clientes"]'
-  },
-  {
-    icon: '🔍',
-    title: 'Auditoria — Rastreio de Ações',
-    text: 'Dentro de cada cliente você vê o <strong>histórico de contatos</strong>: quem ligou, quando, qual assunto e o resultado. Use para auditar o trabalho dos atendentes e garantir que nenhum cliente está sendo negligenciado.',
+    title: 'Clientes — Monitoramento e Retenção',
+    text: 'Em <strong>Clientes</strong> monitore toda a base. Clientes <em>em risco</em> ficam destacados (sem contato há 5+ dias). No perfil de cada cliente há a timeline completa: vendas, renovações e todos os contatos registrados — ótimo para supervisionar o trabalho da equipe.',
     selector: 'a[href*="clientes"]'
   },
   {
     icon: '🏆',
-    title: 'Metas e Comissões da Equipe',
-    text: 'Em <strong>Metas</strong> você acompanha o progresso de cada atendente em relação à meta do mês. Em <strong>Comissões</strong> veja o quanto cada um ganhou e o que já foi pago. Lembre-se: você também aparece nesse painel pelas suas próprias vendas!',
+    title: 'Metas e Comissões — Sistema Progressivo',
+    text: 'Acompanhe em <strong>Metas</strong> o progresso de cada atendente. A comissão é <strong>progressiva</strong>: de <strong>5%</strong> (zero vendas) até <strong>10%</strong> ao bater a meta, subindo venda a venda. Hora extra paga <strong>20%</strong>. Você também aparece no painel com suas próprias vendas!',
     selector: 'a[href*="metas"]'
   },
   {
-    icon: '🔄',
-    title: 'Renovações — Painel Completo',
-    text: 'O painel de <strong>Renovações</strong> (menu principal) mostra todas as renovações do sistema — não só as suas. Veja as vencidas em vermelho, filtre por período e crie renovações avulsas quando necessário.',
-    selector: 'a[href*="renovacoes"]'
+    icon: '🔔',
+    title: 'Notificações — Alertas em Tempo Real',
+    text: 'O sino no canto superior direito acumula notificações do sistema: horas extras aprovadas ou negadas, comissões pagas, salário registrado. Clique para ver as recentes ou marcar todas como lidas. O número vermelho indica itens não lidos.',
+    selector: null
+  },
+  {
+    icon: '🛡️',
+    title: 'Suas Permissões de Gerente',
+    text: 'O administrador pode liberar ou restringir suas ações: <strong>editar ponto</strong> manualmente, <strong>pagar comissões</strong>, <strong>alterar preços</strong> e <strong>excluir vendas</strong>. Se uma ação estiver bloqueada, fale com o admin para verificar sua permissão.',
+    selector: null
   },
   {
     icon: '⚡',
     title: 'Automações — Ferramentas Automáticas',
-    text: '<strong>Automações</strong> inclui: (1) Lembrete de renovação para clientes próximos do vencimento; (2) Follow-up automático para clientes em risco; (3) Redistribuição de clientes sem atendente. Use para manter a base ativa sem esforço manual.',
+    text: '<strong>Automações</strong> inclui: lembrete de renovação, follow-up para clientes em risco e redistribuição de clientes sem atendente. Cada automação mostra quantos clientes serão impactados antes de executar.',
     selector: 'a[href*="automacoes"]'
   },
   {
     icon: '💬',
     title: 'Chat — Comunicação com a Equipe',
-    text: 'O <strong>Chat</strong> é o canal de comunicação privado entre você e o administrador, e entre você e os atendentes. Envie texto, imagens e áudios. Mensagens não lidas aparecem com badge no ícone. Responda sempre rápido — os atendentes dependem de você!',
+    text: 'O <strong>Chat</strong> é o canal privado entre você, o admin e os atendentes. Envie texto, imagens e áudios gravados pelo microfone. Badge no ícone indica mensagens não lidas. Responda rápido — os atendentes dependem de você!',
     selector: 'a[href*="chat"]'
-  },
-  {
-    icon: '💳',
-    title: 'Financeiro — Visão de Entradas e Saídas',
-    text: 'O módulo <strong>Financeiro</strong> mostra o balanço de entradas e saídas registradas. Você tem acesso de leitura para acompanhar a saúde financeira da operação sem poder editar os dados — isso é privilégio do administrador.',
-    selector: 'a[href*="financeiro"]'
   },
   {
     icon: '💵',
     title: 'Seu Salário e Comissão',
-    text: 'Seu salário é calculado com base no ponto: <strong>Valor/hora</strong> = Salário ÷ (Dias/mês × h/dia). Horas em falta geram desconto proporcional. Suas comissões de vendas (5% por venda) são somadas ao salário. O administrador define seu salário base e carga horária.',
+    text: 'Seu salário é calculado pelo ponto: <strong>Valor/hora</strong> = Salário ÷ (Dias/mês × h/dia). Minutos em falta em turnos encerrados geram desconto. Suas comissões de vendas são somadas ao salário. No dashboard você vê a projeção de desconto do dia em tempo real.',
     selector: null
   },
   {
@@ -536,85 +542,97 @@ const TOUR_STEPS = [
   {
     icon: '👋',
     title: 'Bem-vindo ao Nascimento Tech!',
-    text: 'Este é o seu painel de atendente. Aqui você bate ponto, registra vendas, faz renovações e acompanha suas comissões. Vou te guiar por tudo em poucos passos!',
+    text: 'Este é o seu painel de atendente. Aqui você bate ponto, registra vendas, faz renovações, acompanha suas metas e comissões. Vou te guiar por tudo em poucos passos!',
     selector: null
   },
   {
     icon: '🏠',
     title: 'Seu Dashboard',
-    text: 'O <strong>Dashboard</strong> é sua central. Você vê: vendas de hoje, comissão gerada, seu status de ponto atual (entrada, pausa, encerrado), gráfico de desempenho dos últimos 30 dias e um resumo do seu salário previsto no mês.',
+    text: 'O <strong>Dashboard</strong> é sua central. Você vê: vendas de hoje, comissão gerada, status do ponto, barras animadas de meta, ranking do mês e o resumo do salário previsto. Tudo em tempo real.',
     selector: 'a[href*="atendente"]'
+  },
+  {
+    icon: '📋',
+    title: 'Fila do Dia — Por Onde Começar',
+    text: 'Logo no topo do dashboard, o card <strong>Fila do Dia</strong> lista automaticamente o que você precisa fazer agora: renovações vencendo hoje (vermelho), clientes sem contato há dias (amarelo) e renovações próximas (roxo). Comece sempre por ele — é o seu roteiro do dia.',
+    selector: null
   },
   {
     icon: '⏱️',
     title: 'Bater Ponto — Entrada',
-    text: 'Ao chegar, clique em <strong>Entrar</strong> no card de ponto do dashboard. O sistema registra sua hora de entrada. <strong>Importante</strong>: bata o ponto assim que chegar — o horário é registrado automaticamente e não pode ser alterado depois.',
+    text: 'Ao chegar, clique em <strong>Iniciar</strong> no card de ponto. O sistema registra sua hora de entrada. <strong>Importante</strong>: bata o ponto assim que chegar — o horário não pode ser alterado depois.',
     selector: '.nt-main'
   },
   {
     icon: '☕',
-    title: 'Pausas — Use com Responsabilidade',
-    text: 'Durante o turno, clique em <strong>Pausar</strong> para intervalos (café, almoço, etc.). Clique em <strong>Retomar</strong> quando voltar. O tempo de pausa é descontado das suas horas trabalhadas. <strong>Atenção</strong>: pausas excessivas impactam seu salário! Mantenha pausas dentro do razoável.',
+    title: 'Pausas e Encerramento',
+    text: 'Durante o turno, clique em <strong>Pausar</strong> para intervalos. Pausas são descontadas das suas horas. Ao sair, clique em <strong>Encerrar turno</strong>. Turno encerrado com menos horas do que o esperado gera desconto proporcional no salário.',
     selector: '.nt-main'
-  },
-  {
-    icon: '🏁',
-    title: 'Encerrar Turno — Saída',
-    text: 'Ao terminar o dia, clique em <strong>Encerrar turno</strong>. O sistema registra sua saída e calcula o total de horas trabalhadas (descontando pausas). <strong>Não esqueça</strong>: turno em aberto não conta desconto ainda, mas turno encerrado com menos horas do que o esperado gera desconto no salário.',
-    selector: '.nt-main'
-  },
-  {
-    icon: '💵',
-    title: 'Salário — Como é Calculado',
-    text: 'Seu <strong>Valor/hora</strong> = Salário base ÷ (Dias/mês × Horas/dia). Se você trabalhar menos horas do que o esperado em um dia encerrado, o déficit de minutos é multiplicado pelo valor/hora e vira desconto. No dashboard você vê em tempo real a projeção de desconto do dia atual.',
-    selector: null
   },
   {
     icon: '👤',
     title: 'Novo Cliente — Como Cadastrar',
-    text: 'Clique em <strong>Clientes</strong> no menu, depois em <strong>Novo Cliente</strong>. Preencha: nome completo, número do WhatsApp (com DDD), e-mail (opcional). Na mesma tela você já registra a primeira venda: escolha o plano, informe o valor recebido e preencha os dados do pagamento.',
+    text: 'Clique em <strong>Clientes</strong> → <strong>Novo Cliente</strong>. Preencha nome, WhatsApp (com DDD) e e-mail. Na mesma tela você já registra a primeira venda: escolha o plano, informe o valor e preencha a forma de pagamento.',
     selector: 'a[href*="clientes"]'
   },
   {
     icon: '📋',
     title: 'Planos — Seleção Rápida',
-    text: 'Ao registrar uma venda, os <strong>planos cadastrados</strong> aparecem como botões coloridos. Clique no plano para preencher automaticamente o nome e o valor base. Se o cliente pagou diferente (desconto ou acréscimo), use o campo <strong>Ajuste</strong> — negativo para desconto, positivo para acréscimo.',
+    text: 'Ao registrar uma venda, os planos aparecem como <strong>botões coloridos</strong>. Clique no plano para preencher nome e valor automaticamente. Se o cliente pagou valor diferente, use o campo <strong>Ajuste</strong> (negativo = desconto, positivo = acréscimo).',
     selector: 'a[href*="clientes"]'
   },
   {
     icon: '📎',
     title: 'Comprovante — Obrigatório em Tudo',
-    text: 'Toda venda e toda renovação <strong>exige comprovante</strong>. Sem o arquivo, o sistema não salva. Formatos aceitos: imagem (JPG, PNG) ou PDF. Peça sempre o comprovante do cliente antes de fechar a venda. Sem comprovante = sem registro = sem comissão.',
+    text: 'Toda venda e renovação <strong>exige comprovante</strong>. Sem arquivo, o sistema não salva. Formatos: JPG, PNG ou PDF. <strong>Atenção</strong>: o sistema detecta comprovantes duplicados — enviar o mesmo arquivo duas vezes sinaliza fraude automaticamente.',
     selector: null
   },
   {
     icon: '🔄',
     title: 'Renovações — Seus Clientes',
-    text: 'Em <strong>Renovações</strong> você vê os clientes que você cadastrou e que estão próximos do vencimento ou já vencidos. Clique em <strong>Renovar</strong>, informe o valor recebido e anexe o comprovante. O sistema atualiza automaticamente a data de vencimento.',
+    text: 'Em <strong>Renovações</strong> você vê seus clientes próximos do vencimento ou já vencidos. Clique em <strong>Renovar</strong>, informe o valor e anexe o comprovante. O vencimento é atualizado automaticamente.',
     selector: 'a[href*="renovacoes"]'
   },
   {
     icon: '📋',
     title: 'Histórico do Cliente',
-    text: 'Ao clicar em qualquer cliente, você vê o histórico completo: vendas, renovações e todos os contatos registrados. <strong>Registre sempre</strong> o motivo de cada contato: ligou para cobrar, cliente pediu suporte, combinou data de renovação... Isso mostra seu trabalho pro admin e protege você.',
+    text: 'Ao clicar em um cliente, você vê a timeline completa: vendas, renovações e contatos. <strong>Registre sempre</strong> o motivo de cada contato — ligou, não atendeu, combinou data... Isso mostra seu trabalho pro admin e te protege de cobranças injustas.',
     selector: 'a[href*="clientes"]'
+  },
+  {
+    icon: '🎯',
+    title: 'Suas Metas — Barras Animadas',
+    text: 'No dashboard você tem 3 barras de progresso: <strong>Meta de Vendas R$</strong>, <strong>Meta de Renovações</strong> e <strong>Comissão Progressiva</strong>. As metas são configuradas pelo admin. Acompanhe seu avanço ao longo do mês em tempo real.',
+    selector: null
+  },
+  {
+    icon: '💵',
+    title: 'Comissão Progressiva — 5% a 10%',
+    text: 'Sua comissão começa em <strong>5%</strong> (zero vendas) e sobe até <strong>10%</strong> ao bater a meta — cada venda aumenta a taxa de forma suave. Venda em <strong>hora extra</strong> (fora do turno) paga <strong>20%</strong>. Quanto mais você vende, mais cada venda rende!',
+    selector: 'a[href*="comissoes"]'
+  },
+  {
+    icon: '🏆',
+    title: 'Ranking do Mês',
+    text: 'No dashboard você vê o <strong>ranking de todos os atendentes</strong> do mês e onde você está posicionado. Seu lugar no ranking é destacado. Use para acompanhar sua evolução e se motivar a subir.',
+    selector: null
+  },
+  {
+    icon: '🔔',
+    title: 'Notificações — Fique por Dentro',
+    text: 'O sino no canto superior direito acumula notificações: hora extra aprovada ou negada, comissão paga, salário registrado. O número vermelho indica itens não lidos. Clique para ver ou marcar todas como lidas.',
+    selector: null
   },
   {
     icon: '💬',
     title: 'Chat com o Admin/Gerente',
-    text: 'O <strong>Chat</strong> é o canal direto de comunicação com o administrador e com seu gerente. Você pode enviar texto, imagens e áudios gravados pelo microfone (botão do microfone na caixa de mensagem). Mensagens não lidas aparecem com badge no ícone do chat.',
+    text: 'O <strong>Chat</strong> é o canal direto com o admin e gerente. Envie texto, imagens e áudios gravados pelo microfone. Badge no ícone indica mensagens não lidas. Use para tirar dúvidas, reportar problemas ou pedir aprovações.',
     selector: 'a[href*="chat"]'
-  },
-  {
-    icon: '💵',
-    title: 'Suas Comissões',
-    text: 'Em <strong>Comissões</strong> você acompanha quanto ganhou em cada mês: <strong>5%</strong> sobre cada venda registrada no seu nome. Em <strong>hora extra</strong> (fora do horário normal) a comissão sobe para <strong>20%</strong>. O histórico mostra o que foi pago e o que ainda está pendente.',
-    selector: 'a[href*="comissoes"]'
   },
   {
     icon: '🎯',
     title: 'Dica de Ouro — Seja o Melhor',
-    text: '<strong>3 hábitos dos top atendentes:</strong> (1) Bata o ponto sempre ao chegar e sair; (2) Registre TODOS os contatos com clientes — mesmo os sem renovação; (3) Nunca feche uma venda sem o comprovante em mãos. Esses três hábitos garantem sua comissão e mostram seu valor pro admin.',
+    text: '<strong>3 hábitos dos top atendentes:</strong> (1) Bata o ponto sempre ao chegar e sair; (2) Registre TODOS os contatos com clientes, mesmo sem renovação; (3) Nunca feche uma venda sem o comprovante em mãos. Esses três hábitos garantem sua comissão e mostram seu valor.',
     selector: null
   },
   {
