@@ -76,6 +76,11 @@
         <i class="bi bi-journal-text" style="color:#a5b4fc;"></i>
         <span style="color:#a5b4fc;">Auditoria</span>
       </a>
+      <a class="nt-nav-link {% if request.endpoint == 'exports.backup_page' %}active{% endif %}"
+         href="{{ url_for('exports.backup_page') }}">
+        <i class="bi bi-cloud-arrow-down-fill" style="color:#67e8f9;"></i>
+        <span style="color:#67e8f9;">Backup</span>
+      </a>
       {% endif %}
       <a class="nt-nav-link {% if request.endpoint == 'admin.cash' %}active{% endif %}"
          href="{{ url_for('admin.cash') }}">

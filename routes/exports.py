@@ -6,15 +6,19 @@ Endpoints:
   GET /exportar/clientes
   GET /exportar/auditoria
   GET /exportar/financeiro
+  GET /exportar/backup          — dump JSON completo (admin apenas)
+  GET /exportar/backup/auto?token=X — mesmo dump, protegido por token (agendamento externo)
 Todos aceitam os mesmos parâmetros de filtro que as páginas equivalentes.
 """
 import csv
 import io
+import json
+import os
 from datetime import date, datetime, timedelta
 from functools import wraps
 from utils import now_br, today_br
 
-from flask import Blueprint, request, Response, redirect, url_for, flash
+from flask import Blueprint, request, Response, redirect, url_for, flash, render_template
 from flask_login import login_required, current_user
 from sqlalchemy import func
 
@@ -377,3 +381,93 @@ def salaries():
                   'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
     fname = f'salarios_{MONTH_FULL[month]}_{year}.csv'
     return _csv_response(fname, rows, headers)
+
+
+# ── Backup Completo JSON ────────────────────────────────────────────────────
+
+def _build_backup():
+    """Serializa todos os dados críticos para um dict JSON."""
+    def fmt(v):
+        if isinstance(v, (datetime, date)): return v.isoformat()
+        return v
+
+    def rows(model, fields):
+        return [{f: fmt(getattr(obj, f, None)) for f in fields}
+                for obj in model.query.all()]
+
+    from models import (Attendance, AttendanceBreak, OvertimeRequest,
+                        CommissionPayment, AttendantGoal, AbsenceRecord,
+                        PriceItem, Message, AuditLog)
+
+    return {
+        'generated_at': now_br().isoformat(),
+        'users': rows(User, ['id','username','name','email','role','is_active',
+                              'monthly_salary','work_hours_per_day','work_days_per_month',
+                              'shift_end_hour','monthly_sales_target','created_at']),
+        'clients': rows(Client, ['id','name','phone','whatsapp','email',
+                                  'city','state','notes','registered_by','created_at']),
+        'sales': rows(Sale, ['id','attendant_id','client_id','client_name_manual',
+                              'amount','payment_method','commission_rate','commission_amount',
+                              'description','is_overtime','screens','adjustment',
+                              'comprovante_hash','created_at']),
+        'renewals': rows(Renewal, ['id','client_id','client_name_manual','plan_name',
+                                    'amount','due_date','status','renewed_at',
+                                    'attendant_id','notes','created_at']),
+        'client_contacts': rows(ClientContact, ['id','client_id','attendant_id',
+                                                 'contacted_at','direction','channel',
+                                                 'tag','event_type','notes']),
+        'attendances': rows(Attendance, ['id','user_id','check_in','check_out','date']),
+        'overtime_requests': rows(OvertimeRequest, ['id','user_id','requested_at',
+                                                     'status','approved_by','approved_at','notes']),
+        'commission_payments': rows(CommissionPayment, ['id','attendant_id','year','month',
+                                                          'amount','paid_at','paid_by','notes']),
+        'salary_payments': rows(SalaryPayment, ['id','attendant_id','year','month',
+                                                  'amount','paid_at','paid_by','notes']),
+        'absence_records': rows(AbsenceRecord, ['id','user_id','absence_date','type',
+                                                  'notes','created_by','created_at']),
+        'price_items': rows(PriceItem, ['id','name','price','description',
+                                         'screens','period_label','is_active','created_at']),
+        'audit_logs': rows(AuditLog, ['id','user_id','action','target_type',
+                                       'target_id','description','ip_address','created_at']),
+    }
+
+
+@exports_bp.route('/backup')
+@login_required
+def backup_page():
+    if not current_user.is_admin():
+        flash('Acesso negado.', 'danger')
+        return redirect(url_for('auth.login'))
+    backup_token = os.environ.get('BACKUP_TOKEN', '')
+    return render_template('admin/backup.html', backup_token=backup_token)
+
+
+@exports_bp.route('/backup/download')
+@login_required
+def backup_download():
+    if not current_user.is_admin():
+        flash('Acesso negado.', 'danger')
+        return redirect(url_for('auth.login'))
+    data = _build_backup()
+    fname = f'backup_{today_br().strftime("%Y-%m-%d")}.json'
+    return Response(
+        json.dumps(data, ensure_ascii=False, indent=2),
+        mimetype='application/json',
+        headers={'Content-Disposition': f'attachment; filename="{fname}"'},
+    )
+
+
+@exports_bp.route('/backup/auto')
+def backup_auto():
+    """Endpoint para agendamento externo (cron-job.org). Protegido por token."""
+    token = request.args.get('token', '')
+    expected = os.environ.get('BACKUP_TOKEN', '')
+    if not expected or token != expected:
+        return Response('Unauthorized', status=401)
+    data = _build_backup()
+    fname = f'backup_{today_br().strftime("%Y-%m-%d")}.json'
+    return Response(
+        json.dumps(data, ensure_ascii=False, indent=2),
+        mimetype='application/json',
+        headers={'Content-Disposition': f'attachment; filename="{fname}"'},
+    )

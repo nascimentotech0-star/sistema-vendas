@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+{% block title %}Backup — Nascimento Tech{% endblock %}
+{% block page_title %}Backup de Dados{% endblock %}
+{% block content %}
+
+<div class="row g-4">
+
+  <!-- Download manual -->
+  <div class="col-12 col-md-6">
+    <div class="card h-100">
+      <div class="card-header d-flex align-items-center gap-2">
+        <i class="bi bi-cloud-arrow-down-fill" style="color:#67e8f9;"></i>
+        <span class="fw-semibold">Backup Manual</span>
+      </div>
+      <div class="card-body">
+        <p style="color:var(--text-muted);font-size:.88rem;margin-bottom:1.2rem;">
+          Baixa um arquivo <code>.json</code> com todos os dados do sistema:
+          usuários, clientes, vendas, renovações, ponto, comissões e logs de auditoria.
+        </p>
+        <a href="{{ url_for('exports.backup_download') }}"
+           class="btn fw-semibold"
+           style="background:rgba(6,182,212,.2);color:#67e8f9;border:1px solid rgba(6,182,212,.3);">
+          <i class="bi bi-download me-2"></i>Baixar Backup Agora
+        </a>
+        <p class="mt-3 mb-0" style="font-size:.78rem;color:var(--text-muted);">
+          <i class="bi bi-info-circle me-1"></i>
+          Recomendado: baixar semanalmente e salvar em Google Drive ou e-mail.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Backup automático -->
+  <div class="col-12 col-md-6">
+    <div class="card h-100">
+      <div class="card-header d-flex align-items-center gap-2">
+        <i class="bi bi-clock-history" style="color:#fde68a;"></i>
+        <span class="fw-semibold">Backup Automático</span>
+      </div>
+      <div class="card-body">
+        <p style="color:var(--text-muted);font-size:.88rem;">
+          Use o <strong style="color:#fde68a;">cron-job.org</strong> (gratuito) para chamar o endpoint
+          abaixo automaticamente todos os dias e receber o backup por e-mail ou webhook.
+        </p>
+
+        {% if backup_token %}
+        <div class="mb-3">
+          <label class="form-label" style="font-size:.78rem;color:var(--text-muted);">URL do Endpoint</label>
+          <div class="d-flex gap-2">
+            <input type="text" class="form-control form-control-sm" readonly id="backupUrl"
+                   value="{{ request.host_url }}exportar/backup/auto?token={{ backup_token }}"
+                   style="font-family:monospace;font-size:.75rem;">
+            <button onclick="copyUrl()" class="btn btn-sm"
+                    style="background:rgba(99,102,241,.2);color:#a5b4fc;border:1px solid rgba(99,102,241,.3);white-space:nowrap;">
+              <i class="bi bi-clipboard"></i>
+            </button>
+          </div>
+        </div>
+        <div class="alert mb-0" style="background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.2);border-radius:8px;padding:10px 14px;">
+          <small style="color:#fde68a;">
+            <i class="bi bi-shield-lock-fill me-1"></i>
+            Não compartilhe esta URL. O token está na variável <code>BACKUP_TOKEN</code> no Railway.
+          </small>
+        </div>
+        {% else %}
+        <div class="alert" style="background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:8px;padding:12px 16px;">
+          <strong style="color:#fca5a5;font-size:.85rem;">
+            <i class="bi bi-exclamation-triangle-fill me-1"></i>Token não configurado
+          </strong>
+          <p class="mb-0 mt-1" style="color:var(--text-muted);font-size:.82rem;">
+            Adicione a variável <code>BACKUP_TOKEN</code> no Railway com um valor secreto para habilitar o backup automático.
+          </p>
+        </div>
+        <div class="mt-3" style="font-size:.82rem;color:var(--text-muted);">
+          <strong>Como configurar:</strong>
+          <ol style="margin:8px 0 0 16px;line-height:1.8;">
+            <li>No Railway, vá em <strong>Variables</strong></li>
+            <li>Adicione <code>BACKUP_TOKEN</code> = qualquer senha forte</li>
+            <li>Faça deploy e volte aqui para ver a URL</li>
+          </ol>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- O que é incluído -->
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header d-flex align-items-center gap-2">
+        <i class="bi bi-list-check" style="color:#a78bfa;"></i>
+        <span class="fw-semibold">O que está incluído no backup</span>
+      </div>
+      <div class="card-body">
+        <div class="row g-2">
+          {% set items = [
+            ('bi-people-fill', '#a5b4fc', 'Usuários', 'Todos os atendentes e admins'),
+            ('bi-person-lines-fill', '#67e8f9', 'Clientes', 'Cadastro completo de clientes'),
+            ('bi-cart3', '#6ee7b7', 'Vendas', 'Histórico completo de vendas'),
+            ('bi-arrow-repeat', '#fde68a', 'Renovações', 'Todas as renovações e status'),
+            ('bi-clock-history', '#fca5a5', 'Ponto', 'Registros de entrada/saída'),
+            ('bi-cash-coin', '#a78bfa', 'Comissões', 'Pagamentos de comissão e salário'),
+            ('bi-chat-dots', '#67e8f9', 'Contatos', 'Histórico de contatos com clientes'),
+            ('bi-journal-text', '#fde68a', 'Auditoria', 'Log de ações no sistema'),
+          ] %}
+          {% for icon, color, name, desc in items %}
+          <div class="col-6 col-md-3">
+            <div class="d-flex align-items-center gap-2 p-2" style="border-radius:8px;background:rgba(255,255,255,.03);">
+              <i class="bi {{ icon }}" style="color:{{ color }};font-size:1.1rem;"></i>
+              <div>
+                <div style="font-size:.82rem;font-weight:600;">{{ name }}</div>
+                <div style="font-size:.72rem;color:var(--text-muted);">{{ desc }}</div>
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+function copyUrl() {
+  const input = document.getElementById('backupUrl');
+  input.select();
+  navigator.clipboard.writeText(input.value).then(() => {
+    const btn = event.target.closest('button');
+    btn.innerHTML = '<i class="bi bi-check-lg"></i>';
+    setTimeout(() => btn.innerHTML = '<i class="bi bi-clipboard"></i>', 2000);
+  });
+}
+</script>
+{% endblock %}
