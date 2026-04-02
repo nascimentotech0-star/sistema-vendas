@@ -76,21 +76,6 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* Linha de scan horizontal sutil — efeito CRT suave */
-body::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: 9998;
-  background: repeating-linear-gradient(
-    0deg,
-    transparent,
-    transparent 3px,
-    rgba(0,0,0,.04) 3px,
-    rgba(0,0,0,.04) 4px
-  );
-}
 
 /* ══════════════════════════════════════════════
    SIDEBAR
@@ -322,31 +307,8 @@ body::before {
   border: 1px solid var(--border) !important;
   border-radius: var(--radius-lg) !important;
   color: var(--text) !important;
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
   transition: border-color .2s ease, box-shadow .2s ease, transform .2s ease !important;
   animation: card-in .38s ease both;
-  position: relative;
-  overflow: hidden;
-}
-
-/* shimmer no hover — scan line diagonal */
-.card::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    105deg,
-    transparent 40%,
-    rgba(99,102,241,.04) 50%,
-    transparent 60%
-  );
-  transform: translateX(-100%);
-  transition: transform .55s ease;
-  pointer-events: none;
-}
-.card:hover::after {
-  transform: translateX(100%);
 }
 
 .card:hover {
@@ -601,7 +563,6 @@ thead th {
   gap: 14px;
   height: 100%;
   transition: all .2s ease;
-  backdrop-filter: blur(10px);
 }
 .kpi-card:hover {
   border-color: rgba(99,102,241,.38) !important;
