@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Relatório de Salários — {{ month_name }}</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', Arial, sans-serif; background: #fff; color: #111; font-size: 13px; padding: 32px; }
+    .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 28px; border-bottom: 2px solid #059669; padding-bottom: 16px; }
+    .logo { font-size: 22px; font-weight: 700; color: #059669; }
+    .logo small { display: block; font-size: 12px; font-weight: 400; color: #555; margin-top: 2px; }
+    .meta { text-align: right; font-size: 11px; color: #555; }
+    h2 { font-size: 15px; font-weight: 700; margin-bottom: 12px; color: #111; }
+    .summary { display: flex; gap: 16px; margin-bottom: 28px; }
+    .summary-box { flex: 1; border: 1px solid #e5e7eb; border-radius: 8px; padding: 12px 16px; text-align: center; }
+    .summary-box .label { font-size: 10px; text-transform: uppercase; letter-spacing: .05em; color: #6b7280; margin-bottom: 4px; }
+    .summary-box .value { font-size: 20px; font-weight: 700; }
+    .v-green  { color: #059669; }
+    .v-red    { color: #ef4444; }
+    .v-yellow { color: #f59e0b; }
+    table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+    thead th { background: #059669; color: #fff; padding: 7px 10px; text-align: left; font-size: 11px; font-weight: 600; }
+    tbody tr:nth-child(even) { background: #f9fafb; }
+    tbody td { padding: 7px 10px; border-bottom: 1px solid #e5e7eb; font-size: 12px; }
+    .status-paid    { color: #10b981; font-weight: 600; }
+    .status-pending { color: #f59e0b; font-weight: 600; }
+    .status-ok      { color: #6b7280; }
+    .footer { margin-top: 32px; border-top: 1px solid #e5e7eb; padding-top: 12px; font-size: 11px; color: #9ca3af; display: flex; justify-content: space-between; }
+    @media print { body { padding: 20px; } .no-print { display: none !important; } }
+  </style>
+</head>
+<body>
+
+<div class="no-print" style="margin-bottom:20px;">
+  <button onclick="window.print()" style="background:#059669;color:#fff;border:none;padding:10px 24px;border-radius:8px;cursor:pointer;font-size:14px;font-weight:600;">
+    🖨️ Imprimir / Salvar PDF
+  </button>
+  <button onclick="window.close()" style="background:#f3f4f6;color:#374151;border:1px solid #d1d5db;padding:10px 18px;border-radius:8px;cursor:pointer;font-size:14px;margin-left:8px;">
+    Fechar
+  </button>
+</div>
+
+<div class="header">
+  <div class="logo">Nascimento Tech <small>Folha de Salários</small></div>
+  <div class="meta">
+    <strong>{{ month_name }}</strong><br>
+    Gerado em: {{ generated_at.strftime('%d/%m/%Y %H:%M') }}
+  </div>
+</div>
+
+<h2>Resumo</h2>
+<div class="summary">
+  <div class="summary-box">
+    <div class="label">Salário Base Total</div>
+    <div class="value v-green">R$ {{ "%.2f"|format(total_base) }}</div>
+  </div>
+  <div class="summary-box">
+    <div class="label">Descontos</div>
+    <div class="value v-red">R$ {{ "%.2f"|format(total_deductions) }}</div>
+  </div>
+  <div class="summary-box">
+    <div class="label">Total Pago</div>
+    <div class="value v-yellow">R$ {{ "%.2f"|format(total_paid) }}</div>
+  </div>
+</div>
+
+<h2>Detalhamento por Atendente</h2>
+<table>
+  <thead>
+    <tr>
+      <th>Atendente</th>
+      <th>Salário Base</th>
+      <th>Dias trabalhados</th>
+      <th>Horas líquidas</th>
+      <th>Desconto</th>
+      <th>Salário Líquido</th>
+      <th>Pago</th>
+      <th>Saldo</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for row in data %}
+    <tr>
+      <td><strong>{{ row.attendant.name }}</strong></td>
+      <td>R$ {{ "%.2f"|format(row.attendant.monthly_salary) }}</td>
+      <td>{{ row.summary.days_worked }}</td>
+      <td>{{ row.summary.worked_h }}</td>
+      <td {% if row.summary.deduction > 0 %}class="v-red"{% endif %}>
+        R$ {{ "%.2f"|format(row.summary.deduction) }}
+      </td>
+      <td class="status-paid">R$ {{ "%.2f"|format(row.summary.net_salary) }}</td>
+      <td>R$ {{ "%.2f"|format(row.paid) }}</td>
+      <td {% if row.balance > 0 %}class="status-pending"{% elif row.balance < 0 %}class="v-red"{% else %}class="status-ok"{% endif %}>
+        {% if row.balance == 0 %}
+          ✓ Quitado
+        {% elif row.balance < 0 %}
+          Adiantamento R$ {{ "%.2f"|format(row.balance|abs) }}
+        {% else %}
+          R$ {{ "%.2f"|format(row.balance) }}
+        {% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+{% if not data %}
+<p style="color:#6b7280;text-align:center;padding:24px 0;">Nenhum atendente com salário configurado.</p>
+{% endif %}
+
+<div class="footer">
+  <span>Nascimento Tech — Sistema de Gestão</span>
+  <span>{{ month_name }} · {{ generated_at.strftime('%d/%m/%Y') }}</span>
+</div>
+<script>window.onload = function() { setTimeout(() => window.print(), 400); };</script>
+</body>
+</html>

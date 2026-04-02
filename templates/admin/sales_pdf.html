@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Relatório de Vendas — {{ report_date.strftime('%d/%m/%Y') }}</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', Arial, sans-serif; background: #fff; color: #111; font-size: 13px; padding: 32px; }
+    .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 28px; border-bottom: 2px solid #7c3aed; padding-bottom: 16px; }
+    .logo { font-size: 22px; font-weight: 700; color: #7c3aed; }
+    .logo small { display: block; font-size: 12px; font-weight: 400; color: #555; margin-top: 2px; }
+    .meta { text-align: right; font-size: 11px; color: #555; }
+    h2 { font-size: 15px; font-weight: 700; margin-bottom: 12px; color: #111; }
+    .summary { display: flex; gap: 16px; margin-bottom: 28px; }
+    .summary-box { flex: 1; border: 1px solid #e5e7eb; border-radius: 8px; padding: 12px 16px; text-align: center; }
+    .summary-box .label { font-size: 10px; text-transform: uppercase; letter-spacing: .05em; color: #6b7280; margin-bottom: 4px; }
+    .summary-box .value { font-size: 20px; font-weight: 700; }
+    .v-purple { color: #7c3aed; }
+    .v-green  { color: #10b981; }
+    .v-blue   { color: #3b82f6; }
+    table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+    thead th { background: #7c3aed; color: #fff; padding: 7px 10px; text-align: left; font-size: 11px; font-weight: 600; }
+    tbody tr:nth-child(even) { background: #f9fafb; }
+    tbody td { padding: 7px 10px; border-bottom: 1px solid #e5e7eb; font-size: 12px; }
+    .att-name { font-weight: 700; font-size: 14px; color: #7c3aed; margin: 20px 0 8px; }
+    .section { page-break-inside: avoid; }
+    .footer { margin-top: 32px; border-top: 1px solid #e5e7eb; padding-top: 12px; font-size: 11px; color: #9ca3af; display: flex; justify-content: space-between; }
+    @media print { body { padding: 20px; } .no-print { display: none !important; } }
+  </style>
+</head>
+<body>
+
+<div class="no-print" style="margin-bottom:20px;">
+  <button onclick="window.print()" style="background:#7c3aed;color:#fff;border:none;padding:10px 24px;border-radius:8px;cursor:pointer;font-size:14px;font-weight:600;">
+    🖨️ Imprimir / Salvar PDF
+  </button>
+  <button onclick="window.close()" style="background:#f3f4f6;color:#374151;border:1px solid #d1d5db;padding:10px 18px;border-radius:8px;cursor:pointer;font-size:14px;margin-left:8px;">
+    Fechar
+  </button>
+</div>
+
+<div class="header">
+  <div class="logo">Nascimento Tech <small>Relatório de Vendas</small></div>
+  <div class="meta">
+    <strong>{{ report_date.strftime('%d/%m/%Y') }}</strong><br>
+    Gerado em: {{ generated_at.strftime('%d/%m/%Y %H:%M') }}
+  </div>
+</div>
+
+<h2>Resumo do Dia</h2>
+<div class="summary">
+  <div class="summary-box">
+    <div class="label">Total Vendas</div>
+    <div class="value v-purple">R$ {{ "%.2f"|format(total_sales) }}</div>
+  </div>
+  <div class="summary-box">
+    <div class="label">Comissões</div>
+    <div class="value v-green">R$ {{ "%.2f"|format(total_commission) }}</div>
+  </div>
+  <div class="summary-box">
+    <div class="label">Nº de Vendas</div>
+    <div class="value v-blue">{{ sales_count }}</div>
+  </div>
+</div>
+
+{% if att_stats %}
+<h2>Por Atendente</h2>
+{% for aid, row in att_stats.items() %}
+<div class="section">
+  <div class="att-name">{{ row.name }}</div>
+  <table>
+    <thead>
+      <tr>
+        <th>Horário</th><th>Cliente</th><th>Pagamento</th><th>Valor</th><th>Comissão</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for s in row.sales %}
+      <tr>
+        <td>{{ s.created_at.strftime('%H:%M') }}</td>
+        <td>{{ s.client_display }}</td>
+        <td>{{ payment_methods.get(s.payment_method, s.payment_method) }}</td>
+        <td>R$ {{ "%.2f"|format(s.amount) }}</td>
+        <td>R$ {{ "%.2f"|format(s.commission_amount) }} ({{ s.commission_rate|int }}%)</td>
+      </tr>
+      {% endfor %}
+      <tr style="background:#f3f4f6;font-weight:700;">
+        <td colspan="3">Subtotal — {{ row.count }} venda(s)</td>
+        <td>R$ {{ "%.2f"|format(row.total) }}</td>
+        <td>R$ {{ "%.2f"|format(row.commission) }}</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+{% endfor %}
+{% else %}
+<p style="color:#6b7280;text-align:center;padding:24px 0;">Nenhuma venda registrada nesta data.</p>
+{% endif %}
+
+<div class="footer">
+  <span>Nascimento Tech — Sistema de Gestão</span>
+  <span>{{ report_date.strftime('%d/%m/%Y') }} · {{ generated_at.strftime('%d/%m/%Y') }}</span>
+</div>
+<script>window.onload = function() { setTimeout(() => window.print(), 400); };</script>
+</body>
+</html>

@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Relatório de Ponto — {{ month_name }}</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', Arial, sans-serif; background: #fff; color: #111; font-size: 13px; padding: 32px; }
+    .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 28px; border-bottom: 2px solid #0891b2; padding-bottom: 16px; }
+    .logo { font-size: 22px; font-weight: 700; color: #0891b2; }
+    .logo small { display: block; font-size: 12px; font-weight: 400; color: #555; margin-top: 2px; }
+    .meta { text-align: right; font-size: 11px; color: #555; }
+    h2 { font-size: 15px; font-weight: 700; margin-bottom: 12px; color: #111; }
+    table { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 12px; }
+    thead th { background: #0891b2; color: #fff; padding: 7px 10px; text-align: left; font-size: 11px; font-weight: 600; }
+    tbody tr:nth-child(even) { background: #f9fafb; }
+    tbody td { padding: 7px 10px; border-bottom: 1px solid #e5e7eb; }
+    .att-name { font-weight: 700; font-size: 14px; color: #0891b2; margin: 20px 0 4px; }
+    .att-sub  { font-size: 11px; color: #6b7280; margin-bottom: 8px; }
+    .section  { page-break-inside: avoid; }
+    .badge-ok  { color: #10b981; font-weight: 600; }
+    .badge-err { color: #ef4444; font-weight: 600; }
+    .footer { margin-top: 32px; border-top: 1px solid #e5e7eb; padding-top: 12px; font-size: 11px; color: #9ca3af; display: flex; justify-content: space-between; }
+    @media print { body { padding: 20px; } .no-print { display: none !important; } }
+  </style>
+</head>
+<body>
+
+<div class="no-print" style="margin-bottom:20px;">
+  <button onclick="window.print()" style="background:#0891b2;color:#fff;border:none;padding:10px 24px;border-radius:8px;cursor:pointer;font-size:14px;font-weight:600;">
+    🖨️ Imprimir / Salvar PDF
+  </button>
+  <button onclick="window.close()" style="background:#f3f4f6;color:#374151;border:1px solid #d1d5db;padding:10px 18px;border-radius:8px;cursor:pointer;font-size:14px;margin-left:8px;">
+    Fechar
+  </button>
+</div>
+
+<div class="header">
+  <div class="logo">Nascimento Tech <small>Relatório de Ponto</small></div>
+  <div class="meta">
+    <strong>{{ month_name }}</strong><br>
+    Gerado em: {{ generated_at.strftime('%d/%m/%Y %H:%M') }}
+  </div>
+</div>
+
+<h2>Resumo Mensal por Atendente</h2>
+<table>
+  <thead>
+    <tr>
+      <th>Atendente</th>
+      <th>Dias trabalhados</th>
+      <th>Horas líquidas</th>
+      <th>Déficit</th>
+      <th>Faltas</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for row in rows %}
+    <tr>
+      <td><strong>{{ row.attendant.name }}</strong></td>
+      <td>{{ row.days_worked }}</td>
+      <td>{{ row.worked_h }}</td>
+      <td {% if row.deficit_h != '0h00m' %}class="badge-err"{% else %}class="badge-ok"{% endif %}>
+        {{ row.deficit_h }}
+      </td>
+      <td {% if row.absence_count %}class="badge-err"{% endif %}>{{ row.absence_count }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+{% for row in rows %}
+<div class="section">
+  <div class="att-name">{{ row.attendant.name }}</div>
+  <div class="att-sub">{{ row.days_worked }} dias · {{ row.worked_h }} trabalhadas · déficit {{ row.deficit_h }}</div>
+  <table>
+    <thead>
+      <tr><th>Data</th><th>Entrada</th><th>Saída</th><th>Duração</th></tr>
+    </thead>
+    <tbody>
+      {% for rec in row.records %}
+      <tr>
+        <td>{{ rec.check_in.strftime('%d/%m') }}</td>
+        <td>{{ rec.check_in.strftime('%H:%M') }}</td>
+        <td>{% if rec.check_out %}{{ rec.check_out.strftime('%H:%M') }}{% else %}<span style="color:#f59e0b;">Em andamento</span>{% endif %}</td>
+        <td>{{ rec.duration }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endfor %}
+
+{% if not rows %}
+<p style="color:#6b7280;text-align:center;padding:24px 0;">Nenhum registro de ponto neste mês.</p>
+{% endif %}
+
+<div class="footer">
+  <span>Nascimento Tech — Sistema de Gestão</span>
+  <span>{{ month_name }} · {{ generated_at.strftime('%d/%m/%Y') }}</span>
+</div>
+<script>window.onload = function() { setTimeout(() => window.print(), 400); };</script>
+</body>
+</html>

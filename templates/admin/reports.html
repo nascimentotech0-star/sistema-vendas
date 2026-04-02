@@ -3,10 +3,16 @@
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
   <h4 class="fw-bold mb-0"><i class="bi bi-bar-chart-line-fill me-2 text-primary"></i>Relatório Diário</h4>
-  <form method="GET" class="d-flex gap-2">
-    <input type="date" name="date" class="form-control form-control-sm" value="{{ report_date.strftime('%Y-%m-%d') }}">
-    <button type="submit" class="btn btn-primary btn-sm">Gerar</button>
-  </form>
+  <div class="d-flex gap-2">
+    <form method="GET" class="d-flex gap-2">
+      <input type="date" name="date" class="form-control form-control-sm" value="{{ report_date.strftime('%Y-%m-%d') }}">
+      <button type="submit" class="btn btn-primary btn-sm">Gerar</button>
+    </form>
+    <a href="{{ url_for('admin.sales_pdf', date=report_date.strftime('%Y-%m-%d')) }}" target="_blank"
+       class="btn btn-sm" style="background:rgba(124,58,237,.2);color:#a78bfa;border:1px solid rgba(124,58,237,.3);">
+      <i class="bi bi-file-earmark-pdf-fill me-1"></i>PDF
+    </a>
+  </div>
 </div>
 
 <!-- Resumo geral -->

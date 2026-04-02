@@ -1179,6 +1179,127 @@ def commission_pdf():
         generated_at=now_br())
 
 
+@admin_bp.route('/relatorios/pdf/vendas')
+@login_required
+@manager_or_admin
+def sales_pdf():
+    date_str = request.args.get('date', today_br().strftime('%Y-%m-%d'))
+    try:
+        report_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+    except Exception:
+        report_date = today_br()
+
+    sales = Sale.query.filter(func.date(Sale.created_at) == report_date).order_by(Sale.created_at).all()
+
+    att_stats = {}
+    for s in sales:
+        aid = s.attendant_id
+        if aid not in att_stats:
+            att_stats[aid] = {'name': s.attendant.name, 'count': 0, 'total': 0.0, 'commission': 0.0, 'sales': []}
+        att_stats[aid]['count']      += 1
+        att_stats[aid]['total']      += s.amount
+        att_stats[aid]['commission'] += s.commission_amount
+        att_stats[aid]['sales'].append(s)
+
+    total_sales      = sum(s.amount for s in sales)
+    total_commission = sum(s.commission_amount for s in sales)
+
+    return render_template('admin/sales_pdf.html',
+        report_date=report_date,
+        att_stats=att_stats,
+        total_sales=total_sales,
+        total_commission=total_commission,
+        sales_count=len(sales),
+        payment_methods=PAYMENT_METHODS,
+        generated_at=now_br())
+
+
+@admin_bp.route('/relatorios/pdf/ponto')
+@login_required
+@manager_or_admin
+def attendance_pdf():
+    month_str = request.args.get('month', today_br().strftime('%Y-%m'))
+    try:
+        year, mon = int(month_str.split('-')[0]), int(month_str.split('-')[1])
+    except Exception:
+        year, mon = today_br().year, today_br().month
+
+    first_day = date(year, mon, 1)
+    last_day  = date(year, mon, cal.monthrange(year, mon)[1])
+
+    attendants_list = User.query.filter(
+        User.role.in_(['attendant', 'gerente']), User.is_active == True
+    ).order_by(User.name).all()
+
+    rows = []
+    for a in attendants_list:
+        atts = [x for x in a.attendances if first_day <= x.check_in.date() <= last_day]
+        if not atts:
+            continue
+        worked = sum(x.net_minutes for x in atts)
+        deficit = sum(x.deficit_minutes(a.work_hours_per_day or 8) for x in atts)
+        absences = AbsenceRecord.query.filter_by(user_id=a.id).filter(
+            AbsenceRecord.absence_date >= first_day,
+            AbsenceRecord.absence_date <= last_day,
+        ).all()
+        rows.append({
+            'attendant': a,
+            'days_worked': len(atts),
+            'worked_h': f"{worked // 60}h{worked % 60:02d}m",
+            'deficit_h': f"{deficit // 60}h{deficit % 60:02d}m",
+            'absence_count': len(absences),
+            'records': sorted(atts, key=lambda x: x.check_in),
+        })
+
+    month_labels_pt = ['','Janeiro','Fevereiro','Março','Abril','Maio','Junho',
+                       'Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']
+    return render_template('admin/attendance_pdf.html',
+        rows=rows,
+        month_name=f'{month_labels_pt[mon]} {year}',
+        generated_at=now_br())
+
+
+@admin_bp.route('/relatorios/pdf/salarios')
+@login_required
+@admin_required
+def salaries_pdf():
+    month_str = request.args.get('month', today_br().strftime('%Y-%m'))
+    try:
+        year, mon = int(month_str.split('-')[0]), int(month_str.split('-')[1])
+    except Exception:
+        year, mon = today_br().year, today_br().month
+
+    first_day = date(year, mon, 1)
+    last_day  = date(year, mon, cal.monthrange(year, mon)[1])
+
+    attendants_list = User.query.filter(
+        User.role.in_(['attendant', 'gerente']), User.is_active == True,
+        User.monthly_salary > 0
+    ).order_by(User.name).all()
+
+    data = []
+    total_base = total_deductions = total_paid = 0.0
+    for a in attendants_list:
+        summary  = a.monthly_salary_summary(year, mon)
+        payments = SalaryPayment.query.filter_by(attendant_id=a.id, year=year, month=mon).all()
+        paid     = round(sum(p.amount for p in payments), 2)
+        net      = summary['net_salary']
+        total_base       += a.monthly_salary or 0
+        total_deductions += summary['deduction']
+        total_paid       += paid
+        data.append({'attendant': a, 'summary': summary, 'paid': paid, 'balance': round(net - paid, 2)})
+
+    month_labels_pt = ['','Janeiro','Fevereiro','Março','Abril','Maio','Junho',
+                       'Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']
+    return render_template('admin/salaries_pdf.html',
+        data=data,
+        month_name=f'{month_labels_pt[mon]} {year}',
+        total_base=round(total_base, 2),
+        total_deductions=round(total_deductions, 2),
+        total_paid=round(total_paid, 2),
+        generated_at=now_br())
+
+
 # ── Reset de dados (apenas admin) ─────────────────────────────────────────────
 
 @admin_bp.route('/reset-dados', methods=['GET', 'POST'])
