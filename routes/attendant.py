@@ -14,6 +14,7 @@ from models import (db, User, Attendance, AttendanceBreak, OvertimeRequest, Clie
                     PAYMENT_METHODS, BREAK_ALLOWED_MINUTES, DAYS_AT_RISK,
                     CommissionPayment, PriceItem)
 from flask import jsonify as _jsonify
+from audit import log_action
 
 attendant_bp = Blueprint('attendant', __name__)
 
@@ -1153,6 +1154,8 @@ def new_sale():
             adjustment=adjustment,
         )
         db.session.add(sale)
+        db.session.flush()
+        log_action('sale_create', f'Venda registrada: R$ {amount:.2f} ({payment_method})', 'Sale', sale.id)
         db.session.commit()
 
         flash(f'Venda de R$ {amount:.2f} registrada! Comissão: R$ {commission_amount:.2f} ({commission_rate:.0f}%)', 'success')

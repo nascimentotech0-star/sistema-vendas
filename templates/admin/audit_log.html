@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+{% block title %}Auditoria — Nascimento Tech{% endblock %}
+{% block page_title %}Log de Auditoria{% endblock %}
+{% block content %}
+
+<!-- Filtros -->
+<div class="card mb-4">
+  <div class="card-body">
+    <form method="get" class="row g-3 align-items-end">
+      <div class="col-md-4">
+        <label class="form-label" style="color:var(--text-muted);font-size:.82rem;">Usuário</label>
+        <select name="user" class="form-select form-select-sm">
+          <option value="0">Todos</option>
+          {% for u in users %}
+          <option value="{{ u.id }}" {% if user_filter == u.id %}selected{% endif %}>{{ u.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label" style="color:var(--text-muted);font-size:.82rem;">Ação (contém)</label>
+        <input type="text" name="action" class="form-control form-control-sm"
+               placeholder="ex: sale, user, overtime" value="{{ action_filter }}">
+      </div>
+      <div class="col-md-4">
+        <button type="submit" class="btn btn-sm w-100"
+                style="background:rgba(99,102,241,.2);color:#a5b4fc;border:1px solid rgba(99,102,241,.3);">
+          <i class="bi bi-funnel me-1"></i>Filtrar
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Legenda de ações -->
+<div class="d-flex flex-wrap gap-2 mb-3" style="font-size:.75rem;">
+  {% set action_colors = {
+    'sale_create':      ('#6ee7b7', 'rgba(16,185,129,.15)'),
+    'sale_delete':      ('#fca5a5', 'rgba(239,68,68,.15)'),
+    'user_create':      ('#a5b4fc', 'rgba(99,102,241,.15)'),
+    'user_edit':        ('#fde68a', 'rgba(251,191,36,.15)'),
+    'user_toggle':      ('#67e8f9', 'rgba(6,182,212,.15)'),
+    'user_delete':      ('#fca5a5', 'rgba(239,68,68,.25)'),
+    'overtime_approve': ('#6ee7b7', 'rgba(16,185,129,.15)'),
+    'overtime_deny':    ('#fcd34d', 'rgba(245,158,11,.15)'),
+  } %}
+  {% for action, (color, bg) in action_colors.items() %}
+  <span class="badge" style="background:{{ bg }};color:{{ color }};font-weight:500;">{{ action }}</span>
+  {% endfor %}
+</div>
+
+{% if logs.items %}
+<div class="card">
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0" style="font-size:.84rem;">
+        <thead>
+          <tr>
+            <th style="width:160px;">Data / Hora</th>
+            <th style="width:140px;">Usuário</th>
+            <th style="width:140px;">Ação</th>
+            <th>Descrição</th>
+            <th style="width:110px;">Alvo</th>
+            <th style="width:120px;">IP</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for log in logs.items %}
+          {% set color, bg = action_colors.get(log.action, ('#7b7b9e', 'rgba(255,255,255,.06)')) %}
+          <tr>
+            <td style="color:var(--text-muted);white-space:nowrap;">
+              {{ log.created_at.strftime('%d/%m/%Y') }}
+              <small class="d-block">{{ log.created_at.strftime('%H:%M:%S') }}</small>
+            </td>
+            <td>
+              {% if log.actor %}
+                <span class="fw-semibold">{{ log.actor.name.split()[0] }}</span>
+                <small class="d-block" style="color:var(--text-muted);">{{ log.actor.role }}</small>
+              {% else %}
+                <span style="color:var(--text-muted);">Sistema</span>
+              {% endif %}
+            </td>
+            <td>
+              <span class="badge" style="background:{{ bg }};color:{{ color }};font-weight:500;">
+                {{ log.action }}
+              </span>
+            </td>
+            <td style="max-width:320px;word-break:break-word;">{{ log.description or '—' }}</td>
+            <td style="color:var(--text-muted);">
+              {% if log.target_type %}
+                {{ log.target_type }}
+                {% if log.target_id %}#{{ log.target_id }}{% endif %}
+              {% else %}—{% endif %}
+            </td>
+            <td style="color:var(--text-muted);font-size:.78rem;font-family:monospace;">
+              {{ log.ip_address or '—' }}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Paginação -->
+{% if logs.pages > 1 %}
+<nav class="mt-3 d-flex justify-content-center">
+  <ul class="pagination pagination-sm">
+    {% if logs.has_prev %}
+    <li class="page-item">
+      <a class="page-link" href="{{ url_for('admin.audit_log', page=logs.prev_num, user=user_filter, action=action_filter) }}">
+        &laquo;
+      </a>
+    </li>
+    {% endif %}
+    {% for p in logs.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+      {% if p %}
+      <li class="page-item {% if p == logs.page %}active{% endif %}">
+        <a class="page-link" href="{{ url_for('admin.audit_log', page=p, user=user_filter, action=action_filter) }}">{{ p }}</a>
+      </li>
+      {% else %}
+      <li class="page-item disabled"><span class="page-link">…</span></li>
+      {% endif %}
+    {% endfor %}
+    {% if logs.has_next %}
+    <li class="page-item">
+      <a class="page-link" href="{{ url_for('admin.audit_log', page=logs.next_num, user=user_filter, action=action_filter) }}">
+        &raquo;
+      </a>
+    </li>
+    {% endif %}
+  </ul>
+</nav>
+{% endif %}
+
+{% else %}
+<div class="card">
+  <div class="card-body text-center py-5">
+    <i class="bi bi-journal-x" style="font-size:2.5rem;color:var(--text-muted);"></i>
+    <p class="mt-3" style="color:var(--text-muted);">Nenhum registro encontrado com os filtros aplicados.</p>
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}

@@ -132,6 +132,24 @@ def _upgrade_db():
         ('absence_records','notes',                'TEXT'),
         ('salary_payments','notes',                'TEXT'),
     ]
+    # Cria tabela audit_logs se não existir (PostgreSQL)
+    try:
+        with db.engine.connect() as conn:
+            conn.execute(db.text("""
+                CREATE TABLE IF NOT EXISTS audit_logs (
+                    id SERIAL PRIMARY KEY,
+                    user_id INTEGER REFERENCES users(id),
+                    action VARCHAR(60) NOT NULL,
+                    target_type VARCHAR(40),
+                    target_id INTEGER,
+                    description TEXT,
+                    ip_address VARCHAR(45),
+                    created_at TIMESTAMP DEFAULT NOW()
+                )
+            """))
+            conn.commit()
+    except Exception:
+        pass
     for table, column, col_def in new_cols:
         # Cada ALTER TABLE em sua própria conexão isolada — evita aborto em cascata
         try:

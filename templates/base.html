@@ -70,6 +70,13 @@
           <span class="badge ms-auto rounded-pill" style="background:#ef4444;font-size:.65rem;">{{ fraud_count }}</span>
         {% endif %}
       </a>
+      {% if current_user.is_admin() %}
+      <a class="nt-nav-link {% if request.endpoint == 'admin.audit_log' %}active{% endif %}"
+         href="{{ url_for('admin.audit_log') }}">
+        <i class="bi bi-journal-text" style="color:#a5b4fc;"></i>
+        <span style="color:#a5b4fc;">Auditoria</span>
+      </a>
+      {% endif %}
       <a class="nt-nav-link {% if request.endpoint == 'admin.cash' %}active{% endif %}"
          href="{{ url_for('admin.cash') }}">
         <i class="bi bi-cash-coin"></i> Caixa

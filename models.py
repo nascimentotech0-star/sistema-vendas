@@ -438,6 +438,21 @@ class CommissionPayment(db.Model):
     payer     = db.relationship('User', foreign_keys=[paid_by])
 
 
+class AuditLog(db.Model):
+    """Trilha de auditoria para ações críticas no sistema."""
+    __tablename__ = 'audit_logs'
+    id          = db.Column(db.Integer, primary_key=True)
+    user_id     = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
+    action      = db.Column(db.String(60), nullable=False)   # ex: 'sale_delete', 'user_edit'
+    target_type = db.Column(db.String(40), nullable=True)    # ex: 'Sale', 'User'
+    target_id   = db.Column(db.Integer,    nullable=True)
+    description = db.Column(db.Text,       nullable=True)    # detalhe legível
+    ip_address  = db.Column(db.String(45), nullable=True)
+    created_at  = db.Column(db.DateTime,   nullable=False, default=now_br)
+
+    actor = db.relationship('User', foreign_keys=[user_id])
+
+
 class PriceItem(db.Model):
     __tablename__ = 'price_items'
     id           = db.Column(db.Integer, primary_key=True)

@@ -4,7 +4,8 @@ from functools import wraps
 from models import (db, User, Attendance, AttendanceBreak, OvertimeRequest,
                     Client, Sale, Renewal, PAYMENT_METHODS, DAYS_AT_RISK,
                     AttendantGoal, CommissionPayment, PriceItem,
-                    AbsenceRecord, SalaryPayment)
+                    AbsenceRecord, SalaryPayment, AuditLog)
+from audit import log_action
 from datetime import datetime, date, timedelta
 from utils import now_br, today_br
 from sqlalchemy import func
@@ -247,6 +248,8 @@ def new_attendant():
                     monthly_sales_target=sales_target)
         user.set_password(password)
         db.session.add(user)
+        db.session.flush()
+        log_action('user_create', f'Novo usuário criado: {name} ({role})', 'User', user.id)
         db.session.commit()
         flash(f'Usuário {name} cadastrado com sucesso!', 'success')
         return redirect(url_for('admin.attendants'))
@@ -274,6 +277,8 @@ def edit_attendant(id):
         new_password = request.form.get('password', '').strip()
         if new_password:
             attendant.set_password(new_password)
+        pwd_note = ' (senha alterada)' if new_password else ''
+        log_action('user_edit', f'Usuário editado: {attendant.name}{pwd_note}', 'User', attendant.id)
         db.session.commit()
         flash(f'Atendente {attendant.name} atualizado!', 'success')
         return redirect(url_for('admin.attendants'))
@@ -286,8 +291,9 @@ def edit_attendant(id):
 def toggle_attendant(id):
     attendant = User.query.get_or_404(id)
     attendant.is_active = not attendant.is_active
-    db.session.commit()
     status = 'ativado' if attendant.is_active else 'desativado'
+    log_action('user_toggle', f'Usuário {status}: {attendant.name}', 'User', attendant.id)
+    db.session.commit()
     flash(f'Atendente {attendant.name} {status}.', 'success')
     return redirect(url_for('admin.attendants'))
 
@@ -359,6 +365,7 @@ def delete_attendant(id):
     AbsenceRecord.query.filter_by(created_by=id).update(
         {'created_by': None}, synchronize_session=False)
 
+    log_action('user_delete', f'Usuário excluído permanentemente: {name}', 'User', id)
     db.session.delete(attendant)
     db.session.commit()
     flash(f'Usuário {name} excluído com sucesso.', 'success')
@@ -407,6 +414,7 @@ def approve_overtime(id):
     req.status = 'approved'
     req.approved_by = current_user.id
     req.approved_at = now_br()
+    log_action('overtime_approve', f'Hora extra aprovada para {req.user.name}', 'OvertimeRequest', req.id)
     db.session.commit()
     flash(f'Solicitação de {req.user.name} aprovada!', 'success')
     return redirect(url_for('admin.overtime_requests'))
@@ -420,6 +428,7 @@ def deny_overtime(id):
     req.status = 'denied'
     req.approved_by = current_user.id
     req.approved_at = now_br()
+    log_action('overtime_deny', f'Hora extra negada para {req.user.name}', 'OvertimeRequest', req.id)
     db.session.commit()
     flash(f'Solicitação de {req.user.name} negada.', 'warning')
     return redirect(url_for('admin.overtime_requests'))
@@ -479,6 +488,8 @@ def admin_new_sale():
         created_at=created_at,
     )
     db.session.add(sale)
+    db.session.flush()
+    log_action('sale_create', f'Venda registrada pelo admin: R$ {amount:.2f} para atendente #{attendant_id}', 'Sale', sale.id)
     db.session.commit()
     flash(f'Venda de R$ {amount:.2f} registrada. Comissão: R$ {commission_amount:.2f}', 'success')
     return redirect(url_for('admin.sales'))
@@ -489,6 +500,7 @@ def admin_new_sale():
 @admin_required
 def admin_delete_sale(sale_id):
     sale = Sale.query.get_or_404(sale_id)
+    log_action('sale_delete', f'Venda excluída: R$ {sale.amount:.2f} de {sale.attendant.name} em {sale.created_at.strftime("%d/%m/%Y")}', 'Sale', sale_id)
     db.session.delete(sale)
     db.session.commit()
     flash('Venda excluída.', 'success')
@@ -529,6 +541,28 @@ def sales():
         all_clients=all_clients,
         date_filter=date_filter, attendant_filter=attendant_filter,
         payment_filter=payment_filter, payment_methods=PAYMENT_METHODS)
+
+
+# ── Auditoria ──────────────────────────────────────────────────────────────────
+
+@admin_bp.route('/auditoria')
+@login_required
+@admin_required
+def audit_log():
+    page          = request.args.get('page', 1, type=int)
+    user_filter   = request.args.get('user', 0, type=int)
+    action_filter = request.args.get('action', '')
+
+    query = AuditLog.query
+    if user_filter:
+        query = query.filter_by(user_id=user_filter)
+    if action_filter:
+        query = query.filter(AuditLog.action.ilike(f'%{action_filter}%'))
+
+    logs = query.order_by(AuditLog.created_at.desc()).paginate(page=page, per_page=50)
+    users = User.query.order_by(User.name).all()
+    return render_template('admin/audit_log.html', logs=logs, users=users,
+                           user_filter=user_filter, action_filter=action_filter)
 
 
 # ── Fraudes / Comprovantes Duplicados ──────────────────────────────────────────
