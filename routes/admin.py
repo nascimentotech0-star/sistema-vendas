@@ -211,7 +211,7 @@ def dashboard():
 @login_required
 @manager_or_admin
 def attendants():
-    attendants = User.query.filter_by(role='attendant').order_by(User.name).all()
+    attendants = User.query.filter(User.role.in_(['attendant', 'gerente'])).order_by(User.name).all()
     return render_template('admin/attendants.html', attendants=attendants)
 
 
@@ -783,7 +783,7 @@ def goals():
 
     first_day = date(year, mon, 1)
     last_day  = date(year, mon, cal.monthrange(year, mon)[1])
-    attendants = User.query.filter_by(role='attendant', is_active=True).order_by(User.name).all()
+    attendants = User.query.filter(User.role.in_(['attendant', 'gerente']), User.is_active == True).order_by(User.name).all()
 
     if request.method == 'POST':
         for a in attendants:
@@ -845,7 +845,7 @@ def commissions():
 
     first_day = date(year, mon, 1)
     last_day  = date(year, mon, cal.monthrange(year, mon)[1])
-    attendants = User.query.filter_by(role='attendant', is_active=True).order_by(User.name).all()
+    attendants = User.query.filter(User.role.in_(['attendant', 'gerente']), User.is_active == True).order_by(User.name).all()
 
     data = []
     total_earned = total_paid = 0.0
@@ -1097,7 +1097,7 @@ def commission_pdf():
     last_day  = date(year, mon, cal.monthrange(year, mon)[1])
     month_labels_pt = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho',
                         'Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']
-    attendants = User.query.filter_by(role='attendant', is_active=True).order_by(User.name).all()
+    attendants = User.query.filter(User.role.in_(['attendant', 'gerente']), User.is_active == True).order_by(User.name).all()
 
     data = []
     total_earned = total_paid = 0.0
