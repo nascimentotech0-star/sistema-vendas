@@ -21,6 +21,11 @@ class User(db.Model, UserMixin):
     work_days_per_month = db.Column(db.Integer, nullable=True, default=26) # dias trabalhados por mês
     shift_end_hour      = db.Column(db.Integer, nullable=True, default=22)   # hora de término do turno (8–22 padrão, 14 para turno manhã)
     monthly_sales_target = db.Column(db.Integer, nullable=True, default=700) # meta mensal de vendas para comissão máxima (10%)
+    # Permissões granulares (aplicáveis principalmente ao papel 'gerente')
+    perm_prices       = db.Column(db.Boolean, nullable=True, default=False)  # editar tabela de preços
+    perm_pay_comm     = db.Column(db.Boolean, nullable=True, default=True)   # pagar comissões
+    perm_edit_att     = db.Column(db.Boolean, nullable=True, default=True)   # editar ponto manualmente
+    perm_delete_sales = db.Column(db.Boolean, nullable=True, default=False)  # excluir vendas
     created_at = db.Column(db.DateTime, default=now_br)
 
     attendances = db.relationship('Attendance', backref='user', lazy=True, foreign_keys='Attendance.user_id')

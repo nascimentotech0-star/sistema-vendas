@@ -93,7 +93,7 @@
           </div>
           <div class="mb-3">
             <label class="form-label fw-semibold">Perfil de acesso</label>
-            <select name="role" class="form-select">
+            <select name="role" class="form-select" id="roleSelect" onchange="togglePerms()">
               <option value="attendant" {% if not attendant or attendant.role == 'attendant' %}selected{% endif %}>
                 Atendente — vendas e renovações
               </option>
@@ -105,6 +105,29 @@
               </option>
             </select>
             <div class="form-text">Gerente acessa tudo exceto criação e exclusão de usuários.</div>
+          </div>
+
+          <!-- Permissões granulares — visível apenas para gerente -->
+          <div id="permsBlock" class="mb-3" style="display:{% if attendant and attendant.role == 'gerente' %}block{% else %}none{% endif %};">
+            <div class="p-3" style="border:1px solid rgba(99,102,241,.25);border-radius:10px;background:rgba(99,102,241,.05);">
+              <div class="fw-semibold mb-2" style="font-size:.82rem;color:#a5b4fc;">
+                <i class="bi bi-shield-check me-1"></i>Permissões do Gerente
+              </div>
+              {% set perms = [
+                ('perm_edit_att',     'Editar ponto manualmente (lançar, corrigir, excluir)'),
+                ('perm_pay_comm',     'Pagar comissões de atendentes'),
+                ('perm_prices',       'Alterar tabela de preços / planos'),
+                ('perm_delete_sales', 'Excluir vendas registradas'),
+              ] %}
+              {% for field, label in perms %}
+              {% set checked = attendant and getattr(attendant, field, False) %}
+              <div class="form-check form-switch mb-1">
+                <input class="form-check-input" type="checkbox" name="{{ field }}" id="{{ field }}"
+                       {% if checked %}checked{% endif %}>
+                <label class="form-check-label" style="font-size:.83rem;" for="{{ field }}">{{ label }}</label>
+              </div>
+              {% endfor %}
+            </div>
           </div>
 
           <div class="mb-3">
@@ -135,4 +158,12 @@
     </div>
   </div>
 </div>
+{% endblock %}
+{% block scripts %}
+<script>
+function togglePerms() {
+  const role = document.getElementById('roleSelect').value;
+  document.getElementById('permsBlock').style.display = role === 'gerente' ? 'block' : 'none';
+}
+</script>
 {% endblock %}

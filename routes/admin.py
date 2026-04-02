@@ -37,6 +37,23 @@ def manager_or_admin(f):
     return decorated
 
 
+def perm_required(perm_attr):
+    """Acesso para admin sempre; gerente só se tiver a flag de permissão."""
+    def decorator(f):
+        @wraps(f)
+        def decorated(*args, **kwargs):
+            if not current_user.is_authenticated or not current_user.can_access_admin():
+                flash('Acesso negado.', 'danger')
+                return redirect(url_for('auth.login'))
+            if not current_user.is_admin():
+                if not getattr(current_user, perm_attr, False):
+                    flash('Você não tem permissão para esta ação.', 'danger')
+                    return redirect(url_for('admin.dashboard'))
+            return f(*args, **kwargs)
+        return decorated
+    return decorator
+
+
 @admin_bp.context_processor
 def inject_pending_counts():
     overtime_count = OvertimeRequest.query.filter_by(status='pending').count()
@@ -246,7 +263,11 @@ def new_attendant():
         user = User(username=username, name=name, email=email, role=role,
                     monthly_salary=salary, work_hours_per_day=hours,
                     work_days_per_month=days, shift_end_hour=shift_end,
-                    monthly_sales_target=sales_target)
+                    monthly_sales_target=sales_target,
+                    perm_edit_att     = 'perm_edit_att'     in request.form,
+                    perm_pay_comm     = 'perm_pay_comm'     in request.form,
+                    perm_prices       = 'perm_prices'       in request.form,
+                    perm_delete_sales = 'perm_delete_sales' in request.form)
         user.set_password(password)
         db.session.add(user)
         db.session.flush()
@@ -278,6 +299,11 @@ def edit_attendant(id):
         new_password = request.form.get('password', '').strip()
         if new_password:
             attendant.set_password(new_password)
+        # Permissões granulares (checkboxes — presença = True)
+        attendant.perm_edit_att     = 'perm_edit_att'     in request.form
+        attendant.perm_pay_comm     = 'perm_pay_comm'     in request.form
+        attendant.perm_prices       = 'perm_prices'       in request.form
+        attendant.perm_delete_sales = 'perm_delete_sales' in request.form
         pwd_note = ' (senha alterada)' if new_password else ''
         log_action('user_edit', f'Usuário editado: {attendant.name}{pwd_note}', 'User', attendant.id)
         db.session.commit()
@@ -506,7 +532,7 @@ def admin_new_sale():
 
 @admin_bp.route('/vendas/<int:sale_id>/excluir', methods=['POST'])
 @login_required
-@admin_required
+@perm_required('perm_delete_sales')
 def admin_delete_sale(sale_id):
     sale = Sale.query.get_or_404(sale_id)
     log_action('sale_delete', f'Venda excluída: R$ {sale.amount:.2f} de {sale.attendant.name} em {sale.created_at.strftime("%d/%m/%Y")}', 'Sale', sale_id)
@@ -738,7 +764,7 @@ def attendance():
 
 @admin_bp.route('/ponto/manual', methods=['POST'])
 @login_required
-@manager_or_admin
+@perm_required('perm_edit_att')
 def attendance_manual():
     user_id   = request.form.get('user_id', type=int)
     date_str  = request.form.get('date', '')
@@ -770,7 +796,7 @@ def attendance_manual():
 
 @admin_bp.route('/ponto/<int:att_id>/editar', methods=['POST'])
 @login_required
-@manager_or_admin
+@perm_required('perm_edit_att')
 def attendance_edit(att_id):
     rec = Attendance.query.get_or_404(att_id)
     date_str   = rec.date.strftime('%Y-%m-%d')
@@ -799,7 +825,7 @@ def attendance_edit(att_id):
 
 @admin_bp.route('/ponto/<int:att_id>/deletar', methods=['POST'])
 @login_required
-@manager_or_admin
+@perm_required('perm_edit_att')
 def attendance_delete(att_id):
     rec = Attendance.query.get_or_404(att_id)
     date_str = rec.date.strftime('%Y-%m-%d')
@@ -917,7 +943,7 @@ def commissions():
 
 @admin_bp.route('/comissoes/pagar', methods=['POST'])
 @login_required
-@manager_or_admin
+@perm_required('perm_pay_comm')
 def pay_commission():
     att_id = request.form.get('attendant_id', type=int)
     year   = request.form.get('year', type=int)
@@ -949,6 +975,9 @@ def pay_commission():
 @manager_or_admin
 def price_items():
     if request.method == 'POST':
+        if not current_user.is_admin() and not current_user.perm_prices:
+            flash('Você não tem permissão para alterar preços.', 'danger')
+            return redirect(url_for('admin.price_items'))
         name         = request.form.get('name', '').strip()
         price        = float(request.form.get('price', 0) or 0)
         desc         = request.form.get('description', '').strip() or None
@@ -969,7 +998,7 @@ def price_items():
 
 @admin_bp.route('/tabela-precos/<int:id>/toggle', methods=['POST'])
 @login_required
-@manager_or_admin
+@perm_required('perm_prices')
 def toggle_price_item(id):
     item = PriceItem.query.get_or_404(id)
     item.is_active = not item.is_active
@@ -979,7 +1008,7 @@ def toggle_price_item(id):
 
 @admin_bp.route('/tabela-precos/<int:id>/excluir', methods=['POST'])
 @login_required
-@manager_or_admin
+@perm_required('perm_prices')
 def delete_price_item(id):
     item = PriceItem.query.get_or_404(id)
     db.session.delete(item)

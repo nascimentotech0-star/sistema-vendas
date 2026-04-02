@@ -133,6 +133,10 @@ def _upgrade_db():
         ('sales',          'comprovante_hash',       'VARCHAR(64)'),
         ('absence_records','notes',                'TEXT'),
         ('salary_payments','notes',                'TEXT'),
+        ('users',          'perm_prices',          'BOOLEAN DEFAULT FALSE'),
+        ('users',          'perm_pay_comm',        'BOOLEAN DEFAULT TRUE'),
+        ('users',          'perm_edit_att',        'BOOLEAN DEFAULT TRUE'),
+        ('users',          'perm_delete_sales',    'BOOLEAN DEFAULT FALSE'),
     ]
     # Cria tabela notifications se não existir (PostgreSQL)
     try:
