@@ -1124,6 +1124,35 @@ def pay_commission():
     return redirect(url_for('admin.commissions', month=f'{year}-{mon:02d}'))
 
 
+@admin_bp.route('/comissoes/pagamento/<int:payment_id>/editar', methods=['POST'])
+@login_required
+@admin_required
+def edit_commission_payment(payment_id):
+    p = CommissionPayment.query.get_or_404(payment_id)
+    amount = float(request.form.get('amount', p.amount) or p.amount)
+    notes  = request.form.get('notes', '').strip() or None
+    if amount > 0:
+        p.amount = amount
+        p.notes  = notes
+        db.session.commit()
+        flash('Pagamento atualizado.', 'success')
+    else:
+        flash('Valor inválido.', 'danger')
+    return redirect(url_for('admin.commissions', month=f'{p.year}-{p.month:02d}'))
+
+
+@admin_bp.route('/comissoes/pagamento/<int:payment_id>/excluir', methods=['POST'])
+@login_required
+@admin_required
+def delete_commission_payment(payment_id):
+    p = CommissionPayment.query.get_or_404(payment_id)
+    month_str = f'{p.year}-{p.month:02d}'
+    db.session.delete(p)
+    db.session.commit()
+    flash('Pagamento removido.', 'success')
+    return redirect(url_for('admin.commissions', month=month_str))
+
+
 # ── Tabela de Preços ───────────────────────────────────────────────────────────
 
 @admin_bp.route('/tabela-precos', methods=['GET', 'POST'])

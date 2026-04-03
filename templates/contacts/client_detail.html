@@ -27,6 +27,13 @@
               title="Editar WhatsApp e telefone do cliente">
         <i class="bi bi-pencil-fill me-1"></i>Editar contato
       </button>
+      {% if current_user.is_admin() or current_user.is_manager() %}
+      <a href="{{ url_for('attendant.edit_client', id=client.id) }}" class="btn btn-sm"
+         style="background:rgba(251,191,36,.12);color:#fcd34d;border:1px solid rgba(251,191,36,.3);"
+         title="Editar todos os dados do cliente">
+        <i class="bi bi-person-gear me-1"></i>Editar cliente
+      </a>
+      {% endif %}
     </div>
 
     <!-- Card do cliente -->

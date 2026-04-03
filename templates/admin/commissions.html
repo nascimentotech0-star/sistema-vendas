@@ -77,7 +77,7 @@
         {% if row.payments %}
         <div class="table-responsive">
           <table class="table table-sm mb-0">
-            <thead><tr><th>Data</th><th>Valor</th><th>Observação</th><th>Por</th></tr></thead>
+            <thead><tr><th>Data</th><th>Valor</th><th>Observação</th><th>Por</th><th></th></tr></thead>
             <tbody>
               {% for p in row.payments %}
               <tr>
@@ -85,6 +85,21 @@
                 <td class="fw-semibold" style="color:#6ee7b7;">R$ {{ "%.2f"|format(p.amount) }}</td>
                 <td style="color:var(--text-muted);font-size:.82rem;">{{ p.notes or '—' }}</td>
                 <td style="color:var(--text-muted);font-size:.82rem;">{{ p.payer.name }}</td>
+                <td class="d-flex gap-1">
+                  <button type="button" class="btn btn-sm py-0 px-1"
+                          style="background:rgba(99,102,241,.15);border:1px solid rgba(99,102,241,.3);color:#a5b4fc;"
+                          onclick="openEditCommPayment({{ p.id }}, {{ p.amount }}, '{{ p.notes or '' }}')">
+                    <i class="bi bi-pencil-fill" style="font-size:.7rem;"></i>
+                  </button>
+                  <form method="POST" action="{{ url_for('admin.delete_commission_payment', payment_id=p.id) }}"
+                        onsubmit="return confirm('Remover este pagamento?')" class="d-inline">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-sm py-0 px-1"
+                            style="background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.3);color:#fca5a5;">
+                      <i class="bi bi-trash3-fill" style="font-size:.7rem;"></i>
+                    </button>
+                  </form>
+                </td>
               </tr>
               {% endfor %}
             </tbody>
@@ -137,4 +152,43 @@
 </div>
 {% endfor %}
 
+<!-- Modal: Editar Pagamento de Comissão -->
+<div id="modalEditCommPayment" style="display:none;position:fixed;inset:0;z-index:1055;background:rgba(0,0,0,.6);align-items:center;justify-content:center;">
+  <div style="background:#1a1a35;border:1px solid rgba(124,58,237,.3);border-radius:12px;width:100%;max-width:380px;margin:1rem;">
+    <form method="POST" id="formEditCommPayment" action="">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="p-4">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h6 class="fw-bold mb-0" style="color:#a78bfa;"><i class="bi bi-pencil-fill me-2"></i>Editar Pagamento</h6>
+          <button type="button" onclick="document.getElementById('modalEditCommPayment').style.display='none'"
+                  style="background:none;border:none;color:var(--text-muted);font-size:1.2rem;cursor:pointer;">&times;</button>
+        </div>
+        <div class="mb-3">
+          <label class="form-label small fw-semibold">Valor (R$) <span class="text-danger">*</span></label>
+          <input type="number" name="amount" id="editCommAmount" step="0.01" min="0.01" class="form-control form-control-sm" required>
+        </div>
+        <div class="mb-4">
+          <label class="form-label small fw-semibold">Observação</label>
+          <input type="text" name="notes" id="editCommNotes" class="form-control form-control-sm" placeholder="Opcional">
+        </div>
+        <div class="d-flex gap-2">
+          <button type="submit" class="btn btn-primary btn-sm px-4"><i class="bi bi-check-lg me-1"></i>Salvar</button>
+          <button type="button" class="btn btn-sm" onclick="document.getElementById('modalEditCommPayment').style.display='none'"
+                  style="background:rgba(255,255,255,.08);color:var(--text);border:1px solid var(--border);">Cancelar</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% endblock %}
+{% block scripts %}
+<script>
+function openEditCommPayment(id, amount, notes) {
+  document.getElementById('formEditCommPayment').action = '/admin/comissoes/pagamento/' + id + '/editar';
+  document.getElementById('editCommAmount').value = amount;
+  document.getElementById('editCommNotes').value  = notes;
+  document.getElementById('modalEditCommPayment').style.display = 'flex';
+}
+</script>
 {% endblock %}
