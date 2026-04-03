@@ -37,6 +37,157 @@
   </div>
 </div>
 
+{# ── BANNER MOTIVACIONAL ──────────────────────────────────────────────────── #}
+<div class="card mb-4" id="nt-motiv-banner"
+     style="background:linear-gradient(135deg,rgba(99,102,241,.15) 0%,rgba(16,185,129,.08) 100%);
+            border:1px solid rgba(99,102,241,.3);position:relative;overflow:hidden;">
+  <div style="position:absolute;inset:0;pointer-events:none;
+              background:radial-gradient(ellipse at top right,rgba(167,139,250,.12),transparent 60%);"></div>
+  <div class="card-body py-3 px-4 d-flex align-items-center gap-3">
+    <div style="font-size:1.6rem;flex-shrink:0;line-height:1;" id="nt-banner-icon">💡</div>
+    <div style="flex:1;min-width:0;">
+      <div style="font-size:.68rem;color:#a5b4fc;text-transform:uppercase;letter-spacing:.08em;margin-bottom:3px;font-weight:600;">
+        Frase do momento
+      </div>
+      <div id="nt-banner-text"
+           style="font-size:.92rem;color:#e2e8f0;line-height:1.55;font-weight:500;">
+        {{ motivational_msg }}
+      </div>
+    </div>
+    <button onclick="ntNextBannerPhrase()"
+            style="background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);
+                   border-radius:8px;padding:7px 10px;color:var(--text-muted);cursor:pointer;
+                   flex-shrink:0;transition:all .15s;font-size:.75rem;"
+            onmouseover="this.style.background='rgba(255,255,255,.13)'"
+            onmouseout="this.style.background='rgba(255,255,255,.07)'"
+            title="Próxima frase">
+      <i class="bi bi-arrow-clockwise"></i>
+    </button>
+  </div>
+</div>
+
+{# ── STREAK + RECORDE ─────────────────────────────────────────────────────── #}
+<div class="row g-3 mb-4">
+  {# Streak #}
+  <div class="col-6">
+    <div class="card h-100" style="
+      {% if streak >= 7 %}background:linear-gradient(135deg,rgba(245,158,11,.15),rgba(239,68,68,.08));border-color:rgba(245,158,11,.4) !important;
+      {% elif streak >= 3 %}background:linear-gradient(135deg,rgba(245,158,11,.1),rgba(251,191,36,.05));border-color:rgba(245,158,11,.3) !important;
+      {% else %}border-color:rgba(99,102,241,.2) !important;{% endif %}">
+      <div class="card-body text-center py-3">
+        <div style="font-size:2rem;line-height:1;margin-bottom:4px;">
+          {% if streak == 0 %}😴
+          {% elif streak == 1 %}🌱
+          {% elif streak < 3 %}⚡
+          {% elif streak < 7 %}🔥
+          {% else %}🏆
+          {% endif %}
+        </div>
+        <div style="font-size:1.6rem;font-weight:800;line-height:1;
+          color:{% if streak >= 3 %}#fbbf24{% else %}#a5b4fc{% endif %};">
+          {{ streak }}
+        </div>
+        <div style="font-size:.68rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-top:2px;">
+          dia{{ 's' if streak != 1 }} seguido{{ 's' if streak != 1 }}
+        </div>
+        <div style="font-size:.7rem;margin-top:6px;
+          color:{% if streak >= 7 %}#fbbf24{% elif streak >= 3 %}#fcd34d{% else %}var(--text-muted){% endif %};">
+          {% if streak == 0 %}Faça sua primeira venda hoje!
+          {% elif streak == 1 %}Começou bem. Mantenha amanhã!
+          {% elif streak < 3 %}Sequência iniciada! Continue!
+          {% elif streak < 7 %}Sequência incrível! Não pare!
+          {% else %}🔥 Você está em chamas! Lendário!
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {# Recorde pessoal #}
+  <div class="col-6">
+    <div class="card h-100" style="border-color:rgba(16,185,129,.25) !important;">
+      <div class="card-body text-center py-3">
+        <div style="font-size:1.6rem;line-height:1;margin-bottom:4px;">🎯</div>
+        <div style="font-size:.65rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;">
+          Seu recorde/dia
+        </div>
+        <div style="font-size:1.25rem;font-weight:800;color:#6ee7b7;line-height:1.2;margin-top:2px;">
+          R$ {{ "%.0f"|format(personal_best) }}
+        </div>
+        {% if personal_best_date %}
+        <div style="font-size:.68rem;color:var(--text-muted);margin-top:3px;">
+          em {{ personal_best_date.strftime('%d/%m/%Y') if personal_best_date else '—' }}
+        </div>
+        {% endif %}
+        {% if today_total > 0 and personal_best > 0 %}
+          {% set pct_record = ((today_total / personal_best) * 100)|int %}
+          <div style="margin-top:8px;">
+            <div style="background:rgba(255,255,255,.06);border-radius:4px;height:4px;overflow:hidden;">
+              <div style="height:100%;border-radius:4px;width:{{ [pct_record,100]|min }}%;
+                background:{% if pct_record >= 100 %}linear-gradient(90deg,#10b981,#fcd34d){% else %}linear-gradient(90deg,#10b981,#6ee7b7){% endif %};
+                transition:width 1s ease;"></div>
+            </div>
+            <div style="font-size:.68rem;color:{% if pct_record >= 100 %}#fcd34d{% else %}#6ee7b7{% endif %};margin-top:3px;">
+              {% if pct_record >= 100 %}🏆 Recorde batido hoje!{% else %}{{ pct_record }}% do seu recorde{% endif %}
+            </div>
+          </div>
+        {% else %}
+          <div style="font-size:.7rem;color:var(--text-muted);margin-top:6px;">
+            {% if today_total == 0 %}Hoje ainda sem vendas{% else %}Primeiro dia!{% endif %}
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+{# ── FEED DA EQUIPE ───────────────────────────────────────────────────────── #}
+{% if team_feed %}
+<div class="card mb-4" style="border-color:rgba(99,102,241,.2) !important;">
+  <div class="card-header py-2 d-flex align-items-center gap-2">
+    <span class="nt-livdot"></span>
+    <span class="fw-semibold" style="font-size:.85rem;">Pulso da Equipe</span>
+    <small class="ms-auto" style="color:var(--text-muted);font-size:.72rem;">últimas vendas</small>
+  </div>
+  <div class="card-body p-0">
+    {% for s in team_feed %}
+    {% set is_me = s.attendant_id == current_user.id %}
+    <div class="d-flex align-items-center gap-3 px-3 py-2 {% if not loop.last %}row-divider{% endif %}"
+         style="{% if is_me %}background:rgba(99,102,241,.06);{% endif %}">
+      <div style="width:30px;height:30px;border-radius:50%;flex-shrink:0;
+                  background:{% if is_me %}rgba(99,102,241,.2){% else %}rgba(255,255,255,.06){% endif %};
+                  display:flex;align-items:center;justify-content:center;
+                  font-size:.75rem;font-weight:700;
+                  color:{% if is_me %}#a5b4fc{% else %}var(--text-muted){% endif %};">
+        {{ s.attendant.name[0].upper() if s.attendant else '?' }}
+      </div>
+      <div class="flex-fill" style="min-width:0;">
+        <div style="font-size:.8rem;font-weight:{% if is_me %}700{% else %}500{% endif %};
+          color:{% if is_me %}#c4b5fd{% else %}var(--text){% endif %};">
+          {{ s.attendant.name.split()[0] if s.attendant else '—' }}
+          {% if is_me %}<span style="font-size:.65rem;color:var(--text-muted);"> (você)</span>{% endif %}
+        </div>
+        <div style="font-size:.7rem;color:var(--text-muted);">
+          {% if s.client %}{{ s.client.name.split()[0] }}{% else %}sem vínculo{% endif %}
+          · {{ s.payment_display }}
+        </div>
+      </div>
+      <div class="text-end flex-shrink-0">
+        <div style="font-size:.85rem;font-weight:700;color:#6ee7b7;">R$ {{ "%.0f"|format(s.amount) }}</div>
+        <div style="font-size:.65rem;color:var(--text-muted);">
+          {% set diff = (now_br() - s.created_at).total_seconds()|int %}
+          {% if diff < 60 %}agora
+          {% elif diff < 3600 %}{{ (diff // 60) }}min atrás
+          {% elif diff < 86400 %}{{ (diff // 3600) }}h atrás
+          {% else %}{{ s.created_at.strftime('%d/%m') }}{% endif %}
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
 <!-- ── AÇÕES RÁPIDAS ── (primeiro bloco visível) -->
 <div class="row g-3 mb-4">
   <div class="col-4">
@@ -687,6 +838,35 @@
 </style>
 
 <script>
+// ── Banner motivacional ──────────────────────────────────────────────────────
+var BANNER_FRASES = [];
+document.addEventListener('DOMContentLoaded', function(){
+  // Coleta frases do array FRASES já definido abaixo
+  setTimeout(function(){
+    if (typeof FRASES !== 'undefined') BANNER_FRASES = FRASES.slice();
+  }, 100);
+});
+var BANNER_ICONS = ['💡','🚀','⚡','🎯','🔥','💪','🏆','✨','🌟','💎','🎪','🦁'];
+var bannerPos = 0;
+function ntNextBannerPhrase() {
+  var frases = (typeof FRASES !== 'undefined' && FRASES.length) ? FRASES : ['Você é capaz de grandes coisas!'];
+  bannerPos = (bannerPos + 1) % frases.length;
+  var el = document.getElementById('nt-banner-text');
+  var ic = document.getElementById('nt-banner-icon');
+  if (!el) return;
+  el.style.opacity = '0';
+  el.style.transform = 'translateY(6px)';
+  setTimeout(function(){
+    el.textContent = frases[bannerPos];
+    if (ic) ic.textContent = BANNER_ICONS[Math.floor(Math.random() * BANNER_ICONS.length)];
+    el.style.transition = 'opacity .35s ease, transform .35s ease';
+    el.style.opacity = '1';
+    el.style.transform = 'translateY(0)';
+  }, 220);
+}
+// Troca automática a cada 1 minuto no banner também
+setInterval(function(){ ntNextBannerPhrase(); }, 60000);
+
 // Chevron da fila do dia
 document.getElementById('collapseQueue').addEventListener('show.bs.collapse', () => {
   document.getElementById('chevronQueue').style.transform = 'rotate(180deg)';

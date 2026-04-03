@@ -617,6 +617,49 @@ def dashboard():
                 'client_id': r.client_id,
             })
 
+    # ── Streak: dias consecutivos com pelo menos 1 venda ─────────────────────
+    streak = 0
+    check_day = today - timedelta(days=1)  # começa no dia anterior
+    # conta hoje separado (só se tiver venda)
+    if today_sales:
+        streak = 1
+        while True:
+            ds = datetime(check_day.year, check_day.month, check_day.day)
+            de = ds + timedelta(days=1)
+            count = Sale.query.filter(
+                Sale.attendant_id == current_user.id,
+                Sale.created_at >= ds,
+                Sale.created_at < de,
+            ).count()
+            if count > 0:
+                streak += 1
+                check_day -= timedelta(days=1)
+            else:
+                break
+
+    # ── Recorde pessoal do dia (maior total em 1 dia) ─────────────────────────
+    best_day_result = (
+        db.session.query(
+            func.date(Sale.created_at).label('day'),
+            func.sum(Sale.amount).label('total')
+        )
+        .filter(Sale.attendant_id == current_user.id)
+        .group_by(func.date(Sale.created_at))
+        .order_by(func.sum(Sale.amount).desc())
+        .first()
+    )
+    personal_best = float(best_day_result.total) if best_day_result else 0.0
+    personal_best_date = best_day_result.day if best_day_result else None
+
+    # ── Feed da equipe: últimas 8 vendas de todos atendentes ─────────────────
+    team_feed = (
+        Sale.query
+        .filter(Sale.created_at >= datetime(today.year, today.month, today.day) - timedelta(days=1))
+        .order_by(Sale.created_at.desc())
+        .limit(8)
+        .all()
+    )
+
     # ── Mensagem motivacional aleatória ──────────────────────────────────────
     import random
     motivational_msg = random.choice(_MOTIVATIONAL)
@@ -671,6 +714,10 @@ def dashboard():
         goal_renewal_pct=goal_renewal_pct,
         my_rank_pos=my_rank_pos,
         priorities=priorities,
+        streak=streak,
+        personal_best=personal_best,
+        personal_best_date=personal_best_date,
+        team_feed=team_feed,
     )
 
 
