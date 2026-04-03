@@ -507,6 +507,7 @@ def deny_overtime(id):
 @login_required
 @manager_or_admin
 def admin_new_sale():
+    import os, uuid, hashlib
     from models import Client
     attendant_id   = request.form.get('attendant_id', type=int)
     client_id      = request.form.get('client_id', type=int) or None
@@ -528,6 +529,28 @@ def admin_new_sale():
     except ValueError:
         flash('Valor inválido.', 'danger')
         return redirect(url_for('admin.sales'))
+
+    # Comprovante
+    from flask import current_app
+    ALLOWED = {'png', 'jpg', 'jpeg', 'gif', 'webp', 'pdf'}
+    comprovante_filename = None
+    comprovante_hash     = None
+    file = request.files.get('comprovante')
+    if not file or not file.filename or file.filename.rsplit('.', 1)[-1].lower() not in ALLOWED:
+        flash('Comprovante obrigatório (JPG, PNG ou PDF).', 'danger')
+        return redirect(url_for('admin.sales'))
+    raw  = file.read()
+    sha  = hashlib.sha256(raw).hexdigest()
+    dup  = Sale.query.filter_by(comprovante_hash=sha).first()
+    if dup:
+        flash(f'Comprovante duplicado — já usado na venda #{dup.id}.', 'danger')
+        return redirect(url_for('admin.sales'))
+    ext  = file.filename.rsplit('.', 1)[-1].lower()
+    fname = f"{uuid.uuid4().hex}.{ext}"
+    with open(os.path.join(current_app.config['UPLOAD_FOLDER'], fname), 'wb') as fh:
+        fh.write(raw)
+    comprovante_filename = fname
+    comprovante_hash     = sha
 
     commission_amount = round(amount * commission_rate / 100, 2)
 
@@ -553,6 +576,8 @@ def admin_new_sale():
         screens=screens,
         is_overtime=False,
         created_at=created_at,
+        comprovante_filename=comprovante_filename,
+        comprovante_hash=comprovante_hash,
     )
     db.session.add(sale)
     db.session.flush()
