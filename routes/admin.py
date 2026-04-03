@@ -603,6 +603,48 @@ def admin_new_sale():
     return redirect(url_for('admin.sales'))
 
 
+@admin_bp.route('/vendas/<int:sale_id>/editar', methods=['POST'])
+@login_required
+@manager_or_admin
+def admin_edit_sale(sale_id):
+    sale = Sale.query.get_or_404(sale_id)
+    amount_str  = request.form.get('amount', '0').replace(',', '.')
+    adj_str     = request.form.get('adjustment', '0').replace(',', '.')
+    payment_method  = request.form.get('payment_method', sale.payment_method)
+    description     = request.form.get('description', '').strip() or None
+    commission_rate = float(request.form.get('commission_rate', sale.commission_rate) or sale.commission_rate)
+    date_str        = request.form.get('sale_date', '')
+    screens         = int(request.form.get('screens', sale.screens or 1) or 1)
+    try:
+        base   = float(amount_str)
+        adj    = float(adj_str)
+        amount = round(base + adj, 2)
+        if amount <= 0:
+            flash('Valor inválido.', 'danger')
+            return redirect(url_for('admin.sales'))
+    except ValueError:
+        flash('Valor inválido.', 'danger')
+        return redirect(url_for('admin.sales'))
+
+    sale.amount          = amount
+    sale.adjustment      = adj
+    sale.payment_method  = payment_method
+    sale.description     = description
+    sale.commission_rate = commission_rate
+    sale.commission_amount = round(amount * commission_rate / 100, 2)
+    sale.screens         = screens
+    if date_str:
+        try:
+            sale.created_at = datetime.strptime(date_str, '%Y-%m-%dT%H:%M')
+        except Exception:
+            pass
+
+    log_action('sale_edit', f'Venda #{sale_id} editada pelo admin: R$ {amount:.2f}', 'Sale', sale_id)
+    db.session.commit()
+    flash(f'Venda #{sale_id} atualizada.', 'success')
+    return redirect(url_for('admin.sales'))
+
+
 @admin_bp.route('/vendas/<int:sale_id>/excluir', methods=['POST'])
 @login_required
 @perm_required('perm_delete_sales')

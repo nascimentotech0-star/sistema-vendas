@@ -39,7 +39,7 @@
                         border-radius:10px;overflow:hidden;">
               {# Thumbnail / link #}
               {% set ext = s.comprovante_filename.rsplit('.', 1)[-1].lower() %}
-              {% set url = url_for('static', filename='uploads/' + s.comprovante_filename) %}
+              {% set url = url_for('serve_upload', filename=s.comprovante_filename) %}
               <a href="{{ url }}" target="_blank" style="display:block;height:110px;overflow:hidden;
                         background:#0d0d1a;display:flex;align-items:center;justify-content:center;">
                 {% if ext in ['jpg','jpeg','png','gif','webp'] %}

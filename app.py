@@ -103,6 +103,15 @@ def create_app():
 
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
+    # Rota para servir uploads independente do UPLOAD_FOLDER (Railway usa /data/uploads)
+    from flask import send_from_directory
+    from flask_login import login_required as _lr
+
+    @app.route('/uploads/<path:filename>')
+    @_lr
+    def serve_upload(filename):
+        return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+
     with app.app_context():
         db.create_all()
         _upgrade_db()   # primeiro: adiciona colunas novas

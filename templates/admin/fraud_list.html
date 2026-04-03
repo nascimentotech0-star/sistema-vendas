@@ -86,7 +86,7 @@
             </td>
             <td>
               {% if s.comprovante_filename %}
-                <a href="{{ url_for('static', filename='uploads/' + s.comprovante_filename) }}"
+                <a href="{{ url_for('serve_upload', filename=s.comprovante_filename) }}"
                    target="_blank"
                    class="btn btn-sm"
                    style="background:rgba(6,182,212,.15);color:#67e8f9;border:none;padding:3px 8px;font-size:.78rem;">

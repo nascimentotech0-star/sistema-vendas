@@ -69,7 +69,7 @@
             <td class="text-danger">R$ {{ "%.2f"|format(s.commission_amount) }} ({{ s.commission_rate|int }}%)</td>
             <td>
               {% if s.comprovante_filename %}
-                <a href="{{ url_for('static', filename='uploads/' + s.comprovante_filename) }}" target="_blank" class="btn btn-sm btn-outline-info py-0">
+                <a href="{{ url_for('serve_upload', filename=s.comprovante_filename) }}" target="_blank" class="btn btn-sm btn-outline-info py-0">
                   <i class="bi bi-file-image"></i>
                 </a>
               {% else %} — {% endif %}
