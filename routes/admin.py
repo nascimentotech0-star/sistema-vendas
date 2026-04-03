@@ -513,6 +513,20 @@ def admin_new_sale():
     if attendant_id == 0:
         attendant_id = current_user.id  # admin registrando venda própria
     client_id      = request.form.get('client_id', type=int) or None
+
+    # Novo cliente inline (admin digita nome e telefone)
+    new_client_name  = request.form.get('new_client_name', '').strip()
+    new_client_phone = request.form.get('new_client_phone', '').strip()
+    if not client_id and new_client_name:
+        from models import Client
+        nc = Client(
+            name=new_client_name,
+            whatsapp=new_client_phone or None,
+            attendant_id=attendant_id,
+        )
+        db.session.add(nc)
+        db.session.flush()
+        client_id = nc.id
     amount_str     = request.form.get('amount', '0').replace(',', '.')
     adjustment_str = request.form.get('adjustment', '0').replace(',', '.')
     payment_method = request.form.get('payment_method', '')

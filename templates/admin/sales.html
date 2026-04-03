@@ -1,5 +1,32 @@
 {% extends "base.html" %}
 {% block title %}Vendas — VendasPRO{% endblock %}
+{% block scripts %}
+<script>
+function toggleClienteMode(mode) {
+  var btnEx  = document.getElementById('btnClienteExistente');
+  var btnNv  = document.getElementById('btnClienteNovo');
+  var btnNn  = document.getElementById('btnClienteNenhum');
+  var panEx  = document.getElementById('panelClienteExistente');
+  var panNv  = document.getElementById('panelClienteNovo');
+  var selId  = document.getElementById('selectClienteId');
+  var nmName = document.getElementById('newClientName');
+  var nmPhone= document.getElementById('newClientPhone');
+
+  var activeStyle   = 'background:rgba(99,102,241,.3);border:1px solid rgba(99,102,241,.6);color:#a5b4fc;';
+  var inactiveStyle = 'background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.15);color:var(--text-muted);';
+
+  btnEx.style.cssText  = (mode === 'existente' ? activeStyle : inactiveStyle) + 'font-size:.75rem;';
+  btnNv.style.cssText  = (mode === 'novo'      ? activeStyle : inactiveStyle) + 'font-size:.75rem;';
+  btnNn.style.cssText  = (mode === 'nenhum'    ? activeStyle : inactiveStyle) + 'font-size:.75rem;';
+
+  panEx.style.display = (mode === 'existente') ? '' : 'none';
+  panNv.style.display = (mode === 'novo')      ? '' : 'none';
+
+  if (mode !== 'existente') selId.value  = '';
+  if (mode !== 'novo')      { nmName.value = ''; nmPhone.value = ''; }
+}
+</script>
+{% endblock %}
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
   <h4 class="fw-bold mb-0"><i class="bi bi-cart3 me-2 text-primary"></i>Todas as Vendas</h4>
@@ -156,12 +183,46 @@
 
         <div class="mb-3">
           <label class="form-label small fw-semibold">Cliente</label>
-          <select name="client_id" class="form-select form-select-sm">
-            <option value="">— Sem vínculo —</option>
-            {% for c in all_clients %}
-              <option value="{{ c.id }}">{{ c.name }}</option>
-            {% endfor %}
-          </select>
+          <div class="d-flex gap-2 mb-2">
+            <button type="button" id="btnClienteExistente"
+                    onclick="toggleClienteMode('existente')"
+                    class="btn btn-sm"
+                    style="background:rgba(99,102,241,.3);border:1px solid rgba(99,102,241,.6);color:#a5b4fc;font-size:.75rem;">
+              Existente
+            </button>
+            <button type="button" id="btnClienteNovo"
+                    onclick="toggleClienteMode('novo')"
+                    class="btn btn-sm"
+                    style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.15);color:var(--text-muted);font-size:.75rem;">
+              + Novo cliente
+            </button>
+            <button type="button" id="btnClienteNenhum"
+                    onclick="toggleClienteMode('nenhum')"
+                    class="btn btn-sm"
+                    style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.15);color:var(--text-muted);font-size:.75rem;">
+              Sem vínculo
+            </button>
+          </div>
+          <div id="panelClienteExistente">
+            <select name="client_id" id="selectClienteId" class="form-select form-select-sm">
+              <option value="">— Selecionar cliente —</option>
+              {% for c in all_clients %}
+                <option value="{{ c.id }}">{{ c.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div id="panelClienteNovo" style="display:none;">
+            <div class="row g-2">
+              <div class="col-7">
+                <input type="text" name="new_client_name" id="newClientName"
+                       class="form-control form-control-sm" placeholder="Nome do cliente">
+              </div>
+              <div class="col-5">
+                <input type="text" name="new_client_phone" id="newClientPhone"
+                       class="form-control form-control-sm" placeholder="WhatsApp">
+              </div>
+            </div>
+          </div>
         </div>
 
         <div class="row g-3 mb-3">
