@@ -810,15 +810,25 @@ def renewals():
 def att_renew(id):
     renewal = Renewal.query.get_or_404(id)
 
-    # Comprovante obrigatório
+    # Comprovante obrigatório + anti-duplicata
     file = request.files.get('comprovante')
     if not file or not file.filename or not allowed_file(file.filename):
         flash('Comprovante de pagamento é obrigatório para confirmar a renovação.', 'danger')
         return redirect(url_for('attendant.renewals'))
 
+    raw  = file.read()
+    sha  = hashlib.sha256(raw).hexdigest()
+    dup  = Sale.query.filter_by(comprovante_hash=sha).first()
+    if dup:
+        when = dup.created_at.strftime('%d/%m/%Y às %H:%M')
+        who  = dup.attendant.name.split()[0] if dup.attendant else 'outro atendente'
+        flash(f'Comprovante duplicado! Este arquivo já foi usado na venda #{dup.id} ({when} por {who}).', 'danger')
+        return redirect(url_for('attendant.renewals'))
+
     ext = file.filename.rsplit('.', 1)[1].lower()
     fname = f"{uuid.uuid4().hex}.{ext}"
-    file.save(os.path.join(current_app.config['UPLOAD_FOLDER'], fname))
+    with open(os.path.join(current_app.config['UPLOAD_FOLDER'], fname), 'wb') as fh:
+        fh.write(raw)
 
     # Atualiza valor se informado
     amount_str = request.form.get('amount', '').strip().replace(',', '.')
@@ -1047,10 +1057,55 @@ def new_client():
                                    chart_labels=dl, chart_vals=dv,
                                    clients_today=ct, sales_today=st)
 
+        # ── Normaliza número: remove não-dígitos e strip do prefixo 55 nacional ──
+        def _norm_phone(raw):
+            digits = ''.join(c for c in (raw or '') if c.isdigit())
+            if len(digits) == 13 and digits.startswith('55'):
+                digits = digits[2:]  # remove DDI 55
+            return digits or None
+
+        phone_raw    = request.form.get('phone', '').strip()
+        whatsapp_raw = request.form.get('whatsapp', '').strip()
+        phone_norm    = _norm_phone(phone_raw)
+        whatsapp_norm = _norm_phone(whatsapp_raw)
+
+        # ── Detectar cliente duplicado (nome similar OU telefone igual) ──────────
+        dup_client = None
+        # por nome (case-insensitive, ignora espaços extras)
+        name_lower = name.lower()
+        for c in Client.query.all():
+            if c.name.lower() == name_lower:
+                dup_client = c
+                break
+        # por telefone/whatsapp (se encontrar número igual)
+        if not dup_client and (phone_norm or whatsapp_norm):
+            for c in Client.query.all():
+                c_phone = _norm_phone(c.phone)
+                c_wa    = _norm_phone(c.whatsapp)
+                if phone_norm and phone_norm in (c_phone, c_wa):
+                    dup_client = c; break
+                if whatsapp_norm and whatsapp_norm in (c_phone, c_wa):
+                    dup_client = c; break
+
+        if dup_client:
+            flash(
+                f'Cliente duplicado! "{dup_client.name}" já está cadastrado '
+                f'(ID #{dup_client.id}, registrado por '
+                f'{dup_client.registered_by_user.name.split()[0] if dup_client.registered_by_user else "outro atendente"}).',
+                'danger'
+            )
+            dl, dv, ct, st = _chart_data()
+            return render_template('attendant/client_form.html',
+                                   client=None, payment_methods=PAYMENT_METHODS,
+                                   is_overtime=overtime,
+                                   commission_rate=get_commission_rate(),
+                                   chart_labels=dl, chart_vals=dv,
+                                   clients_today=ct, sales_today=st)
+
         client = Client(
             name=name,
-            phone=request.form.get('phone', '').strip() or None,
-            whatsapp=request.form.get('whatsapp', '').strip() or None,
+            phone=phone_raw or None,
+            whatsapp=whatsapp_raw or None,
             email=request.form.get('email', '').strip() or None,
             city=request.form.get('city', '').strip() or None,
             state=request.form.get('state', '').strip() or None,

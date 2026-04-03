@@ -686,6 +686,47 @@ def fraud_list():
     return render_template('admin/fraud_list.html', groups=groups)
 
 
+# ── Comprovantes por dia ──────────────────────────────────────────────────────
+
+@admin_bp.route('/comprovantes')
+@login_required
+@manager_or_admin
+def comprovantes():
+    """Galeria de comprovantes agrupados por dia."""
+    month_str = request.args.get('month', today_br().strftime('%Y-%m'))
+    try:
+        year, mon = int(month_str.split('-')[0]), int(month_str.split('-')[1])
+    except Exception:
+        year, mon = today_br().year, today_br().month
+
+    import calendar as _cal
+    first_day = datetime(year, mon, 1)
+    last_day  = datetime(year, mon, _cal.monthrange(year, mon)[1]) + timedelta(days=1)
+
+    sales_with_proof = (
+        Sale.query
+        .filter(
+            Sale.comprovante_filename.isnot(None),
+            Sale.created_at >= first_day,
+            Sale.created_at < last_day,
+        )
+        .order_by(Sale.created_at.desc())
+        .all()
+    )
+
+    # Agrupa por data (dia)
+    from collections import defaultdict
+    by_day = defaultdict(list)
+    for s in sales_with_proof:
+        by_day[s.created_at.date()].append(s)
+    days_sorted = sorted(by_day.keys(), reverse=True)
+
+    return render_template('admin/comprovantes.html',
+        by_day=by_day, days_sorted=days_sorted,
+        month=month_str, year=year, mon=mon,
+    )
+
+
 # ── Caixa ──────────────────────────────────────────────────────────────────────
 
 @admin_bp.route('/caixa')

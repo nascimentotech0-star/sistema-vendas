@@ -76,6 +76,11 @@
         <i class="bi bi-journal-text" style="color:#a5b4fc;"></i>
         <span style="color:#a5b4fc;">Auditoria</span>
       </a>
+      <a class="nt-nav-link {% if request.endpoint == 'admin.comprovantes' %}active{% endif %}"
+         href="{{ url_for('admin.comprovantes') }}">
+        <i class="bi bi-file-image" style="color:#fbbf24;"></i>
+        <span style="color:#fbbf24;">Comprovantes</span>
+      </a>
       <a class="nt-nav-link {% if request.endpoint == 'exports.backup_page' %}active{% endif %}"
          href="{{ url_for('exports.backup_page') }}">
         <i class="bi bi-cloud-arrow-down-fill" style="color:#67e8f9;"></i>
