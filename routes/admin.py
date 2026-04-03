@@ -510,6 +510,8 @@ def admin_new_sale():
     import os, uuid, hashlib
     from models import Client
     attendant_id   = request.form.get('attendant_id', type=int)
+    if attendant_id == 0:
+        attendant_id = current_user.id  # admin registrando venda própria
     client_id      = request.form.get('client_id', type=int) or None
     amount_str     = request.form.get('amount', '0').replace(',', '.')
     adjustment_str = request.form.get('adjustment', '0').replace(',', '.')
