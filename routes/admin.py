@@ -522,7 +522,7 @@ def admin_new_sale():
         nc = Client(
             name=new_client_name,
             whatsapp=new_client_phone or None,
-            attendant_id=attendant_id,
+            registered_by=current_user.id,
         )
         db.session.add(nc)
         db.session.flush()
