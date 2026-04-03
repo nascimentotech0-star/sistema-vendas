@@ -120,7 +120,7 @@
                 ('perm_delete_sales', 'Excluir vendas registradas'),
               ] %}
               {% for field, label in perms %}
-              {% set checked = attendant and getattr(attendant, field, False) %}
+              {% set checked = (attendant | attr(field)) if attendant else False %}
               <div class="form-check form-switch mb-1">
                 <input class="form-check-input" type="checkbox" name="{{ field }}" id="{{ field }}"
                        {% if checked %}checked{% endif %}>
