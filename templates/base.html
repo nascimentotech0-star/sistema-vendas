@@ -227,6 +227,46 @@
         <i class="bi bi-mortarboard-fill" style="color:#fcd34d;"></i>
         <span style="color:#fcd34d;">Tutorial</span>
       </button>
+
+      {# ── Pulso da Equipe (só aparece quando team_feed está disponível) #}
+      {% if team_feed is defined and team_feed %}
+      <div style="margin:10px 8px 0;border-top:1px solid var(--border);padding-top:10px;">
+        <div class="d-flex align-items-center gap-1 mb-2 px-1">
+          <span class="nt-livdot" style="width:6px;height:6px;"></span>
+          <span style="font-size:.68rem;font-weight:700;color:var(--text-muted);letter-spacing:.05em;text-transform:uppercase;">Pulso da Equipe</span>
+        </div>
+        {% for s in team_feed[:5] %}
+        {% set is_me = s.attendant_id == current_user.id %}
+        <div class="d-flex align-items-center gap-2 px-1 py-1" style="border-radius:6px;{% if is_me %}background:rgba(99,102,241,.08);{% endif %}">
+          <div style="width:22px;height:22px;border-radius:50%;flex-shrink:0;
+                      background:{% if is_me %}rgba(99,102,241,.25){% else %}rgba(255,255,255,.07){% endif %};
+                      display:flex;align-items:center;justify-content:center;
+                      font-size:.65rem;font-weight:700;
+                      color:{% if is_me %}#a5b4fc{% else %}var(--text-muted){% endif %};">
+            {{ s.attendant.name[0].upper() if s.attendant else '?' }}
+          </div>
+          <div class="flex-fill" style="min-width:0;overflow:hidden;">
+            <div style="font-size:.7rem;font-weight:{% if is_me %}700{% else %}500{% endif %};
+                        color:{% if is_me %}#c4b5fd{% else %}var(--text){% endif %};
+                        white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+              {{ s.attendant.name.split()[0] if s.attendant else '—' }}{% if is_me %} <span style="color:var(--text-muted);font-weight:400;">você</span>{% endif %}
+            </div>
+            <div style="font-size:.62rem;color:var(--text-muted);">
+              {% set diff = (now - s.created_at).total_seconds()|int %}
+              {% if diff < 60 %}agora
+              {% elif diff < 3600 %}{{ (diff // 60) }}min
+              {% elif diff < 86400 %}{{ (diff // 3600) }}h atrás
+              {% else %}{{ s.created_at.strftime('%d/%m') }}{% endif %}
+            </div>
+          </div>
+          <div style="font-size:.72rem;font-weight:700;color:#6ee7b7;flex-shrink:0;">
+            R${{ "%.0f"|format(s.amount) }}
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+
     {% endif %}
   </nav>
 

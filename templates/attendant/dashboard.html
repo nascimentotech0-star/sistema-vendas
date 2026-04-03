@@ -141,53 +141,6 @@
   </div>
 </div>
 
-{# ── FEED DA EQUIPE ───────────────────────────────────────────────────────── #}
-{% if team_feed %}
-<div class="card mb-4" style="border-color:rgba(99,102,241,.2) !important;">
-  <div class="card-header py-2 d-flex align-items-center gap-2">
-    <span class="nt-livdot"></span>
-    <span class="fw-semibold" style="font-size:.85rem;">Pulso da Equipe</span>
-    <small class="ms-auto" style="color:var(--text-muted);font-size:.72rem;">últimas vendas</small>
-  </div>
-  <div class="card-body p-0">
-    {% for s in team_feed %}
-    {% set is_me = s.attendant_id == current_user.id %}
-    <div class="d-flex align-items-center gap-3 px-3 py-2 {% if not loop.last %}row-divider{% endif %}"
-         style="{% if is_me %}background:rgba(99,102,241,.06);{% endif %}">
-      <div style="width:30px;height:30px;border-radius:50%;flex-shrink:0;
-                  background:{% if is_me %}rgba(99,102,241,.2){% else %}rgba(255,255,255,.06){% endif %};
-                  display:flex;align-items:center;justify-content:center;
-                  font-size:.75rem;font-weight:700;
-                  color:{% if is_me %}#a5b4fc{% else %}var(--text-muted){% endif %};">
-        {{ s.attendant.name[0].upper() if s.attendant else '?' }}
-      </div>
-      <div class="flex-fill" style="min-width:0;">
-        <div style="font-size:.8rem;font-weight:{% if is_me %}700{% else %}500{% endif %};
-          color:{% if is_me %}#c4b5fd{% else %}var(--text){% endif %};">
-          {{ s.attendant.name.split()[0] if s.attendant else '—' }}
-          {% if is_me %}<span style="font-size:.65rem;color:var(--text-muted);"> (você)</span>{% endif %}
-        </div>
-        <div style="font-size:.7rem;color:var(--text-muted);">
-          {% if s.client %}{{ s.client.name.split()[0] }}{% else %}sem vínculo{% endif %}
-          · {{ s.payment_display }}
-        </div>
-      </div>
-      <div class="text-end flex-shrink-0">
-        <div style="font-size:.85rem;font-weight:700;color:#6ee7b7;">R$ {{ "%.0f"|format(s.amount) }}</div>
-        <div style="font-size:.65rem;color:var(--text-muted);">
-          {% set diff = (now - s.created_at).total_seconds()|int %}
-          {% if diff < 60 %}agora
-          {% elif diff < 3600 %}{{ (diff // 60) }}min atrás
-          {% elif diff < 86400 %}{{ (diff // 3600) }}h atrás
-          {% else %}{{ s.created_at.strftime('%d/%m') }}{% endif %}
-        </div>
-      </div>
-    </div>
-    {% endfor %}
-  </div>
-</div>
-{% endif %}
-
 <!-- ── AÇÕES RÁPIDAS ── (primeiro bloco visível) -->
 <div class="row g-3 mb-4">
   <div class="col-4">
