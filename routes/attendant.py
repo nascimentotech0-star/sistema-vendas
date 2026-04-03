@@ -640,12 +640,12 @@ def dashboard():
     # ── Recorde pessoal do dia (maior total em 1 dia) ─────────────────────────
     best_day_result = (
         db.session.query(
-            func.date(Sale.created_at).label('day'),
-            func.sum(Sale.amount).label('total')
+            db.func.date(Sale.created_at).label('day'),
+            db.func.sum(Sale.amount).label('total')
         )
         .filter(Sale.attendant_id == current_user.id)
-        .group_by(func.date(Sale.created_at))
-        .order_by(func.sum(Sale.amount).desc())
+        .group_by(db.func.date(Sale.created_at))
+        .order_by(db.func.sum(Sale.amount).desc())
         .first()
     )
     personal_best = float(best_day_result.total) if best_day_result else 0.0
