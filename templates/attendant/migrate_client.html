@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+{% block title %}Migrar Cliente — Nascimento Tech{% endblock %}
+{% block page_title %}Migrar Cliente{% endblock %}
+{% block content %}
+
+<div class="d-flex align-items-center mb-4">
+  <a href="{{ url_for('attendant.dashboard') }}" class="btn btn-outline-secondary btn-sm me-3">
+    <i class="bi bi-arrow-left"></i>
+  </a>
+  <div>
+    <h4 class="fw-bold mb-0">Migrar Cliente</h4>
+    <small style="color:var(--text-muted);">Cliente já existente em outra plataforma — sem venda nova, sem comissão</small>
+  </div>
+</div>
+
+<div class="row justify-content-center">
+  <div class="col-12 col-md-6">
+
+    <div class="card mb-3" style="border-left:4px solid #6ee7b7 !important;background:rgba(16,185,129,.04);">
+      <div class="card-body py-3">
+        <div class="d-flex align-items-center gap-2">
+          <i class="bi bi-info-circle-fill" style="color:#6ee7b7;font-size:1.1rem;"></i>
+          <div style="font-size:.83rem;color:var(--text-muted);">
+            Use este formulário para cadastrar clientes que já usam o serviço em outra plataforma.
+            O sistema vai cadastrá-los e registrar a renovação atual com o comprovante —
+            <strong style="color:#6ee7b7;">sem gerar venda nem comissão.</strong>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-body p-4">
+        <form method="POST" enctype="multipart/form-data">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+          <h6 class="fw-semibold mb-3" style="color:#a5b4fc;border-bottom:1px solid var(--border);padding-bottom:8px;">
+            <i class="bi bi-person me-1"></i>Dados do Cliente
+          </h6>
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Nome Completo <span class="text-danger">*</span></label>
+            <input type="text" name="name" class="form-control" required placeholder="Ex: João da Silva">
+          </div>
+
+          <div class="row g-3 mb-3">
+            <div class="col-6">
+              <label class="form-label fw-semibold">WhatsApp</label>
+              <input type="text" name="whatsapp" class="form-control" placeholder="(11) 99999-9999" data-phone>
+            </div>
+            <div class="col-6">
+              <label class="form-label fw-semibold">Telefone</label>
+              <input type="text" name="phone" class="form-control" placeholder="(11) 99999-9999" data-phone>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold">E-mail</label>
+            <input type="email" name="email" class="form-control" placeholder="cliente@email.com">
+          </div>
+
+          <div class="mb-4">
+            <label class="form-label fw-semibold">Observação</label>
+            <input type="text" name="notes" class="form-control" placeholder="Ex: veio da plataforma X">
+          </div>
+
+          <h6 class="fw-semibold mb-3" style="color:#fcd34d;border-bottom:1px solid var(--border);padding-bottom:8px;">
+            <i class="bi bi-arrow-repeat me-1"></i>Plano Atual
+          </h6>
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Plano <span class="text-danger">*</span></label>
+            <div class="d-flex flex-wrap gap-2 mb-2">
+              {% for p in price_items %}
+              <button type="button" class="btn btn-sm plan-btn"
+                      style="background:rgba(99,102,241,.12);border:1px solid rgba(99,102,241,.3);color:#a5b4fc;"
+                      onclick="selectPlan(this, '{{ p.name }}', {{ p.price }})">
+                {{ p.name }}<br><small>R$ {{ "%.2f"|format(p.price) }}</small>
+              </button>
+              {% endfor %}
+            </div>
+            <input type="text" name="plan_name" id="planName" class="form-control form-control-sm"
+                   placeholder="Ou digite o nome do plano manualmente" required>
+          </div>
+
+          <div class="row g-3 mb-3">
+            <div class="col-6">
+              <label class="form-label fw-semibold">Valor Pago (R$)</label>
+              <input type="number" name="amount" step="0.01" min="0" class="form-control" placeholder="0,00">
+            </div>
+            <div class="col-6">
+              <label class="form-label fw-semibold">Vencimento <span class="text-danger">*</span></label>
+              <input type="date" name="due_date" class="form-control" required>
+              <div class="form-text" style="font-size:.7rem;">Data em que o plano vai expirar.</div>
+            </div>
+          </div>
+
+          <div class="mb-4">
+            <label class="form-label fw-semibold">Comprovante do Plano Atual <span class="text-danger">*</span></label>
+            <input type="file" name="comprovante" class="form-control"
+                   accept=".jpg,.jpeg,.png,.gif,.webp,.pdf" required>
+            <div class="form-text" style="font-size:.72rem;">
+              Comprovante de pagamento da renovação atual. JPG, PNG ou PDF.
+            </div>
+          </div>
+
+          <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-success px-4">
+              <i class="bi bi-box-arrow-in-down me-1"></i> Migrar Cliente
+            </button>
+            <a href="{{ url_for('attendant.dashboard') }}" class="btn btn-outline-secondary">Cancelar</a>
+          </div>
+        </form>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+{% endblock %}
+{% block scripts %}
+<script>
+function selectPlan(btn, name, price) {
+  document.querySelectorAll('.plan-btn').forEach(function(b){
+    b.style.background = 'rgba(99,102,241,.12)';
+    b.style.borderColor = 'rgba(99,102,241,.3)';
+    b.style.color = '#a5b4fc';
+  });
+  btn.style.background = 'rgba(99,102,241,.4)';
+  btn.style.borderColor = 'rgba(167,139,250,.8)';
+  btn.style.color = '#fff';
+  document.getElementById('planName').value = name;
+  var amtField = document.querySelector('[name="amount"]');
+  if (amtField && !amtField.value) amtField.value = price.toFixed(2);
+}
+</script>
+{% endblock %}

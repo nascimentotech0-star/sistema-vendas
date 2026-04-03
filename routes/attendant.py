@@ -1013,6 +1013,122 @@ def clients():
     return render_template('attendant/clients.html', clients=clients_list, search=search)
 
 
+@attendant_bp.route('/clientes/migrar', methods=['GET', 'POST'])
+@login_required
+@attendant_required
+def migrate_client():
+    """Migra cliente de outra plataforma — sem gerar venda/comissão.
+    Cadastra o cliente e cria uma renovação com comprovante, sem comissão.
+    """
+    price_items = PriceItem.query.filter_by(is_active=True).order_by(PriceItem.price).all()
+
+    if request.method == 'POST':
+        name = request.form.get('name', '').strip()
+        if not name:
+            flash('Nome é obrigatório.', 'danger')
+            return render_template('attendant/migrate_client.html', price_items=price_items)
+
+        def _norm_phone(raw):
+            digits = ''.join(c for c in (raw or '') if c.isdigit())
+            if len(digits) == 13 and digits.startswith('55'):
+                digits = digits[2:]
+            return digits or None
+
+        phone_raw    = request.form.get('phone', '').strip()
+        whatsapp_raw = request.form.get('whatsapp', '').strip()
+        phone_norm    = _norm_phone(phone_raw)
+        whatsapp_norm = _norm_phone(whatsapp_raw)
+
+        # Verifica duplicata
+        dup_client = None
+        name_lower = name.lower()
+        for c in Client.query.all():
+            if c.name.lower() == name_lower:
+                dup_client = c; break
+        if not dup_client and (phone_norm or whatsapp_norm):
+            for c in Client.query.all():
+                c_phone = _norm_phone(c.phone)
+                c_wa    = _norm_phone(c.whatsapp)
+                if phone_norm and phone_norm in (c_phone, c_wa):
+                    dup_client = c; break
+                if whatsapp_norm and whatsapp_norm in (c_phone, c_wa):
+                    dup_client = c; break
+
+        if dup_client:
+            flash(
+                f'Cliente "{dup_client.name}" já está cadastrado (ID #{dup_client.id}). '
+                f'Se precisar adicionar uma renovação, use a tela de Renovações.',
+                'warning'
+            )
+            return render_template('attendant/migrate_client.html', price_items=price_items)
+
+        # Cria o cliente
+        client = Client(
+            name=name,
+            phone=phone_raw or None,
+            whatsapp=whatsapp_raw or None,
+            email=request.form.get('email', '').strip() or None,
+            notes=request.form.get('notes', '').strip() or None,
+            registered_by=current_user.id,
+        )
+        db.session.add(client)
+        db.session.flush()
+
+        # Comprovante de renovação (obrigatório)
+        file = request.files.get('comprovante')
+        if not file or not file.filename or not allowed_file(file.filename):
+            flash('Comprovante do plano atual é obrigatório para migração.', 'danger')
+            db.session.rollback()
+            return render_template('attendant/migrate_client.html', price_items=price_items)
+
+        raw = file.read()
+        sha = hashlib.sha256(raw).hexdigest()
+        dup_sale = Sale.query.filter_by(comprovante_hash=sha).first()
+        if dup_sale:
+            flash(f'Comprovante duplicado — já usado na venda #{dup_sale.id}.', 'danger')
+            db.session.rollback()
+            return render_template('attendant/migrate_client.html', price_items=price_items)
+
+        ext   = file.filename.rsplit('.', 1)[-1].lower()
+        fname = f"{uuid.uuid4().hex}.{ext}"
+        with open(os.path.join(current_app.config['UPLOAD_FOLDER'], fname), 'wb') as fh:
+            fh.write(raw)
+
+        # Data de vencimento
+        due_date_str = request.form.get('due_date', '')
+        try:
+            due_date = datetime.strptime(due_date_str, '%Y-%m-%d').date()
+        except Exception:
+            flash('Data de vencimento inválida.', 'danger')
+            db.session.rollback()
+            return render_template('attendant/migrate_client.html', price_items=price_items)
+
+        plan_name = request.form.get('plan_name', '').strip()
+        try:
+            amount = float(request.form.get('amount', '0').replace(',', '.'))
+        except Exception:
+            amount = 0.0
+
+        renewal = Renewal(
+            client_id=client.id,
+            plan_name=plan_name,
+            amount=amount,
+            due_date=due_date,
+            status='renewed',
+            renewed_at=now_br(),
+            attendant_id=current_user.id,
+            comprovante_filename=fname,
+            notes='Migrado de outra plataforma',
+        )
+        db.session.add(renewal)
+        log_action('client_migrate', f'Cliente migrado: {name}', 'Client', client.id)
+        db.session.commit()
+        flash(f'Cliente "{name}" migrado com sucesso! Renovação registrada até {due_date.strftime("%d/%m/%Y")}.', 'success')
+        return redirect(url_for('attendant.renewals'))
+
+    return render_template('attendant/migrate_client.html', price_items=price_items)
+
+
 @attendant_bp.route('/clientes/novo', methods=['GET', 'POST'])
 @login_required
 @attendant_required

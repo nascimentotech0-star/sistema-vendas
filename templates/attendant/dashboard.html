@@ -504,27 +504,40 @@
 
 <!-- ── AÇÕES RÁPIDAS ── -->
 <div class="row g-3 mb-4">
-  <div class="col-6">
+  <div class="col-4">
     <a href="{{ url_for('attendant.new_client') }}" class="card text-decoration-none h-100"
        style="transition:transform .15s;" onmouseover="this.style.transform='translateY(-3px)'" onmouseout="this.style.transform=''">
       <div class="card-body text-center py-4">
-        <div class="stat-icon stat-icon-purple mx-auto mb-3" style="width:56px;height:56px;font-size:1.5rem;">
+        <div class="stat-icon stat-icon-purple mx-auto mb-3" style="width:48px;height:48px;font-size:1.3rem;">
           <i class="bi bi-person-plus-fill"></i>
         </div>
-        <p class="fw-bold mb-1" style="color:var(--text);font-size:1rem;">Novo Cliente</p>
-        <small style="color:var(--text-muted);">Cadastra o cliente e registra a venda</small>
+        <p class="fw-bold mb-1" style="color:var(--text);font-size:.9rem;">Novo Cliente</p>
+        <small style="color:var(--text-muted);font-size:.72rem;">Cadastra + registra venda</small>
       </div>
     </a>
   </div>
-  <div class="col-6">
+  <div class="col-4">
+    <a href="{{ url_for('attendant.migrate_client') }}" class="card text-decoration-none h-100"
+       style="transition:transform .15s;border-color:rgba(16,185,129,.3) !important;"
+       onmouseover="this.style.transform='translateY(-3px)'" onmouseout="this.style.transform=''">
+      <div class="card-body text-center py-4">
+        <div class="stat-icon mx-auto mb-3" style="width:48px;height:48px;font-size:1.3rem;background:rgba(16,185,129,.15);">
+          <i class="bi bi-box-arrow-in-down" style="color:#6ee7b7;"></i>
+        </div>
+        <p class="fw-bold mb-1" style="color:var(--text);font-size:.9rem;">Migrar Cliente</p>
+        <small style="color:#6ee7b7;font-size:.72rem;">Já é cliente, sem venda nova</small>
+      </div>
+    </a>
+  </div>
+  <div class="col-4">
     <a href="{{ url_for('attendant.renewals') }}" class="card text-decoration-none h-100"
        style="transition:transform .15s;" onmouseover="this.style.transform='translateY(-3px)'" onmouseout="this.style.transform=''">
       <div class="card-body text-center py-4">
-        <div class="stat-icon stat-icon-yellow mx-auto mb-3" style="width:56px;height:56px;font-size:1.5rem;">
+        <div class="stat-icon stat-icon-yellow mx-auto mb-3" style="width:48px;height:48px;font-size:1.3rem;">
           <i class="bi bi-arrow-repeat"></i>
         </div>
-        <p class="fw-bold mb-1" style="color:var(--text);font-size:1rem;">Renovação</p>
-        <small style="color:var(--text-muted);">
+        <p class="fw-bold mb-1" style="color:var(--text);font-size:.9rem;">Renovação</p>
+        <small style="color:var(--text-muted);font-size:.72rem;">
           {% if renewals_overdue %}
             <span style="color:#f9a8d4;"><i class="bi bi-exclamation-triangle-fill me-1"></i>{{ renewals_overdue|length }} vencida(s)</span>
           {% else %}
@@ -1212,7 +1225,18 @@ document.addEventListener('DOMContentLoaded', function () {
     }, 1800);
   })();
 
-  // ── Ciclo de mensagens flutuantes a cada 4 minutos ──────────────────
+  // ── Primeira frase logo ao abrir (se saudação não apareceu hoje) ───
+  (function(){
+    var today = new Date().toISOString().slice(0, 10);
+    var greetedToday = localStorage.getItem('nt_greeted_' + today);
+    // Se já saudou hoje, dispara frase após 5s; senão aguarda a saudação (1.8s + 13s ≈ 15s)
+    var delay = greetedToday ? 5000 : 16000;
+    setTimeout(function(){
+      showNtToast('⚡', null, nextPhrase(), 'rgba(99,102,241,.4)', 9000);
+    }, delay);
+  })();
+
+  // ── Ciclo de mensagens flutuantes a cada 1 minuto ────────────────────
   setInterval(function(){
     showNtToast(
       '⚡',
@@ -1221,6 +1245,6 @@ document.addEventListener('DOMContentLoaded', function () {
       'rgba(99,102,241,.4)',
       9000
     );
-  }, 4 * 60 * 1000);
+  }, 60 * 1000);
 </script>
 {% endblock %}
