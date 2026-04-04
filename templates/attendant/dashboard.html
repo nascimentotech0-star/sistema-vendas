@@ -37,8 +37,11 @@
   </div>
 </div>
 
+<div class="row g-3 align-items-start mb-0">
+<div class="col-12 col-lg-8">
+
 {# ── BANNER MOTIVACIONAL ──────────────────────────────────────────────────── #}
-<div class="card mb-4" id="nt-motiv-banner"
+<div class="card mb-3" id="nt-motiv-banner"
      style="background:linear-gradient(135deg,rgba(99,102,241,.15) 0%,rgba(16,185,129,.08) 100%);
             border:1px solid rgba(99,102,241,.3);position:relative;overflow:hidden;">
   <div style="position:absolute;inset:0;pointer-events:none;
@@ -67,7 +70,7 @@
 </div>
 
 {# ── STREAK + RECORDE ─────────────────────────────────────────────────────── #}
-<div class="row g-3 mb-4">
+<div class="row g-3 mb-3">
   {# Streak #}
   <div class="col-6">
     <div class="card h-100" style="
@@ -141,8 +144,8 @@
   </div>
 </div>
 
-<!-- ── AÇÕES RÁPIDAS ── (primeiro bloco visível) -->
-<div class="row g-3 mb-4">
+<!-- ── AÇÕES RÁPIDAS ── -->
+<div class="row g-3 mb-3">
   <div class="col-4">
     <a href="{{ url_for('attendant.new_client') }}" class="card text-decoration-none h-100"
        style="transition:transform .15s;" onmouseover="this.style.transform='translateY(-3px)'" onmouseout="this.style.transform=''">
@@ -188,91 +191,101 @@
   </div>
 </div>
 
-<!-- Ponto — compacto -->
-<div class="card mb-4">
+</div>{# fim col-lg-8 #}
+
+{# ── COLUNA DIREITA: PONTO ── #}
+<div class="col-12 col-lg-4">
+<div class="card mb-3" style="border-color:rgba(99,102,241,.25) !important;">
   <div class="card-body py-2 px-3">
-    <div class="d-flex align-items-center gap-3 flex-wrap">
-      <span style="font-size:.78rem;font-weight:600;color:var(--accent);white-space:nowrap;">
-        <i class="bi bi-clock me-1"></i>Ponto
-      </span>
 
+    <div class="d-flex align-items-center gap-2 mb-2">
+      <i class="bi bi-clock-fill" style="color:var(--accent);font-size:.85rem;"></i>
+      <span style="font-size:.8rem;font-weight:700;color:var(--accent);">Controle de Ponto</span>
       {% if attendance %}
-        <span style="font-size:.78rem;color:var(--text-muted);">
-          Entrada <strong style="color:var(--text);">{{ attendance.check_in.strftime('%H:%M') }}</strong>
-          · <strong style="color:var(--accent3);">{{ attendance.duration }}</strong>
-          {% if attendance.total_break_minutes > 0 %}· Pausas <strong style="color:#fcd34d;">{{ attendance.total_break_minutes }}min</strong>{% endif %}
-          {% if attendance.total_extra_minutes > 0 %}· <span style="color:#f9a8d4;">Banco +{{ attendance.total_extra_minutes }}min</span>{% endif %}
+        <span class="ms-auto" style="font-size:.72rem;font-weight:600;color:#6ee7b7;">
+          {{ attendance.duration }}
         </span>
-        {% if active_break %}
-          <span class="badge px-2" style="background:rgba(245,158,11,.2);color:#fcd34d;font-size:.7rem;">
-            <i class="bi bi-pause-circle-fill me-1"></i>Pausa desde {{ active_break.started_at.strftime('%H:%M') }}
-            {% if active_break.is_overdue %} · <span style="color:#f9a8d4;">+{{ active_break.duration_minutes - break_allowed }}min!</span>{% else %} · {{ break_allowed - active_break.duration_minutes }}min restantes{% endif %}
-          </span>
-        {% endif %}
-        {% if today_deficit_mins > 0 and current_user.monthly_salary %}
-          {% set deficit_val = (today_deficit_mins / 60 * current_user.hourly_rate) | round(2) %}
-          {% set dh = today_deficit_mins // 60 %}{% set dm = today_deficit_mins % 60 %}
-          <span style="font-size:.75rem;color:#fca5a5;">
-            <i class="bi bi-hourglass-split me-1"></i>Faltam {% if dh %}{{ dh }}h{% endif %}{{ dm }}min · desc. R$ {{ "%.2f"|format(deficit_val) }}
-          </span>
-        {% endif %}
-      {% else %}
-        <span style="font-size:.78rem;color:var(--text-muted);">Você ainda não iniciou o atendimento hoje.</span>
       {% endif %}
-
-      <div class="ms-auto d-flex gap-2 flex-wrap">
-        {% if not attendance %}
-          <form method="POST" action="{{ url_for('attendant.checkin') }}">
-            <button class="btn btn-success btn-sm px-3"><i class="bi bi-play-fill me-1"></i>Iniciar</button>
-          </form>
-        {% else %}
-          {% if not active_break %}
-            <form method="POST" action="{{ url_for('attendant.start_break') }}">
-              <button class="btn btn-sm px-2" style="background:rgba(245,158,11,.2);color:#fcd34d;border:1px solid rgba(245,158,11,.3);font-size:.78rem;">
-                <i class="bi bi-pause-fill"></i> Pausar
-              </button>
-            </form>
-          {% else %}
-            <form method="POST" action="{{ url_for('attendant.end_break') }}">
-              <button class="btn btn-sm px-2" style="background:rgba(16,185,129,.2);color:#6ee7b7;border:1px solid rgba(16,185,129,.3);font-size:.78rem;">
-                <i class="bi bi-play-fill"></i> Voltar
-              </button>
-            </form>
-          {% endif %}
-          <form method="POST" action="{{ url_for('attendant.checkout') }}" onsubmit="return confirm('Deseja encerrar o atendimento?')">
-            <button class="btn btn-outline-danger btn-sm px-2" style="font-size:.78rem;"><i class="bi bi-stop-fill"></i> Encerrar</button>
-          </form>
-        {% endif %}
-      </div>
     </div>
 
-    {# ── Resumo salarial compacto ── #}
+    {% if attendance %}
+      <div class="d-flex flex-wrap gap-2 mb-2" style="font-size:.72rem;color:var(--text-muted);">
+        <span>Entrada <strong style="color:var(--text);">{{ attendance.check_in.strftime('%H:%M') }}</strong></span>
+        {% if attendance.total_break_minutes > 0 %}
+          <span>Pausas <strong style="color:#fcd34d;">{{ attendance.total_break_minutes }}min</strong></span>
+        {% endif %}
+        {% if today_deficit_mins > 0 %}
+          {% set dh = today_deficit_mins // 60 %}{% set dm = today_deficit_mins % 60 %}
+          <span style="color:#fca5a5;"><i class="bi bi-hourglass-split me-1"></i>Faltam {% if dh %}{{ dh }}h{% endif %}{{ dm }}min</span>
+        {% endif %}
+      </div>
+      {% if active_break %}
+        <div class="mb-2">
+          <span class="badge px-2 py-1" style="background:rgba(245,158,11,.2);color:#fcd34d;font-size:.68rem;">
+            <i class="bi bi-pause-circle-fill me-1"></i>Em pausa
+            {% if active_break.is_overdue %}· <span style="color:#f9a8d4;">+{{ active_break.duration_minutes - break_allowed }}min!</span>
+            {% else %}· {{ break_allowed - active_break.duration_minutes }}min restantes{% endif %}
+          </span>
+        </div>
+      {% endif %}
+    {% else %}
+      <div style="font-size:.75rem;color:var(--text-muted);" class="mb-2">
+        Atendimento não iniciado.
+      </div>
+    {% endif %}
+
+    <div class="d-flex gap-2 flex-wrap">
+      {% if not attendance %}
+        <form method="POST" action="{{ url_for('attendant.checkin') }}" class="flex-fill">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button class="btn btn-success btn-sm w-100"><i class="bi bi-play-fill me-1"></i>Iniciar Atendimento</button>
+        </form>
+      {% else %}
+        {% if not active_break %}
+          <form method="POST" action="{{ url_for('attendant.start_break') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button class="btn btn-sm px-2" style="background:rgba(245,158,11,.2);color:#fcd34d;border:1px solid rgba(245,158,11,.3);font-size:.78rem;">
+              <i class="bi bi-pause-fill"></i> Pausar
+            </button>
+          </form>
+        {% else %}
+          <form method="POST" action="{{ url_for('attendant.end_break') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button class="btn btn-sm px-2" style="background:rgba(16,185,129,.2);color:#6ee7b7;border:1px solid rgba(16,185,129,.3);font-size:.78rem;">
+              <i class="bi bi-play-fill"></i> Voltar
+            </button>
+          </form>
+        {% endif %}
+        <form method="POST" action="{{ url_for('attendant.checkout') }}" onsubmit="return confirm('Deseja encerrar o atendimento?')">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button class="btn btn-outline-danger btn-sm px-2" style="font-size:.78rem;"><i class="bi bi-stop-fill"></i> Encerrar</button>
+        </form>
+      {% endif %}
+    </div>
+
+    {# Resumo salarial mini #}
     {% if current_user.monthly_salary and current_user.monthly_salary > 0 %}
-    <div class="d-flex flex-wrap gap-3 mt-2 pt-2" style="border-top:1px solid var(--border);">
+    <div class="d-flex gap-3 mt-2 pt-2" style="border-top:1px solid var(--border);">
       <div>
-        <div style="font-size:.6rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;">Salário Base</div>
-        <div style="font-size:.85rem;font-weight:700;color:#a78bfa;">R$ {{ "%.2f"|format(current_user.monthly_salary) }}</div>
+        <div style="font-size:.58rem;color:var(--text-muted);text-transform:uppercase;">Horas/mês</div>
+        <div style="font-size:.78rem;font-weight:700;color:#6ee7b7;">{{ salary_summary.worked_h }}</div>
       </div>
       <div>
-        <div style="font-size:.6rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;">Horas este mês</div>
-        <div style="font-size:.85rem;font-weight:700;color:#6ee7b7;">{{ salary_summary.worked_h }}</div>
-      </div>
-      <div>
-        <div style="font-size:.6rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;">Desconto</div>
-        <div style="font-size:.85rem;font-weight:700;color:{% if salary_summary.deduction > 0 %}#fca5a5{% else %}#6ee7b7{% endif %};">
-          {% if salary_summary.deduction > 0 %}− R$ {{ "%.2f"|format(salary_summary.deduction) }}{% else %}R$ 0,00{% endif %}
+        <div style="font-size:.58rem;color:var(--text-muted);text-transform:uppercase;">Desconto</div>
+        <div style="font-size:.78rem;font-weight:700;color:{% if salary_summary.deduction > 0 %}#fca5a5{% else %}#6ee7b7{% endif %};">
+          {% if salary_summary.deduction > 0 %}−R$ {{ "%.0f"|format(salary_summary.deduction) }}{% else %}R$ 0{% endif %}
         </div>
       </div>
       <div>
-        <div style="font-size:.6rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;">Salário previsto</div>
-        <div style="font-size:.85rem;font-weight:700;color:{% if salary_summary.deduction > 0 %}#fcd34d{% else %}#6ee7b7{% endif %};">
-          R$ {{ "%.2f"|format(salary_summary.net_salary) }}
-        </div>
+        <div style="font-size:.58rem;color:var(--text-muted);text-transform:uppercase;">Salário prev.</div>
+        <div style="font-size:.78rem;font-weight:700;color:#a78bfa;">R$ {{ "%.0f"|format(salary_summary.net_salary) }}</div>
       </div>
     </div>
     {% endif %}
   </div>
 </div>
+</div>{# fim col-lg-4 #}
+</div>{# fim row principal #}
 
 {% if active_break and active_break.is_overdue %}
 <div class="alert mb-4 py-2" style="border-left:4px solid #f9a8d4 !important;background:rgba(236,72,153,.08) !important;">
