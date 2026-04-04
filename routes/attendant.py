@@ -442,6 +442,16 @@ def dashboard():
     today_total = sum(s.amount for s in today_sales)
     today_commission = sum(s.commission_amount for s in today_sales)
 
+    # ── Renovações de hoje (deste atendente) ─────────────────────────────────
+    today_renewals_list = Renewal.query.filter(
+        Renewal.attendant_id == current_user.id,
+        Renewal.created_at >= day_start,
+        Renewal.created_at < day_end,
+        Renewal.status == 'renewed',
+    ).all()
+    today_renewals_count = len(today_renewals_list)
+    today_renewals_total = sum(r.amount for r in today_renewals_list if r.amount)
+
     overtime_req = OvertimeRequest.query.filter(
         OvertimeRequest.user_id == current_user.id,
         OvertimeRequest.requested_at >= day_start,
@@ -547,7 +557,17 @@ def dashboard():
     goal_sales_pct      = min(int(month_total / goal_sales_target * 100), 100) if goal_sales_target > 0 else 0
     goal_renewal_pct    = min(int(renewals_done / goal_renewal_target * 100), 100) if goal_renewal_target > 0 else 0
 
-    # ── Ranking do mês (todos os atendentes) ─────────────────────────────────
+    # ── Renovações do mês (deste atendente) ──────────────────────────────────
+    month_renewals_list = Renewal.query.filter(
+        Renewal.attendant_id == current_user.id,
+        Renewal.created_at >= month_start,
+        Renewal.created_at < month_end,
+        Renewal.status == 'renewed',
+    ).all()
+    month_renewals_count = len(month_renewals_list)
+    month_renewals_total = sum(r.amount for r in month_renewals_list if r.amount)
+
+    # ── Ranking de VENDAS do mês (todos os atendentes) ────────────────────────
     ranking_rows = (
         db.session.query(
             User.id,
@@ -567,6 +587,31 @@ def dashboard():
     ]
     my_rank_pos = next((i + 1 for i, r in enumerate(ranking_all) if r['id'] == current_user.id), None)
     ranking_top = ranking_all[:5]
+
+    # ── Ranking de RENOVAÇÕES do mês (todos os atendentes) ───────────────────
+    renewal_ranking_rows = (
+        db.session.query(
+            User.id,
+            User.name,
+            db.func.count(Renewal.id).label('count'),
+            db.func.sum(Renewal.amount).label('total'),
+        )
+        .join(Renewal, Renewal.attendant_id == User.id)
+        .filter(
+            Renewal.created_at >= month_start,
+            Renewal.created_at < month_end,
+            Renewal.status == 'renewed',
+        )
+        .group_by(User.id, User.name)
+        .order_by(db.func.count(Renewal.id).desc())
+        .all()
+    )
+    renewal_ranking_all = [
+        {'id': r.id, 'name': r.name.split()[0], 'count': r.count, 'total': float(r.total or 0)}
+        for r in renewal_ranking_rows
+    ]
+    my_renewal_rank_pos = next((i + 1 for i, r in enumerate(renewal_ranking_all) if r['id'] == current_user.id), None)
+    renewal_ranking_top = renewal_ranking_all[:5]
 
     # ── Fila de prioridades do dia ─────────────────────────────────────────────
     in_3_days = today + timedelta(days=3)
@@ -680,6 +725,8 @@ def dashboard():
         today_sales=today_sales,
         today_total=today_total,
         today_commission=today_commission,
+        today_renewals_count=today_renewals_count,
+        today_renewals_total=today_renewals_total,
         overtime_req=overtime_req,
         commission_rate=commission_rate,
         is_overtime=overtime,
@@ -708,6 +755,10 @@ def dashboard():
         sales_remaining=sales_remaining,
         motivational_msg=motivational_msg,
         ranking=ranking_top,
+        renewal_ranking=renewal_ranking_top,
+        my_renewal_rank_pos=my_renewal_rank_pos,
+        month_renewals_count=month_renewals_count,
+        month_renewals_total=month_renewals_total,
         goal_sales_target=goal_sales_target,
         goal_renewal_target=goal_renewal_target,
         goal_sales_pct=goal_sales_pct,

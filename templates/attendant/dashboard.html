@@ -409,23 +409,37 @@
 </div>
 {% endif %}
 
-<!-- ── RANKING DO MÊS ── -->
+<!-- ── RANKING DO MÊS (vendas + renovações) ── -->
 <div class="card mb-4" style="border-color:rgba(251,191,36,.25);">
-  <div class="card-header d-flex align-items-center gap-2" style="background:rgba(251,191,36,.06);">
-    <i class="bi bi-trophy-fill" style="color:#fbbf24;"></i>
-    <span class="fw-semibold">Ranking de Vendas — {{ now.strftime('%B/%Y')|capitalize }}</span>
-    {% if my_rank_pos is not none %}
-    <span class="ms-auto badge px-3 py-2" style="font-size:.75rem;
-      background:{% if my_rank_pos == 1 %}rgba(251,191,36,.25);color:#fde68a
-                 {% elif my_rank_pos == 2 %}rgba(167,139,250,.2);color:#c4b5fd
-                 {% elif my_rank_pos == 3 %}rgba(251,146,60,.2);color:#fed7aa
-                 {% else %}rgba(100,116,139,.2);color:#94a3b8{% endif %};">
-      {% if my_rank_pos == 1 %}🥇{% elif my_rank_pos == 2 %}🥈{% elif my_rank_pos == 3 %}🥉{% else %}{{ my_rank_pos }}º{% endif %}
-      Você está em {{ my_rank_pos }}º lugar
-    </span>
-    {% endif %}
+  <div class="card-header py-2" style="background:rgba(251,191,36,.06);">
+    <div class="d-flex align-items-center gap-2 mb-2">
+      <i class="bi bi-trophy-fill" style="color:#fbbf24;"></i>
+      <span class="fw-semibold">Ranking — {{ now.strftime('%B/%Y')|capitalize }}</span>
+    </div>
+    <div class="d-flex gap-2">
+      <button type="button" id="btnRankVendas" onclick="switchRanking('vendas')"
+              class="btn btn-sm" style="font-size:.75rem;background:rgba(251,191,36,.3);border:1px solid rgba(251,191,36,.5);color:#fde68a;">
+        <i class="bi bi-cart3 me-1"></i>Vendas
+        {% if my_rank_pos is not none %}
+          <span class="ms-1" style="font-size:.65rem;">
+            {% if my_rank_pos == 1 %}🥇{% elif my_rank_pos == 2 %}🥈{% elif my_rank_pos == 3 %}🥉{% else %}{{ my_rank_pos }}º{% endif %}
+          </span>
+        {% endif %}
+      </button>
+      <button type="button" id="btnRankRenovacoes" onclick="switchRanking('renovacoes')"
+              class="btn btn-sm" style="font-size:.75rem;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.15);color:var(--text-muted);">
+        <i class="bi bi-arrow-repeat me-1"></i>Renovações
+        {% if my_renewal_rank_pos is not none %}
+          <span class="ms-1" style="font-size:.65rem;">
+            {% if my_renewal_rank_pos == 1 %}🥇{% elif my_renewal_rank_pos == 2 %}🥈{% elif my_renewal_rank_pos == 3 %}🥉{% else %}{{ my_renewal_rank_pos }}º{% endif %}
+          </span>
+        {% endif %}
+      </button>
+    </div>
   </div>
-  <div class="card-body p-0">
+
+  {# ── Painel Vendas ── #}
+  <div id="panelRankVendas" class="card-body p-0">
     {% if ranking %}
     {% set rank_max = ranking[0]['total'] if ranking[0]['total'] > 0 else 1 %}
     <div class="table-responsive">
@@ -465,6 +479,48 @@
     </div>
     {% endif %}
   </div>
+
+  {# ── Painel Renovações ── #}
+  <div id="panelRankRenovacoes" class="card-body p-0" style="display:none;">
+    {% if renewal_ranking %}
+    {% set ren_max = renewal_ranking[0]['count'] if renewal_ranking[0]['count'] > 0 else 1 %}
+    <div class="table-responsive">
+      <table class="table mb-0">
+        <tbody>
+          {% for r in renewal_ranking %}
+          {% set is_me = r['id'] == current_user.id %}
+          <tr style="{% if is_me %}background:rgba(99,102,241,.08);{% endif %}border-bottom:1px solid rgba(255,255,255,.04);">
+            <td class="px-3 py-3" style="width:44px;text-align:center;font-size:1.1rem;">
+              {% if loop.index == 1 %}🥇{% elif loop.index == 2 %}🥈{% elif loop.index == 3 %}🥉{% else %}<span style="color:#64748b;font-weight:700;font-size:.85rem;">{{ loop.index }}</span>{% endif %}
+            </td>
+            <td class="px-2 py-3">
+              <div style="font-weight:{% if is_me %}700{% else %}500{% endif %};color:{% if is_me %}#c4b5fd{% else %}var(--text){% endif %};">
+                {{ r['name'] }}{% if is_me %} <span style="font-size:.7rem;color:var(--text-muted);">(você)</span>{% endif %}
+              </div>
+              <div style="background:rgba(255,255,255,.06);border-radius:4px;height:5px;margin-top:6px;overflow:hidden;">
+                <div style="height:100%;border-radius:4px;width:{{ ((r['count'] / ren_max) * 100)|int }}%;
+                  background:{% if loop.index == 1 %}linear-gradient(90deg,#10b981,#6ee7b7){% elif is_me %}linear-gradient(90deg,#6366f1,#a78bfa){% else %}linear-gradient(90deg,#1e293b,#334155){% endif %};
+                  box-shadow:{% if loop.index == 1 %}0 0 6px rgba(16,185,129,.4){% elif is_me %}0 0 6px rgba(99,102,241,.4){% else %}none{% endif %};"></div>
+              </div>
+            </td>
+            <td class="px-3 py-3 text-end" style="white-space:nowrap;">
+              <div style="font-family:var(--font-mono,monospace);font-weight:700;font-size:.88rem;
+                color:{% if loop.index == 1 %}#6ee7b7{% elif is_me %}#a78bfa{% else %}var(--text-muted){% endif %};">
+                {{ r['count'] }} renovação{{ 'ões' if r['count'] != 1 }}
+              </div>
+              <div style="font-size:.72rem;color:var(--text-muted);">R$ {{ "%.0f"|format(r['total']) }}</div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="p-4 text-center" style="color:var(--text-muted);font-size:.85rem;">
+      <i class="bi bi-arrow-repeat me-2"></i>Nenhuma renovação registrada este mês ainda.
+    </div>
+    {% endif %}
+  </div>
 </div>
 
 <!-- ── COMISSÃO DO MÊS ── -->
@@ -482,6 +538,10 @@
         <small style="color:var(--text-muted);">
           sobre R$ {{ "%.2f"|format(month_total) }} em vendas ·
           <span style="color:#6ee7b7;">{{ today_sales|length }} venda(s) hoje</span>
+          {% if today_renewals_count > 0 %}
+          · <span style="color:#34d399;">{{ today_renewals_count }} renovação(ões) hoje
+            (R$ {{ "%.0f"|format(today_renewals_total) }})</span>
+          {% endif %}
         </small>
       </div>
       <div class="col-auto text-end">
@@ -791,6 +851,24 @@
 </style>
 
 <script>
+// ── Ranking: toggle abas ──────────────────────────────────────────────────────
+function switchRanking(tab) {
+  var pV  = document.getElementById('panelRankVendas');
+  var pR  = document.getElementById('panelRankRenovacoes');
+  var bV  = document.getElementById('btnRankVendas');
+  var bR  = document.getElementById('btnRankRenovacoes');
+  var active   = 'background:rgba(251,191,36,.3);border:1px solid rgba(251,191,36,.5);color:#fde68a;font-size:.75rem;';
+  var inactive = 'background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.15);color:var(--text-muted);font-size:.75rem;';
+  if (tab === 'vendas') {
+    pV.style.display = ''; pR.style.display = 'none';
+    bV.style.cssText = active; bR.style.cssText = inactive;
+  } else {
+    pV.style.display = 'none'; pR.style.display = '';
+    bV.style.cssText = inactive;
+    bR.style.cssText = 'background:rgba(16,185,129,.25);border:1px solid rgba(16,185,129,.4);color:#6ee7b7;font-size:.75rem;';
+  }
+}
+
 // ── Banner motivacional ──────────────────────────────────────────────────────
 var BANNER_FRASES = [];
 document.addEventListener('DOMContentLoaded', function(){
