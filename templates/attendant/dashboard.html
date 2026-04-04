@@ -464,9 +464,8 @@
             <td class="px-3 py-3 text-end" style="white-space:nowrap;">
               <div style="font-family:var(--font-mono,monospace);font-weight:700;font-size:.88rem;
                 color:{% if loop.index == 1 %}#fde68a{% elif is_me %}#a78bfa{% else %}var(--text-muted){% endif %};">
-                R$ {{ "%.0f"|format(r['total']) }}
+                {{ r['count'] }} venda{{ 's' if r['count'] != 1 }}
               </div>
-              <div style="font-size:.72rem;color:var(--text-muted);">{{ r['count'] }} venda{{ 's' if r['count'] != 1 }}</div>
             </td>
           </tr>
           {% endfor %}
@@ -508,7 +507,6 @@
                 color:{% if loop.index == 1 %}#6ee7b7{% elif is_me %}#a78bfa{% else %}var(--text-muted){% endif %};">
                 {{ r['count'] }} renovação{{ 'ões' if r['count'] != 1 }}
               </div>
-              <div style="font-size:.72rem;color:var(--text-muted);">R$ {{ "%.0f"|format(r['total']) }}</div>
             </td>
           </tr>
           {% endfor %}
@@ -536,18 +534,16 @@
         </p>
         <h2 class="fw-bold mb-0" style="color:#6ee7b7;">R$ {{ "%.2f"|format(month_commission) }}</h2>
         <small style="color:var(--text-muted);">
-          sobre R$ {{ "%.2f"|format(month_total) }} em vendas ·
           <span style="color:#6ee7b7;">{{ today_sales|length }} venda(s) hoje</span>
           {% if today_renewals_count > 0 %}
-          · <span style="color:#34d399;">{{ today_renewals_count }} renovação(ões) hoje
-            (R$ {{ "%.0f"|format(today_renewals_total) }})</span>
+          · <span style="color:#34d399;">{{ today_renewals_count }} renovação(ões) hoje</span>
           {% endif %}
         </small>
       </div>
       <div class="col-auto text-end">
         <div style="font-size:.7rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;">Hoje</div>
         <div style="font-size:1.4rem;font-weight:700;color:#a78bfa;">R$ {{ "%.2f"|format(today_commission) }}</div>
-        <div style="font-size:.75rem;color:var(--text-muted);">R$ {{ "%.2f"|format(today_total) }} vendido</div>
+        <div style="font-size:.75rem;color:var(--text-muted);">{{ today_sales|length }} venda(s)</div>
       </div>
     </div>
 
@@ -561,8 +557,7 @@
         <div class="d-flex justify-content-between align-items-center mb-1">
           <span style="font-size:.75rem;color:var(--text-muted);">
             <i class="bi bi-cash-stack me-1" style="color:#a78bfa;"></i>
-            Meta de Vendas (R$)
-            <span style="color:var(--text-muted);"> · R$ {{ "%.0f"|format(month_total) }} / R$ {{ "%.0f"|format(goal_sales_target) }}</span>
+            Meta de Vendas
           </span>
           <span class="nt-goal-pct" style="font-size:.75rem;font-weight:700;
             color:{% if sp >= 100 %}#fcd34d{% elif sp >= 60 %}#a78bfa{% else %}var(--text-muted){% endif %};">
@@ -576,11 +571,11 @@
           </div>
         </div>
         <div class="d-flex justify-content-between mt-1">
-          <span style="font-size:.67rem;color:var(--text-muted);">R$ 0</span>
+          <span style="font-size:.67rem;color:var(--text-muted);">0%</span>
           <span style="font-size:.67rem;color:var(--text-muted);">
-            {% if sp < 100 %}Faltam R$ {{ "%.0f"|format(goal_sales_target - month_total) }}{% else %}Meta atingida!{% endif %}
+            {% if sp < 100 %}{{ sp }}% atingido{% else %}Meta atingida! 🏆{% endif %}
           </span>
-          <span style="font-size:.67rem;color:var(--text-muted);">R$ {{ "%.0f"|format(goal_sales_target) }}</span>
+          <span style="font-size:.67rem;color:var(--text-muted);">100%</span>
         </div>
       </div>
       {% endif %}
@@ -659,8 +654,8 @@
   <div class="col-6 col-lg-3">
     <div class="card stat-card stat-card-purple h-100">
       <div class="card-body text-center py-3">
-        <p class="mb-1" style="font-size:.72rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;">Total Hoje</p>
-        <h4 class="fw-bold mb-0" style="color:#a78bfa;" id="nt-v-today-total" data-val="{{ today_total }}">R$ {{ "%.2f"|format(today_total) }}</h4>
+        <p class="mb-1" style="font-size:.72rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;">Vendas Hoje</p>
+        <h4 class="fw-bold mb-0" style="color:#a78bfa;" id="nt-v-today-total" data-val="{{ today_sales|length }}">{{ today_sales|length }}</h4>
       </div>
     </div>
   </div>
