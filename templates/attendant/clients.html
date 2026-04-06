@@ -5,13 +5,26 @@
 
 <div class="card mb-3">
   <div class="card-body py-2">
-    <form method="GET" class="d-flex gap-2 align-items-center">
-      <div class="input-group" style="max-width:280px;">
+    <form method="GET" class="d-flex flex-wrap gap-2 align-items-center">
+      <div class="input-group" style="max-width:260px;">
         <span class="input-group-text"><i class="bi bi-search"></i></span>
         <input type="text" name="q" class="form-control form-control-sm"
                placeholder="Buscar por nome ou número..." value="{{ search }}">
       </div>
-      {% if search %}
+      <select name="panel" class="form-select form-select-sm" style="max-width:140px;">
+        <option value="">Todos os painéis</option>
+        {% for p in panel_options %}
+          <option value="{{ p }}" {% if filter_panel == p %}selected{% endif %}>{{ p }}</option>
+        {% endfor %}
+      </select>
+      <select name="support" class="form-select form-select-sm" style="max-width:150px;">
+        <option value="">Todos os suportes</option>
+        {% for s in support_options %}
+          <option value="{{ s }}" {% if filter_support == s %}selected{% endif %}>{{ s }}</option>
+        {% endfor %}
+      </select>
+      <button type="submit" class="btn btn-sm btn-primary">Filtrar</button>
+      {% if search or filter_panel or filter_support %}
         <a href="{{ url_for('attendant.clients') }}" class="btn btn-sm"
            style="background:rgba(255,255,255,.08);color:var(--text);border:1px solid var(--border);">Limpar</a>
       {% endif %}
@@ -28,7 +41,7 @@
     <div class="table-responsive">
       <table class="table table-hover mb-0">
         <thead>
-          <tr><th>Nome</th><th>WhatsApp / Telefone</th><th>Cadastrado por</th><th>Último Contato</th><th>Cidade</th><th>Ações</th></tr>
+          <tr><th>Nome</th><th>WhatsApp / Telefone</th><th>Painel / Suporte</th><th>Cadastrado por</th><th>Último Contato</th><th>Ações</th></tr>
         </thead>
         <tbody>
           {% for c in clients %}
@@ -53,6 +66,18 @@
               {% endif %}
             </td>
             <td style="font-size:.82rem;">
+              {% if c.panel_name or c.support_type %}
+                {% if c.panel_name %}
+                  <span class="badge" style="background:rgba(99,102,241,.2);color:#a5b4fc;font-weight:500;">{{ c.panel_name }}</span>
+                {% endif %}
+                {% if c.support_type %}
+                  <span class="badge" style="background:rgba(6,182,212,.15);color:#67e8f9;font-weight:500;">{{ c.support_type }}</span>
+                {% endif %}
+              {% else %}
+                <span style="color:var(--text-muted);">—</span>
+              {% endif %}
+            </td>
+            <td style="font-size:.82rem;">
               {% if c.last_contact %}
                 <span style="color:{% if c.is_at_risk %}#f9a8d4{% else %}#6ee7b7{% endif %};">
                   {{ c.last_contact.contacted_at.strftime('%d/%m/%Y') }}
@@ -67,7 +92,6 @@
                 {{ c.registered_by_user.name.split()[0] }}
               {% else %}—{% endif %}
             </td>
-            <td style="color:var(--text-muted);font-size:.85rem;">{{ c.city or '—' }}{% if c.state %}/{{ c.state }}{% endif %}</td>
             <td>
               <div class="d-flex gap-1">
                 <a href="{{ url_for('contacts.client_detail', client_id=c.id) }}" class="btn btn-sm"

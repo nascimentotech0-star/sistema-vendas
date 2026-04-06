@@ -1097,7 +1097,9 @@ def request_overtime():
 @login_required
 @attendant_required
 def clients():
-    search = request.args.get('q', '').strip()
+    search       = request.args.get('q', '').strip()
+    filter_panel = request.args.get('panel', '').strip()
+    filter_sup   = request.args.get('support', '').strip()
     query = Client.query
     if search:
         query = query.filter(
@@ -1107,8 +1109,19 @@ def clients():
                 Client.whatsapp.ilike(f'%{search}%'),
             )
         )
+    if filter_panel:
+        query = query.filter(Client.panel_name == filter_panel)
+    if filter_sup:
+        query = query.filter(Client.support_type == filter_sup)
     clients_list = query.order_by(Client.name).all()
-    return render_template('attendant/clients.html', clients=clients_list, search=search)
+
+    panel_options   = sorted({c.panel_name   for c in Client.query.all() if c.panel_name})
+    support_options = sorted({c.support_type for c in Client.query.all() if c.support_type})
+
+    return render_template('attendant/clients.html',
+                           clients=clients_list, search=search,
+                           panel_options=panel_options, support_options=support_options,
+                           filter_panel=filter_panel, filter_support=filter_sup)
 
 
 @attendant_bp.route('/clientes/migrar', methods=['GET', 'POST'])
@@ -1118,13 +1131,21 @@ def migrate_client():
     """Migra cliente de outra plataforma — sem gerar venda/comissão.
     Cadastra o cliente e cria uma renovação com comprovante, sem comissão.
     """
-    price_items = PriceItem.query.filter_by(is_active=True).order_by(PriceItem.price).all()
+    price_items     = PriceItem.query.filter_by(is_active=True).order_by(PriceItem.price).all()
+    panel_options   = sorted({c.panel_name   for c in Client.query.all() if c.panel_name})
+    support_options = sorted({c.support_type for c in Client.query.all() if c.support_type})
+
+    def _render_migrate(**kw):
+        return render_template('attendant/migrate_client.html',
+                               price_items=price_items,
+                               panel_options=panel_options,
+                               support_options=support_options, **kw)
 
     if request.method == 'POST':
         name = request.form.get('name', '').strip()
         if not name:
             flash('Nome é obrigatório.', 'danger')
-            return render_template('attendant/migrate_client.html', price_items=price_items)
+            return _render_migrate()
 
         def _norm_phone(raw):
             digits = ''.join(c for c in (raw or '') if c.isdigit())
@@ -1158,7 +1179,7 @@ def migrate_client():
                 f'Se precisar adicionar uma renovação, use a tela de Renovações.',
                 'warning'
             )
-            return render_template('attendant/migrate_client.html', price_items=price_items)
+            return _render_migrate()
 
         # Cria o cliente
         client = Client(
@@ -1167,6 +1188,8 @@ def migrate_client():
             whatsapp=whatsapp_raw or None,
             email=request.form.get('email', '').strip() or None,
             notes=request.form.get('notes', '').strip() or None,
+            panel_name=request.form.get('panel_name', '').strip() or None,
+            support_type=request.form.get('support_type', '').strip() or None,
             registered_by=current_user.id,
         )
         db.session.add(client)
@@ -1177,7 +1200,7 @@ def migrate_client():
         if not file or not file.filename or not allowed_file(file.filename):
             flash('Comprovante do plano atual é obrigatório para migração.', 'danger')
             db.session.rollback()
-            return render_template('attendant/migrate_client.html', price_items=price_items)
+            return _render_migrate()
 
         raw = file.read()
         sha = hashlib.sha256(raw).hexdigest()
@@ -1185,7 +1208,7 @@ def migrate_client():
         if dup_sale:
             flash(f'Comprovante duplicado — já usado na venda #{dup_sale.id}.', 'danger')
             db.session.rollback()
-            return render_template('attendant/migrate_client.html', price_items=price_items)
+            return _render_migrate()
 
         ext   = file.filename.rsplit('.', 1)[-1].lower()
         fname = f"{uuid.uuid4().hex}.{ext}"
@@ -1199,7 +1222,7 @@ def migrate_client():
         except Exception:
             flash('Data de vencimento inválida.', 'danger')
             db.session.rollback()
-            return render_template('attendant/migrate_client.html', price_items=price_items)
+            return _render_migrate()
 
         plan_name = request.form.get('plan_name', '').strip()
         try:
@@ -1224,14 +1247,16 @@ def migrate_client():
         flash(f'Cliente "{name}" migrado com sucesso! Renovação registrada até {due_date.strftime("%d/%m/%Y")}.', 'success')
         return redirect(url_for('attendant.renewals'))
 
-    return render_template('attendant/migrate_client.html', price_items=price_items)
+    return _render_migrate()
 
 
 @attendant_bp.route('/clientes/novo', methods=['GET', 'POST'])
 @login_required
 @attendant_required
 def new_client():
-    overtime = is_overtime_now()
+    overtime        = is_overtime_now()
+    panel_options   = sorted({c.panel_name   for c in Client.query.all() if c.panel_name})
+    support_options = sorted({c.support_type for c in Client.query.all() if c.support_type})
 
     def _chart_data():
         today = today_br()
@@ -1259,17 +1284,22 @@ def new_client():
         ).count()
         return day_labels, day_vals, clients_today, sales_today
 
+    def _render_form():
+        dl, dv, ct, st = _chart_data()
+        return render_template('attendant/client_form.html',
+                               client=None, payment_methods=PAYMENT_METHODS,
+                               is_overtime=overtime,
+                               commission_rate=get_commission_rate(),
+                               chart_labels=dl, chart_vals=dv,
+                               clients_today=ct, sales_today=st,
+                               panel_options=panel_options,
+                               support_options=support_options)
+
     if request.method == 'POST':
         name = request.form.get('name', '').strip()
         if not name:
             flash('Nome é obrigatório.', 'danger')
-            dl, dv, ct, st = _chart_data()
-            return render_template('attendant/client_form.html',
-                                   client=None, payment_methods=PAYMENT_METHODS,
-                                   is_overtime=overtime,
-                                   commission_rate=get_commission_rate(),
-                                   chart_labels=dl, chart_vals=dv,
-                                   clients_today=ct, sales_today=st)
+            return _render_form()
 
         # ── Normaliza número: remove não-dígitos e strip do prefixo 55 nacional ──
         def _norm_phone(raw):
@@ -1308,13 +1338,7 @@ def new_client():
                 f'{dup_client.registered_by_user.name.split()[0] if dup_client.registered_by_user else "outro atendente"}).',
                 'danger'
             )
-            dl, dv, ct, st = _chart_data()
-            return render_template('attendant/client_form.html',
-                                   client=None, payment_methods=PAYMENT_METHODS,
-                                   is_overtime=overtime,
-                                   commission_rate=get_commission_rate(),
-                                   chart_labels=dl, chart_vals=dv,
-                                   clients_today=ct, sales_today=st)
+            return _render_form()
 
         client = Client(
             name=name,
@@ -1324,94 +1348,99 @@ def new_client():
             city=request.form.get('city', '').strip() or None,
             state=request.form.get('state', '').strip() or None,
             notes=request.form.get('notes', '').strip() or None,
+            panel_name=request.form.get('panel_name', '').strip() or None,
+            support_type=request.form.get('support_type', '').strip() or None,
             registered_by=current_user.id
         )
         db.session.add(client)
         db.session.flush()
 
-        amount_str = request.form.get('amount', '').strip().replace(',', '.')
-        payment_method = request.form.get('payment_method', '')
-        description = request.form.get('description', '').strip() or None
+        amount_str     = request.form.get('amount', '').strip().replace(',', '.')
+        payment_method = request.form.get('payment_method', '').strip()
+        description    = request.form.get('description', '').strip() or None
 
+        # ── Se preencheu valor, valida tudo ANTES de salvar qualquer coisa ────────
         if amount_str:
+            # 1. forma de pagamento obrigatória
             if not payment_method:
-                db.session.commit()
-                flash(f'Cliente {name} cadastrado! Mas selecione a forma de pagamento para registrar a venda.', 'warning')
-                return redirect(url_for('attendant.dashboard'))
+                db.session.rollback()
+                flash('Selecione a forma de pagamento para registrar a venda.', 'danger')
+                return _render_form()
+
+            # 2. valor numérico válido
             try:
-                amount = float(amount_str)
-                screens    = int(request.form.get('screens', 1) or 1)
-                adjustment = float(request.form.get('adjustment', 0) or 0)
-                amount = round(amount + adjustment, 2)
-                if amount > 0:
-                    commission_rate = get_commission_rate(get_month_sales_count(current_user.id))
-                    commission_amount = round(amount * commission_rate / 100, 2)
-
-                    try:
-                        comprovante_filename, comprovante_hash = _process_comprovante()
-                    except ValueError as dup_err:
-                        db.session.rollback()
-                        flash(f'⚠️ {dup_err}', 'danger')
-                        dl, dv, ct, st = _chart_data()
-                        return render_template('attendant/client_form.html',
-                                               client=None, payment_methods=PAYMENT_METHODS,
-                                               is_overtime=overtime,
-                                               commission_rate=get_commission_rate(),
-                                               chart_labels=dl, chart_vals=dv,
-                                               clients_today=ct, sales_today=st)
-
-                    sale = Sale(
-                        attendant_id=current_user.id,
-                        client_id=client.id,
-                        amount=amount,
-                        payment_method=payment_method,
-                        commission_rate=commission_rate,
-                        commission_amount=commission_amount,
-                        description=description,
-                        comprovante_filename=comprovante_filename,
-                        comprovante_hash=comprovante_hash,
-                        is_overtime=overtime,
-                        screens=screens,
-                        adjustment=adjustment,
-                    )
-                    db.session.add(sale)
-                    db.session.commit()
-                    flash(f'Cliente {name} cadastrado! Venda de R$ {amount:.2f} registrada. '
-                          f'Comissão: R$ {commission_amount:.2f} ({commission_rate:.0f}%)', 'success')
-                    return redirect(url_for('attendant.dashboard'))
+                base_amount = float(amount_str)
+                screens     = int(request.form.get('screens', 1) or 1)
+                adjustment  = float(request.form.get('adjustment', 0) or 0)
+                amount      = round(base_amount + adjustment, 2)
+                if amount <= 0:
+                    raise ValueError('Valor zero')
             except ValueError:
-                pass
+                db.session.rollback()
+                flash('Valor da venda inválido.', 'danger')
+                return _render_form()
 
+            # 3. comprovante (valida antes de salvar cliente)
+            try:
+                comprovante_filename, comprovante_hash = _process_comprovante()
+            except ValueError as dup_err:
+                db.session.rollback()
+                flash(f'⚠️ {dup_err}', 'danger')
+                return _render_form()
+
+            # Tudo validado — salva cliente e venda juntos
+            commission_rate   = get_commission_rate(get_month_sales_count(current_user.id))
+            commission_amount = round(amount * commission_rate / 100, 2)
+            sale = Sale(
+                attendant_id=current_user.id,
+                client_id=client.id,
+                amount=amount,
+                payment_method=payment_method,
+                commission_rate=commission_rate,
+                commission_amount=commission_amount,
+                description=description,
+                comprovante_filename=comprovante_filename,
+                comprovante_hash=comprovante_hash,
+                is_overtime=overtime,
+                screens=screens,
+                adjustment=adjustment,
+            )
+            db.session.add(sale)
+            db.session.commit()
+            flash(f'Cliente {name} cadastrado! Venda de R$ {amount:.2f} registrada. '
+                  f'Comissão: R$ {commission_amount:.2f} ({commission_rate:.0f}%)', 'success')
+            return redirect(url_for('attendant.dashboard'))
+
+        # Sem valor de venda — apenas salva o cliente
         db.session.commit()
         flash(f'Cliente {name} cadastrado com sucesso!', 'success')
         return redirect(url_for('attendant.dashboard'))
 
-    dl, dv, ct, st = _chart_data()
-    return render_template('attendant/client_form.html',
-                           client=None, payment_methods=PAYMENT_METHODS,
-                           is_overtime=overtime,
-                           commission_rate=get_commission_rate(),
-                           chart_labels=dl, chart_vals=dv,
-                           clients_today=ct, sales_today=st)
+    return _render_form()
 
 
 @attendant_bp.route('/clientes/<int:id>/editar', methods=['GET', 'POST'])
 @login_required
 @attendant_required
 def edit_client(id):
-    client = Client.query.get_or_404(id)
+    client          = Client.query.get_or_404(id)
+    panel_options   = sorted({c.panel_name   for c in Client.query.all() if c.panel_name})
+    support_options = sorted({c.support_type for c in Client.query.all() if c.support_type})
     if request.method == 'POST':
-        client.name = request.form.get('name', '').strip()
-        client.phone = request.form.get('phone', '').strip() or None
-        client.whatsapp = request.form.get('whatsapp', '').strip() or None
-        client.email = request.form.get('email', '').strip() or None
-        client.city = request.form.get('city', '').strip() or None
-        client.state = request.form.get('state', '').strip() or None
-        client.notes = request.form.get('notes', '').strip() or None
+        client.name         = request.form.get('name', '').strip()
+        client.phone        = request.form.get('phone', '').strip() or None
+        client.whatsapp     = request.form.get('whatsapp', '').strip() or None
+        client.email        = request.form.get('email', '').strip() or None
+        client.city         = request.form.get('city', '').strip() or None
+        client.state        = request.form.get('state', '').strip() or None
+        client.notes        = request.form.get('notes', '').strip() or None
+        client.panel_name   = request.form.get('panel_name', '').strip() or None
+        client.support_type = request.form.get('support_type', '').strip() or None
         db.session.commit()
         flash('Cliente atualizado!', 'success')
         return redirect(url_for('attendant.clients'))
-    return render_template('attendant/client_form.html', client=client)
+    return render_template('attendant/client_form.html', client=client,
+                           panel_options=panel_options, support_options=support_options)
 
 
 # ── Vendas ─────────────────────────────────────────────────────────────────────

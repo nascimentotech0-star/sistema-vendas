@@ -248,6 +248,8 @@ class Client(db.Model):
     city = db.Column(db.String(100), nullable=True)
     state = db.Column(db.String(50), nullable=True)
     notes = db.Column(db.Text, nullable=True)
+    panel_name = db.Column(db.String(60), nullable=True)
+    support_type = db.Column(db.String(60), nullable=True)
     registered_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     created_at = db.Column(db.DateTime, default=now_br)
 

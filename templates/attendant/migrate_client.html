@@ -59,6 +59,25 @@
             <input type="email" name="email" class="form-control" placeholder="cliente@email.com">
           </div>
 
+          <div class="row g-3 mb-3">
+            <div class="col-6">
+              <label class="form-label fw-semibold">Painel</label>
+              <input type="text" name="panel_name" class="form-control" list="panel-options"
+                     placeholder="Ex: Gol, Star...">
+              <datalist id="panel-options">
+                {% for p in panel_options %}<option value="{{ p }}">{% endfor %}
+              </datalist>
+            </div>
+            <div class="col-6">
+              <label class="form-label fw-semibold">Suporte</label>
+              <input type="text" name="support_type" class="form-control" list="support-options"
+                     placeholder="Ex: Suporte 1, Suporte 2...">
+              <datalist id="support-options">
+                {% for s in support_options %}<option value="{{ s }}">{% endfor %}
+              </datalist>
+            </div>
+          </div>
+
           <div class="mb-4">
             <label class="form-label fw-semibold">Observação</label>
             <input type="text" name="notes" class="form-control" placeholder="Ex: veio da plataforma X">

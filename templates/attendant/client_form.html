@@ -56,6 +56,25 @@
             </div>
           </div>
 
+          <div class="row g-3 mb-3">
+            <div class="col-6">
+              <label class="form-label">Painel</label>
+              <input type="text" name="panel_name" class="form-control" list="panel-options"
+                     placeholder="Ex: Gol, Star..." value="{{ client.panel_name if client else '' }}">
+              <datalist id="panel-options">
+                {% for p in panel_options %}<option value="{{ p }}">{% endfor %}
+              </datalist>
+            </div>
+            <div class="col-6">
+              <label class="form-label">Suporte</label>
+              <input type="text" name="support_type" class="form-control" list="support-options"
+                     placeholder="Ex: Suporte 1, Suporte 2..." value="{{ client.support_type if client else '' }}">
+              <datalist id="support-options">
+                {% for s in support_options %}<option value="{{ s }}">{% endfor %}
+              </datalist>
+            </div>
+          </div>
+
           <div class="mb-4">
             <label class="form-label">Observações</label>
             <textarea name="notes" class="form-control" rows="2"
