@@ -11,7 +11,8 @@ from flask_login import login_required, current_user
 from werkzeug.utils import secure_filename
 
 from models import (db, User, Attendance, AttendanceBreak, OvertimeRequest, Client, Sale, Renewal,
-                    PAYMENT_METHODS, BREAK_ALLOWED_MINUTES, DAYS_AT_RISK,
+                    PAYMENT_METHODS, PANEL_OPTIONS, SUPPORT_OPTIONS,
+                    BREAK_ALLOWED_MINUTES, DAYS_AT_RISK,
                     CommissionPayment, PriceItem, AttendantGoal)
 from flask import jsonify as _jsonify
 from audit import log_action
@@ -1114,13 +1115,9 @@ def clients():
     if filter_sup:
         query = query.filter(Client.support_type == filter_sup)
     clients_list = query.order_by(Client.name).all()
-
-    panel_options   = sorted({c.panel_name   for c in Client.query.all() if c.panel_name})
-    support_options = sorted({c.support_type for c in Client.query.all() if c.support_type})
-
     return render_template('attendant/clients.html',
                            clients=clients_list, search=search,
-                           panel_options=panel_options, support_options=support_options,
+                           panel_options=PANEL_OPTIONS, support_options=SUPPORT_OPTIONS,
                            filter_panel=filter_panel, filter_support=filter_sup)
 
 
@@ -1132,14 +1129,11 @@ def migrate_client():
     Cadastra o cliente e cria uma renovação com comprovante, sem comissão.
     """
     price_items     = PriceItem.query.filter_by(is_active=True).order_by(PriceItem.price).all()
-    panel_options   = sorted({c.panel_name   for c in Client.query.all() if c.panel_name})
-    support_options = sorted({c.support_type for c in Client.query.all() if c.support_type})
-
     def _render_migrate(**kw):
         return render_template('attendant/migrate_client.html',
                                price_items=price_items,
-                               panel_options=panel_options,
-                               support_options=support_options, **kw)
+                               panel_options=PANEL_OPTIONS,
+                               support_options=SUPPORT_OPTIONS, **kw)
 
     if request.method == 'POST':
         name = request.form.get('name', '').strip()
@@ -1255,8 +1249,8 @@ def migrate_client():
 @attendant_required
 def new_client():
     overtime        = is_overtime_now()
-    panel_options   = sorted({c.panel_name   for c in Client.query.all() if c.panel_name})
-    support_options = sorted({c.support_type for c in Client.query.all() if c.support_type})
+    panel_options   = PANEL_OPTIONS
+    support_options = SUPPORT_OPTIONS
 
     def _chart_data():
         today = today_br()
@@ -1345,8 +1339,6 @@ def new_client():
             phone=phone_raw or None,
             whatsapp=whatsapp_raw or None,
             email=request.form.get('email', '').strip() or None,
-            city=request.form.get('city', '').strip() or None,
-            state=request.form.get('state', '').strip() or None,
             notes=request.form.get('notes', '').strip() or None,
             panel_name=request.form.get('panel_name', '').strip() or None,
             support_type=request.form.get('support_type', '').strip() or None,
@@ -1423,16 +1415,12 @@ def new_client():
 @login_required
 @attendant_required
 def edit_client(id):
-    client          = Client.query.get_or_404(id)
-    panel_options   = sorted({c.panel_name   for c in Client.query.all() if c.panel_name})
-    support_options = sorted({c.support_type for c in Client.query.all() if c.support_type})
+    client = Client.query.get_or_404(id)
     if request.method == 'POST':
         client.name         = request.form.get('name', '').strip()
         client.phone        = request.form.get('phone', '').strip() or None
         client.whatsapp     = request.form.get('whatsapp', '').strip() or None
         client.email        = request.form.get('email', '').strip() or None
-        client.city         = request.form.get('city', '').strip() or None
-        client.state        = request.form.get('state', '').strip() or None
         client.notes        = request.form.get('notes', '').strip() or None
         client.panel_name   = request.form.get('panel_name', '').strip() or None
         client.support_type = request.form.get('support_type', '').strip() or None
@@ -1440,7 +1428,21 @@ def edit_client(id):
         flash('Cliente atualizado!', 'success')
         return redirect(url_for('attendant.clients'))
     return render_template('attendant/client_form.html', client=client,
-                           panel_options=panel_options, support_options=support_options)
+                           panel_options=PANEL_OPTIONS, support_options=SUPPORT_OPTIONS)
+
+
+@attendant_bp.route('/clientes/<int:id>/painel-suporte', methods=['POST'])
+@login_required
+@attendant_required
+def quick_edit_panel(id):
+    client = Client.query.get_or_404(id)
+    client.panel_name   = request.form.get('panel_name', '').strip() or None
+    client.support_type = request.form.get('support_type', '').strip() or None
+    db.session.commit()
+    return redirect(url_for('attendant.clients',
+                            q=request.args.get('q', ''),
+                            panel=request.args.get('panel', ''),
+                            support=request.args.get('support', '')))
 
 
 # ── Vendas ─────────────────────────────────────────────────────────────────────

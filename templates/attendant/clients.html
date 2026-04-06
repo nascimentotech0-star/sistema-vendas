@@ -41,7 +41,14 @@
     <div class="table-responsive">
       <table class="table table-hover mb-0">
         <thead>
-          <tr><th>Nome</th><th>WhatsApp / Telefone</th><th>Painel / Suporte</th><th>Cadastrado por</th><th>Último Contato</th><th>Ações</th></tr>
+          <tr>
+            <th>Nome</th>
+            <th>WhatsApp / Telefone</th>
+            <th>Painel / Suporte</th>
+            <th>Cadastrado por</th>
+            <th>Último Contato</th>
+            <th>Ações</th>
+          </tr>
         </thead>
         <tbody>
           {% for c in clients %}
@@ -66,16 +73,31 @@
               {% endif %}
             </td>
             <td style="font-size:.82rem;">
-              {% if c.panel_name or c.support_type %}
+              <div class="d-flex align-items-center gap-1 flex-wrap">
                 {% if c.panel_name %}
                   <span class="badge" style="background:rgba(99,102,241,.2);color:#a5b4fc;font-weight:500;">{{ c.panel_name }}</span>
                 {% endif %}
                 {% if c.support_type %}
                   <span class="badge" style="background:rgba(6,182,212,.15);color:#67e8f9;font-weight:500;">{{ c.support_type }}</span>
                 {% endif %}
-              {% else %}
-                <span style="color:var(--text-muted);">—</span>
-              {% endif %}
+                {% if not c.panel_name and not c.support_type %}
+                  <span style="color:var(--text-muted);">—</span>
+                {% endif %}
+                <button type="button"
+                        class="btn-quick-panel btn py-0 px-1 ms-1"
+                        style="background:rgba(245,158,11,.15);border:1px solid rgba(245,158,11,.3);color:#fcd34d;"
+                        title="Editar painel/suporte"
+                        data-id="{{ c.id }}"
+                        data-panel="{{ c.panel_name or '' }}"
+                        data-support="{{ c.support_type or '' }}">
+                  <i class="bi bi-pencil-fill" style="font-size:.65rem;"></i>
+                </button>
+              </div>
+            </td>
+            <td style="font-size:.8rem;color:var(--text-muted);">
+              {% if c.registered_by_user %}
+                {{ c.registered_by_user.name.split()[0] }}
+              {% else %}—{% endif %}
             </td>
             <td style="font-size:.82rem;">
               {% if c.last_contact %}
@@ -87,11 +109,6 @@
                 <span style="color:#f9a8d4;">Nunca</span>
               {% endif %}
             </td>
-            <td style="font-size:.8rem;color:var(--text-muted);">
-              {% if c.registered_by_user %}
-                {{ c.registered_by_user.name.split()[0] }}
-              {% else %}—{% endif %}
-            </td>
             <td>
               <div class="d-flex gap-1">
                 <a href="{{ url_for('contacts.client_detail', client_id=c.id) }}" class="btn btn-sm"
@@ -101,7 +118,7 @@
                 </a>
                 <a href="{{ url_for('attendant.edit_client', id=c.id) }}" class="btn btn-sm"
                    style="background:rgba(124,58,237,.2);color:#a78bfa;border:none;padding:3px 8px;"
-                   title="Editar">
+                   title="Editar cliente">
                   <i class="bi bi-pencil"></i>
                 </a>
               </div>
@@ -115,7 +132,7 @@
       <div class="text-center py-5">
         <i class="bi bi-people" style="font-size:2.5rem;color:var(--text-muted);"></i>
         <p class="mt-2" style="color:var(--text-muted);">
-          {% if search %}Nenhum cliente encontrado para "{{ search }}".
+          {% if search or filter_panel or filter_support %}Nenhum cliente encontrado para os filtros aplicados.
           {% else %}Nenhum cliente cadastrado ainda.{% endif %}
         </p>
         <a href="{{ url_for('attendant.new_client') }}" class="btn btn-primary btn-sm">Cadastrar agora</a>
@@ -124,4 +141,64 @@
   </div>
 </div>
 
+<!-- Modal: Editar Painel / Suporte rápido -->
+<div id="modalQuickPanel" style="display:none;position:fixed;inset:0;z-index:1055;background:rgba(0,0,0,.6);align-items:center;justify-content:center;">
+  <div style="background:#1a1a35;border:1px solid rgba(245,158,11,.3);border-radius:12px;width:100%;max-width:340px;margin:1rem;">
+    <form method="POST" id="formQuickPanel" action="">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="p-4">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h6 class="fw-bold mb-0" style="color:#fcd34d;"><i class="bi bi-pencil-fill me-2"></i>Painel / Suporte</h6>
+          <button type="button" onclick="document.getElementById('modalQuickPanel').style.display='none'"
+                  style="background:none;border:none;color:var(--text-muted);font-size:1.2rem;cursor:pointer;">&times;</button>
+        </div>
+        <div class="mb-3">
+          <label class="form-label small fw-semibold">Painel</label>
+          <select name="panel_name" id="quickPanelSelect" class="form-select form-select-sm">
+            <option value="">— Nenhum —</option>
+            {% for p in panel_options %}
+              <option value="{{ p }}">{{ p }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="mb-4">
+          <label class="form-label small fw-semibold">Suporte</label>
+          <select name="support_type" id="quickSupportSelect" class="form-select form-select-sm">
+            <option value="">— Nenhum —</option>
+            {% for s in support_options %}
+              <option value="{{ s }}">{{ s }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="d-flex gap-2">
+          <button type="submit" class="btn btn-sm px-4"
+                  style="background:rgba(245,158,11,.25);color:#fcd34d;border:1px solid rgba(245,158,11,.4);">
+            <i class="bi bi-check-lg me-1"></i>Salvar
+          </button>
+          <button type="button" class="btn btn-sm"
+                  onclick="document.getElementById('modalQuickPanel').style.display='none'"
+                  style="background:rgba(255,255,255,.08);color:var(--text);border:1px solid var(--border);">
+            Cancelar
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% endblock %}
+{% block scripts %}
+<script>
+document.querySelectorAll('.btn-quick-panel').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    var id      = this.dataset.id;
+    var panel   = this.dataset.panel;
+    var support = this.dataset.support;
+    document.getElementById('formQuickPanel').action = '/atendente/clientes/' + id + '/painel-suporte';
+    document.getElementById('quickPanelSelect').value   = panel;
+    document.getElementById('quickSupportSelect').value = support;
+    document.getElementById('modalQuickPanel').style.display = 'flex';
+  });
+});
+</script>
 {% endblock %}

@@ -488,6 +488,9 @@ class PriceItem(db.Model):
     created_at   = db.Column(db.DateTime, default=now_br)
 
 
+PANEL_OPTIONS   = ['Gol', 'Star']
+SUPPORT_OPTIONS = ['Suporte 2', 'Theus', 'Impostor']
+
 PAYMENT_METHODS = {
     'pix': 'Pix',
     'credito': 'Cartão de Crédito',

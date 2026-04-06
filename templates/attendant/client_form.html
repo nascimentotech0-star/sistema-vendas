@@ -44,34 +44,23 @@
           </div>
 
           <div class="row g-3 mb-3">
-            <div class="col-8">
-              <label class="form-label">Cidade</label>
-              <input type="text" name="city" class="form-control"
-                     value="{{ client.city if client else '' }}">
-            </div>
-            <div class="col-4">
-              <label class="form-label">Estado</label>
-              <input type="text" name="state" class="form-control" maxlength="2" placeholder="SP"
-                     value="{{ client.state if client else '' }}">
-            </div>
-          </div>
-
-          <div class="row g-3 mb-3">
             <div class="col-6">
               <label class="form-label">Painel</label>
-              <input type="text" name="panel_name" class="form-control" list="panel-options"
-                     placeholder="Ex: Gol, Star..." value="{{ client.panel_name if client else '' }}">
-              <datalist id="panel-options">
-                {% for p in panel_options %}<option value="{{ p }}">{% endfor %}
-              </datalist>
+              <select name="panel_name" class="form-select">
+                <option value="">— Selecionar —</option>
+                {% for p in panel_options %}
+                  <option value="{{ p }}" {% if client and client.panel_name == p %}selected{% endif %}>{{ p }}</option>
+                {% endfor %}
+              </select>
             </div>
             <div class="col-6">
               <label class="form-label">Suporte</label>
-              <input type="text" name="support_type" class="form-control" list="support-options"
-                     placeholder="Ex: Suporte 1, Suporte 2..." value="{{ client.support_type if client else '' }}">
-              <datalist id="support-options">
-                {% for s in support_options %}<option value="{{ s }}">{% endfor %}
-              </datalist>
+              <select name="support_type" class="form-select">
+                <option value="">— Selecionar —</option>
+                {% for s in support_options %}
+                  <option value="{{ s }}" {% if client and client.support_type == s %}selected{% endif %}>{{ s }}</option>
+                {% endfor %}
+              </select>
             </div>
           </div>
 
