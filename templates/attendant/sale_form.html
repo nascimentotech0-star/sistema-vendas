@@ -105,6 +105,22 @@
             </div>
           </div>
 
+          <div class="mb-3 p-3 rounded" style="background:rgba(99,102,241,.08);border:1px solid rgba(99,102,241,.2);">
+            <label class="form-label fw-semibold mb-1" style="font-size:.85rem;">
+              <i class="bi bi-clock-fill me-1" style="color:#a5b4fc;"></i> Hora do Pagamento
+            </label>
+            <div class="d-flex align-items-center gap-2">
+              <input type="time" name="comprovante_time" id="comprovante_time"
+                     class="form-control form-control-sm" style="max-width:120px;"
+                     value="{{ now.strftime('%H:%M') }}" onchange="atualizaComissaoHora()">
+              <span id="hora_origem" class="badge" style="background:rgba(255,255,255,.1);color:var(--text-muted);font-size:.7rem;">hora atual</span>
+            </div>
+            <div class="form-text mt-1" style="font-size:.72rem;color:var(--text-muted);">
+              Ajuste para a hora em que o pagamento foi recebido se diferente do momento atual.
+              Pagamentos antes das {{ shift_end }}h recebem comissão normal (não hora extra).
+            </div>
+          </div>
+
           <div class="d-flex gap-2 mt-4">
             <button type="submit" class="btn btn-success px-4 fw-semibold">
               <i class="bi bi-check-circle-fill me-1"></i> Registrar Venda
@@ -119,15 +135,41 @@
 {% endblock %}
 {% block scripts %}
 <script>
-  const rate = {{ 20 if is_overtime else 5 }};
+  const SHIFT_END   = {{ shift_end }};
+  const RATE_NORMAL = {{ commission_rate }};  // taxa progressiva atual
+  const RATE_EXTRA  = 20;
+
+  function getRateAtual() {
+    const timeVal = document.getElementById('comprovante_time').value;
+    if (timeVal) {
+      const h = parseInt(timeVal.split(':')[0]);
+      const isExtra = !(h >= 8 && h < SHIFT_END);
+      return isExtra ? RATE_EXTRA : RATE_NORMAL;
+    }
+    return {{ 20 if is_overtime else commission_rate }};
+  }
+
+  function atualizaComissaoHora() {
+    const timeVal = document.getElementById('comprovante_time').value;
+    const badge   = document.getElementById('hora_origem');
+    if (timeVal) {
+      const h = parseInt(timeVal.split(':')[0]);
+      const isExtra = !(h >= 8 && h < SHIFT_END);
+      badge.textContent = 'hora editada';
+      badge.style.background = isExtra ? 'rgba(245,158,11,.2)' : 'rgba(16,185,129,.2)';
+      badge.style.color       = isExtra ? '#fcd34d'            : '#6ee7b7';
+    }
+    calcComissao();
+  }
 
   function calcComissao() {
     const base = parseFloat(document.getElementById('amountInput').value.replace(',', '.')) || 0;
     const adj  = parseFloat(document.getElementById('adjustmentInput').value) || 0;
     const final = base + adj;
+    const rate  = getRateAtual();
     if (base > 0) {
       const fmt = v => 'R$ ' + v.toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
-      document.getElementById('finalValue').textContent = fmt(final);
+      document.getElementById('finalValue').textContent      = fmt(final);
       document.getElementById('commissionValue').textContent = fmt(final * rate / 100);
       document.getElementById('commissionPreview').style.display = 'block';
     } else {
@@ -175,16 +217,53 @@
 
   document.getElementById('fileInput').addEventListener('change', function () {
     const file = this.files[0];
-    if (file && file.type.startsWith('image/')) {
+    if (!file) return;
+
+    // Preview da imagem
+    if (file.type.startsWith('image/')) {
       const reader = new FileReader();
       reader.onload = e => {
         document.getElementById('previewImg').src = e.target.result;
         document.getElementById('imagePreview').style.display = 'block';
+        // Tenta ler EXIF para extrair hora do comprovante
+        lerExifHora(e.target.result);
       };
       reader.readAsDataURL(file);
     } else {
       document.getElementById('imagePreview').style.display = 'none';
     }
   });
+
+  function lerExifHora(dataUrl) {
+    // Lê os bytes EXIF diretamente do base64 para extrair DateTimeOriginal
+    // Funciona para JPEG com EXIF; WhatsApp remove EXIF — nesses casos não faz nada
+    try {
+      const bin = atob(dataUrl.split(',')[1]);
+      if (bin.charCodeAt(0) !== 0xFF || bin.charCodeAt(1) !== 0xD8) return; // não é JPEG
+      let i = 2;
+      while (i < bin.length - 4) {
+        const marker = (bin.charCodeAt(i) << 8) | bin.charCodeAt(i+1);
+        const len    = (bin.charCodeAt(i+2) << 8) | bin.charCodeAt(i+3);
+        if (marker === 0xFFE1) { // APP1 — EXIF
+          const seg = bin.slice(i+4, i+2+len);
+          if (seg.slice(0,4) === 'Exif') {
+            const dtMatch = seg.match(/(\d{4}):(\d{2}):(\d{2}) (\d{2}):(\d{2}):(\d{2})/);
+            if (dtMatch) {
+              const hh = dtMatch[4], mm = dtMatch[5];
+              document.getElementById('comprovante_time').value = `${hh}:${mm}`;
+              const badge = document.getElementById('hora_origem');
+              badge.textContent = 'lido do arquivo';
+              badge.style.background = 'rgba(6,182,212,.2)';
+              badge.style.color       = '#67e8f9';
+              atualizaComissaoHora();
+            }
+          }
+          break;
+        }
+        if (marker === 0xFFDA) break; // SOS — fim dos metadados
+        i += 2 + len;
+      }
+    } catch(e) { /* EXIF não disponível, mantém hora atual */ }
+  }
 </script>
 {% endblock %}

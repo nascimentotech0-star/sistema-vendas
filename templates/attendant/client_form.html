@@ -157,6 +157,21 @@
                      accept="image/*,.pdf">
               <small style="color:var(--text-muted);">Obrigatório para registrar a venda. Deixe em branco para só cadastrar o cliente.</small>
             </div>
+
+            <div class="mb-3 p-3 rounded" style="background:rgba(99,102,241,.08);border:1px solid rgba(99,102,241,.2);">
+              <label class="form-label mb-1" style="font-size:.82rem;font-weight:600;">
+                <i class="bi bi-clock-fill me-1" style="color:#a5b4fc;"></i> Hora do Pagamento
+              </label>
+              <div class="d-flex align-items-center gap-2">
+                <input type="time" name="comprovante_time" id="comprovante_time_cf"
+                       class="form-control form-control-sm" style="max-width:110px;"
+                       value="{{ now.strftime('%H:%M') }}" onchange="atualizaHoraCF()">
+                <span id="hora_origem_cf" class="badge" style="background:rgba(255,255,255,.1);color:var(--text-muted);font-size:.7rem;">hora atual</span>
+              </div>
+              <div class="mt-1" style="font-size:.71rem;color:var(--text-muted);">
+                Ajuste se o pagamento foi recebido antes das {{ shift_end }}h — assim a comissão fica como horário normal.
+              </div>
+            </div>
           </div>
           {% endif %}
 
@@ -257,11 +272,37 @@
     }).catch(() => {});
 
   // Preview de comissão e valor final
-  const rate = {{ commission_rate }};
+  const SHIFT_END_CF   = {{ shift_end }};
+  const RATE_NORMAL_CF = {{ commission_rate }};
+  const RATE_EXTRA_CF  = 20;
+
+  function getRateCF() {
+    const tv = document.getElementById('comprovante_time_cf');
+    if (tv && tv.value) {
+      const h = parseInt(tv.value.split(':')[0]);
+      return (h >= 8 && h < SHIFT_END_CF) ? RATE_NORMAL_CF : RATE_EXTRA_CF;
+    }
+    return {{ 20 if is_overtime else commission_rate }};
+  }
+
+  function atualizaHoraCF() {
+    const tv = document.getElementById('comprovante_time_cf');
+    const badge = document.getElementById('hora_origem_cf');
+    if (tv && tv.value) {
+      const h = parseInt(tv.value.split(':')[0]);
+      const isExtra = !(h >= 8 && h < SHIFT_END_CF);
+      badge.textContent = 'hora editada';
+      badge.style.background = isExtra ? 'rgba(245,158,11,.2)' : 'rgba(16,185,129,.2)';
+      badge.style.color       = isExtra ? '#fcd34d'            : '#6ee7b7';
+    }
+    calcComissao();
+  }
+
   function calcComissao() {
     const base = parseFloat(document.getElementById('inputAmount').value) || 0;
     const adj  = parseFloat(document.getElementById('inputAdjustment').value) || 0;
     const final = base + adj;
+    const rate  = getRateCF();
     const preview = document.getElementById('comissaoPreview');
     if (base > 0) {
       document.getElementById('valorFinal').textContent =
@@ -273,6 +314,46 @@
       preview.style.display = 'none';
     }
   }
+
+  // EXIF — tenta ler hora da foto do comprovante
+  document.getElementById('comprovanteSale') && document.getElementById('comprovanteSale').addEventListener('change', function() {
+    const file = this.files[0];
+    if (!file || !file.type.startsWith('image/')) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+      try {
+        const bin = atob(e.target.result.split(',')[1]);
+        if (bin.charCodeAt(0) !== 0xFF || bin.charCodeAt(1) !== 0xD8) return;
+        let i = 2;
+        while (i < bin.length - 4) {
+          const marker = (bin.charCodeAt(i) << 8) | bin.charCodeAt(i+1);
+          const len    = (bin.charCodeAt(i+2) << 8) | bin.charCodeAt(i+3);
+          if (marker === 0xFFE1) {
+            const seg = bin.slice(i+4, i+2+len);
+            if (seg.slice(0,4) === 'Exif') {
+              const dtMatch = seg.match(/(\d{4}):(\d{2}):(\d{2}) (\d{2}):(\d{2}):(\d{2})/);
+              if (dtMatch) {
+                const hh = dtMatch[4], mm = dtMatch[5];
+                const tv = document.getElementById('comprovante_time_cf');
+                if (tv) { tv.value = `${hh}:${mm}`; }
+                const badge = document.getElementById('hora_origem_cf');
+                if (badge) {
+                  badge.textContent = 'lido do arquivo';
+                  badge.style.background = 'rgba(6,182,212,.2)';
+                  badge.style.color = '#67e8f9';
+                }
+                atualizaHoraCF();
+              }
+            }
+            break;
+          }
+          if (marker === 0xFFDA) break;
+          i += 2 + len;
+        }
+      } catch(e) {}
+    };
+    reader.readAsDataURL(file);
+  });
 
   // Gráfico 7 dias
   (function(){

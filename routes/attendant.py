@@ -71,15 +71,32 @@ def _extract_comprovante_dt(raw, ext):
     return None
 
 
-def _is_overtime_for_sale(comp_dt=None):
-    """Determina se a venda é hora extra considerando o timestamp do comprovante.
+def _is_overtime_for_sale(comp_dt=None, form_time_str=None):
+    """Determina se a venda é hora extra.
 
-    Se o comprovante tem timestamp (EXIF), usa esse horário — bloqueia envio de
-    comprovantes antigos (capturados antes das 22h) após o turno para obter 20% extra.
-    Sem timestamp, cai no comportamento padrão (hora atual do servidor).
+    Prioridade: hora informada no formulário > EXIF > hora atual do servidor.
+    Isso impede que comprovantes recebidos antes das 22h gerem comissão de hora extra
+    mesmo que o upload seja feito depois das 22h.
     """
     shift_end = _shift_end()
-    check_dt  = comp_dt if comp_dt else now_br()
+    check_dt  = None
+
+    # 1. Hora informada manualmente no formulário (mais confiável)
+    if form_time_str:
+        try:
+            h, m = map(int, form_time_str.strip().split(':'))
+            check_dt = now_br().replace(hour=h, minute=m, second=0, microsecond=0)
+        except Exception:
+            pass
+
+    # 2. EXIF da imagem (funciona para fotos de câmera; WhatsApp remove EXIF)
+    if check_dt is None and comp_dt is not None:
+        check_dt = comp_dt
+
+    # 3. Fallback: hora atual do servidor
+    if check_dt is None:
+        check_dt = now_br()
+
     return not (8 <= check_dt.hour < shift_end)
 
 
@@ -1326,7 +1343,9 @@ def new_client():
                                chart_labels=dl, chart_vals=dv,
                                clients_today=ct, sales_today=st,
                                panel_options=panel_options,
-                               support_options=support_options)
+                               support_options=support_options,
+                               shift_end=_shift_end(),
+                               now=now_br())
 
     if request.method == 'POST':
         name = request.form.get('name', '').strip()
@@ -1420,8 +1439,9 @@ def new_client():
                 return _render_form()
 
             # Tudo validado — salva cliente e venda juntos
-            # Usa timestamp do comprovante para definir hora extra (evita abuso de envio tardio)
-            sale_overtime = _is_overtime_for_sale(comp_dt)
+            # Usa hora informada no formulário ou EXIF para definir hora extra
+            form_time     = request.form.get('comprovante_time', '').strip()
+            sale_overtime = _is_overtime_for_sale(comp_dt, form_time)
             if sale_overtime:
                 commission_rate = 20.0
             else:
@@ -1473,7 +1493,8 @@ def edit_client(id):
         flash('Cliente atualizado!', 'success')
         return redirect(url_for('attendant.clients'))
     return render_template('attendant/client_form.html', client=client,
-                           panel_options=PANEL_OPTIONS, support_options=SUPPORT_OPTIONS)
+                           panel_options=PANEL_OPTIONS, support_options=SUPPORT_OPTIONS,
+                           shift_end=_shift_end(), now=now_br())
 
 
 @attendant_bp.route('/clientes/<int:id>/painel-suporte', methods=['POST'])
@@ -1531,8 +1552,11 @@ def new_sale():
 
         if not amount_str or not payment_method:
             flash('Valor e forma de pagamento são obrigatórios.', 'danger')
+            cur_rate = get_commission_rate()
             return render_template('attendant/sale_form.html', clients=clients_list,
-                                   is_overtime=overtime, payment_methods=PAYMENT_METHODS)
+                                   is_overtime=overtime, payment_methods=PAYMENT_METHODS,
+                                   commission_rate=cur_rate, shift_end=_shift_end(),
+                                   now=now_br())
         try:
             amount = float(amount_str)
             if amount <= 0:
@@ -1555,7 +1579,8 @@ def new_sale():
             return render_template('attendant/sale_form.html', clients=clients_list,
                                    is_overtime=overtime, payment_methods=PAYMENT_METHODS)
 
-        sale_overtime = _is_overtime_for_sale(comp_dt)
+        form_time     = request.form.get('comprovante_time', '').strip()
+        sale_overtime = _is_overtime_for_sale(comp_dt, form_time)
         if sale_overtime:
             commission_rate   = 20.0
         else:
@@ -1586,8 +1611,11 @@ def new_sale():
         flash(f'Venda de R$ {amount:.2f} registrada! Comissão: R$ {commission_amount:.2f} ({commission_rate:.0f}%)', 'success')
         return redirect(url_for('attendant.sales'))
 
+    cur_rate = get_commission_rate()
     return render_template('attendant/sale_form.html', clients=clients_list,
-                           is_overtime=overtime, payment_methods=PAYMENT_METHODS)
+                           is_overtime=overtime, payment_methods=PAYMENT_METHODS,
+                           commission_rate=cur_rate, shift_end=_shift_end(),
+                           now=now_br())
 
 
 # ── Comissões do atendente ─────────────────────────────────────────────────────
