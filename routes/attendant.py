@@ -45,19 +45,57 @@ def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 
-def _process_comprovante(file_field='comprovante'):
-    """Lê o comprovante do request, valida, salva e retorna (filename, sha256_hash).
+def _extract_comprovante_dt(raw, ext):
+    """Tenta extrair o datetime em que o comprovante foi gerado (EXIF para imagens).
 
-    Se nenhum arquivo for enviado devolve (None, None).
-    Se o arquivo for duplicado (hash já existe em outra venda) levanta ValueError
-    com mensagem descritiva para exibir ao atendente.
+    Retorna datetime ou None se não encontrar.
+    Isso impede abuso de enviar comprovantes antigos após as 22h para obter comissão de hora extra.
+    """
+    if ext in ('jpg', 'jpeg', 'png', 'webp'):
+        try:
+            import io as _io
+            from PIL import Image
+            img = Image.open(_io.BytesIO(raw))
+            exif = img._getexif() if hasattr(img, '_getexif') else None
+            if exif:
+                # 36867=DateTimeOriginal, 36868=DateTimeDigitized, 306=DateTime
+                for tag_id in (36867, 36868, 306):
+                    val = exif.get(tag_id)
+                    if val:
+                        try:
+                            return datetime.strptime(str(val)[:19], '%Y:%m:%d %H:%M:%S')
+                        except Exception:
+                            continue
+        except Exception:
+            pass
+    return None
+
+
+def _is_overtime_for_sale(comp_dt=None):
+    """Determina se a venda é hora extra considerando o timestamp do comprovante.
+
+    Se o comprovante tem timestamp (EXIF), usa esse horário — bloqueia envio de
+    comprovantes antigos (capturados antes das 22h) após o turno para obter 20% extra.
+    Sem timestamp, cai no comportamento padrão (hora atual do servidor).
+    """
+    shift_end = _shift_end()
+    check_dt  = comp_dt if comp_dt else now_br()
+    return not (8 <= check_dt.hour < shift_end)
+
+
+def _process_comprovante(file_field='comprovante'):
+    """Lê o comprovante do request, valida, salva e retorna (filename, sha256_hash, comp_dt).
+
+    comp_dt: datetime extraído do EXIF/metadados do arquivo (ou None).
+    Se nenhum arquivo for enviado devolve (None, None, None).
+    Se o arquivo for duplicado levanta ValueError com mensagem descritiva.
     """
     file = request.files.get(file_field)
     if not file or not file.filename or not allowed_file(file.filename):
-        return None, None
+        return None, None, None
 
-    raw = file.read()                          # lê bytes uma só vez
-    sha256 = hashlib.sha256(raw).hexdigest()   # fingerprint único do arquivo
+    raw    = file.read()
+    sha256 = hashlib.sha256(raw).hexdigest()
 
     # Verificar duplicata
     dup = Sale.query.filter_by(comprovante_hash=sha256).first()
@@ -70,14 +108,15 @@ def _process_comprovante(file_field='comprovante'):
             f'Se for um pagamento diferente, use outro comprovante.'
         )
 
-    ext   = file.filename.rsplit('.', 1)[1].lower()
-    fname = f"{uuid.uuid4().hex}.{ext}"
-    path  = os.path.join(current_app.config['UPLOAD_FOLDER'], fname)
+    ext    = file.filename.rsplit('.', 1)[1].lower()
+    fname  = f"{uuid.uuid4().hex}.{ext}"
+    path   = os.path.join(current_app.config['UPLOAD_FOLDER'], fname)
+    comp_dt = _extract_comprovante_dt(raw, ext)
 
     with open(path, 'wb') as f:
-        f.write(raw)   # já foi lido, gravar diretamente
+        f.write(raw)
 
-    return fname, sha256
+    return fname, sha256, comp_dt
 
 
 def _shift_end():
@@ -1374,14 +1413,20 @@ def new_client():
 
             # 3. comprovante (valida antes de salvar cliente)
             try:
-                comprovante_filename, comprovante_hash = _process_comprovante()
+                comprovante_filename, comprovante_hash, comp_dt = _process_comprovante()
             except ValueError as dup_err:
                 db.session.rollback()
                 flash(f'⚠️ {dup_err}', 'danger')
                 return _render_form()
 
             # Tudo validado — salva cliente e venda juntos
-            commission_rate   = get_commission_rate(get_month_sales_count(current_user.id))
+            # Usa timestamp do comprovante para definir hora extra (evita abuso de envio tardio)
+            sale_overtime = _is_overtime_for_sale(comp_dt)
+            if sale_overtime:
+                commission_rate = 20.0
+            else:
+                target = current_user.monthly_sales_target or 700
+                commission_rate = progressive_rate(get_month_sales_count(current_user.id), target)
             commission_amount = round(amount * commission_rate / 100, 2)
             sale = Sale(
                 attendant_id=current_user.id,
@@ -1393,7 +1438,7 @@ def new_client():
                 description=description,
                 comprovante_filename=comprovante_filename,
                 comprovante_hash=comprovante_hash,
-                is_overtime=overtime,
+                is_overtime=sale_overtime,
                 screens=screens,
                 adjustment=adjustment,
             )
@@ -1504,11 +1549,19 @@ def new_sale():
         commission_amount = round(amount * (commission_rate / 100), 2)
 
         try:
-            comprovante_filename, comprovante_hash = _process_comprovante()
+            comprovante_filename, comprovante_hash, comp_dt = _process_comprovante()
         except ValueError as dup_err:
             flash(f'⚠️ {dup_err}', 'danger')
             return render_template('attendant/sale_form.html', clients=clients_list,
                                    is_overtime=overtime, payment_methods=PAYMENT_METHODS)
+
+        sale_overtime = _is_overtime_for_sale(comp_dt)
+        if sale_overtime:
+            commission_rate   = 20.0
+        else:
+            target = current_user.monthly_sales_target or 700
+            commission_rate = progressive_rate(get_month_sales_count(current_user.id), target)
+        commission_amount = round(amount * commission_rate / 100, 2)
 
         sale = Sale(
             attendant_id=current_user.id,
@@ -1521,7 +1574,7 @@ def new_sale():
             description=description,
             comprovante_filename=comprovante_filename,
             comprovante_hash=comprovante_hash,
-            is_overtime=is_overtime_now(),
+            is_overtime=sale_overtime,
             screens=screens,
             adjustment=adjustment,
         )

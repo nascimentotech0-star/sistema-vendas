@@ -7,3 +7,4 @@ Werkzeug==3.0.3
 gunicorn==22.0.0
 psycopg2-binary==2.9.9
 sentry-sdk[flask]==2.22.0
+Pillow==10.4.0
