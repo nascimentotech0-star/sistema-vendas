@@ -1494,7 +1494,10 @@ def edit_client(id):
         return redirect(url_for('attendant.clients'))
     return render_template('attendant/client_form.html', client=client,
                            panel_options=PANEL_OPTIONS, support_options=SUPPORT_OPTIONS,
-                           shift_end=_shift_end(), now=now_br())
+                           shift_end=_shift_end(), now=now_br(),
+                           is_overtime=is_overtime_now(),
+                           commission_rate=get_commission_rate(),
+                           payment_methods=PAYMENT_METHODS)
 
 
 @attendant_bp.route('/clientes/<int:id>/painel-suporte', methods=['POST'])
@@ -1563,8 +1566,10 @@ def new_sale():
                 raise ValueError
         except ValueError:
             flash('Valor inválido.', 'danger')
+            cur_rate = get_commission_rate()
             return render_template('attendant/sale_form.html', clients=clients_list,
-                                   is_overtime=overtime, payment_methods=PAYMENT_METHODS)
+                                   is_overtime=overtime, payment_methods=PAYMENT_METHODS,
+                                   commission_rate=cur_rate, shift_end=_shift_end(), now=now_br())
 
         screens    = int(request.form.get('screens', 1) or 1)
         adjustment = float(request.form.get('adjustment', 0) or 0)
@@ -1576,8 +1581,10 @@ def new_sale():
             comprovante_filename, comprovante_hash, comp_dt = _process_comprovante()
         except ValueError as dup_err:
             flash(f'⚠️ {dup_err}', 'danger')
+            cur_rate = get_commission_rate()
             return render_template('attendant/sale_form.html', clients=clients_list,
-                                   is_overtime=overtime, payment_methods=PAYMENT_METHODS)
+                                   is_overtime=overtime, payment_methods=PAYMENT_METHODS,
+                                   commission_rate=cur_rate, shift_end=_shift_end(), now=now_br())
 
         form_time     = request.form.get('comprovante_time', '').strip()
         sale_overtime = _is_overtime_for_sale(comp_dt, form_time)

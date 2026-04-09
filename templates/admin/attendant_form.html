@@ -15,6 +15,7 @@
     <div class="card border-0 shadow-sm">
       <div class="card-body p-4">
         <form method="POST" data-nt-validate>
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           {% if not attendant %}
           <div class="mb-3">
             <label class="form-label fw-semibold">Usuário <span class="text-danger">*</span></label>

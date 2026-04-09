@@ -165,6 +165,7 @@
                       {{ ab.absence_date.strftime('%d/%m') }} — {{ ab.type_label }}
                       {% if ab.notes %}<em style="opacity:.7;"> · {{ ab.notes }}</em>{% endif %}
                       <form method="POST" action="{{ url_for('admin.delete_absence', id=ab.id) }}" class="d-inline ms-1">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <button type="submit" style="background:none;border:none;color:inherit;padding:0;cursor:pointer;font-size:.7rem;"
                                 onclick="return confirm('Remover?')"><i class="bi bi-x"></i></button>
                       </form>
@@ -284,6 +285,7 @@
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content" style="background:#1a1a35;border:1px solid rgba(124,58,237,.3);">
       <form method="POST">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <input type="hidden" name="user_id" id="editUserId">
         <div class="modal-header" style="border-color:var(--border);">
           <h5 class="modal-title" style="font-size:.95rem;font-weight:700;">
@@ -346,6 +348,7 @@
   <div class="modal-dialog modal-dialog-centered modal-sm">
     <div class="modal-content" style="background:#1a1a35;border:1px solid rgba(16,185,129,.3);">
       <form method="POST" action="{{ url_for('admin.pay_salary') }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <input type="hidden" name="attendant_id" id="payUserId">
         <input type="hidden" name="year" value="{{ year }}">
         <input type="hidden" name="month" value="{{ month }}">
@@ -387,6 +390,7 @@
   <div class="modal-dialog modal-dialog-centered modal-sm">
     <div class="modal-content" style="background:#1a1a35;border:1px solid rgba(239,68,68,.3);">
       <form method="POST" action="{{ url_for('admin.register_absence') }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <input type="hidden" name="user_id" id="absUserId">
         <input type="hidden" name="month_str" value="{{ month_str }}">
         <div class="modal-header" style="border-color:rgba(239,68,68,.2);">

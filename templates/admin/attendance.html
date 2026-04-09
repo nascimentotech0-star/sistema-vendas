@@ -147,6 +147,7 @@
             {{ ab.type_label }}
           </span>
           <form method="POST" action="{{ url_for('admin.delete_absence', id=ab.id) }}" class="d-inline">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <button type="submit" class="btn btn-sm py-0 px-1" title="Remover falta"
                     style="background:transparent;border:none;color:#fca5a5;font-size:.8rem;"
                     onclick="return confirm('Remover registro de falta?')">
@@ -172,6 +173,7 @@
   <div class="modal-dialog modal-dialog-centered modal-sm">
     <div class="modal-content" style="background:#1a1a35;border:1px solid rgba(239,68,68,.3);">
       <form method="POST" action="{{ url_for('admin.register_absence') }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <input type="hidden" name="user_id" id="absUserId">
         <input type="hidden" name="absence_date" id="absDate">
         <input type="hidden" name="month_str" value="{{ att_date.strftime('%Y-%m') }}">
@@ -290,6 +292,7 @@
               </button>
               <form method="POST" action="{{ url_for('admin.attendance_delete', att_id=r.id) }}" class="d-inline"
                     onsubmit="return confirm('Remover este registro de ponto?')">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <button type="submit" class="btn btn-sm py-0 px-2"
                         style="background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.3);color:#fca5a5;font-size:.75rem;">
                   <i class="bi bi-trash3-fill"></i>
@@ -337,6 +340,7 @@
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content" style="background:#1a1a35;border:1px solid rgba(124,58,237,.3);">
       <form method="POST" action="{{ url_for('admin.attendance_manual') }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <div class="modal-header" style="border-color:rgba(124,58,237,.2);">
           <h5 class="modal-title" style="font-size:.9rem;color:#a78bfa;">
             <i class="bi bi-plus-circle-fill me-2"></i>Lançar Ponto Manual
@@ -387,6 +391,7 @@
   <div class="modal-dialog modal-dialog-centered modal-sm">
     <div class="modal-content" style="background:#1a1a35;border:1px solid rgba(124,58,237,.3);">
       <form id="formEdit" method="POST">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <div class="modal-header" style="border-color:rgba(124,58,237,.2);">
           <h5 class="modal-title" style="font-size:.9rem;color:#a78bfa;">
             <i class="bi bi-pencil-fill me-2"></i>Editar Registro

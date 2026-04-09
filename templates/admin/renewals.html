@@ -200,12 +200,14 @@
               <div class="d-flex gap-1">
                 {% if r.status == 'pending' %}
                   <form method="POST" action="{{ url_for('renewals.mark_renewed', id=r.id) }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <button class="btn btn-sm" title="Marcar como renovado"
                             style="background:rgba(16,185,129,.2);color:#6ee7b7;border:none;padding:3px 8px;">
                       <i class="bi bi-check-lg"></i>
                     </button>
                   </form>
                   <form method="POST" action="{{ url_for('renewals.mark_cancelled', id=r.id) }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <button class="btn btn-sm" title="Marcar como cancelado"
                             style="background:rgba(236,72,153,.2);color:#f9a8d4;border:none;padding:3px 8px;">
                       <i class="bi bi-x-lg"></i>
@@ -218,6 +220,7 @@
                 </a>
                 <form method="POST" action="{{ url_for('renewals.delete_renewal', id=r.id) }}"
                       onsubmit="return confirm('Excluir esta renovação?')">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                   <button class="btn btn-sm" style="background:rgba(255,255,255,.06);color:var(--text-muted);border:none;padding:3px 8px;" title="Excluir">
                     <i class="bi bi-trash"></i>
                   </button>

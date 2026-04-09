@@ -15,6 +15,7 @@
 </div>
 
 <form method="POST">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
   <input type="hidden" name="month" value="{{ month }}">
 
   {% for a in attendants %}

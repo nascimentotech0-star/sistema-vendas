@@ -184,6 +184,7 @@
                 </button>
                 <form method="POST" action="{{ url_for('attendant.att_cancel', id=r.id) }}"
                       onsubmit="return confirm('Confirmar cancelamento?')">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                   <button class="btn btn-sm px-2 py-1"
                           style="background:rgba(236,72,153,.15);color:#f9a8d4;border:1px solid rgba(236,72,153,.3);font-size:.75rem;"
                           title="Marcar como cancelado">
@@ -234,6 +235,7 @@
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
       </div>
       <form method="POST" action="{{ url_for('attendant.att_new_renewal') }}" enctype="multipart/form-data">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <div class="modal-body">
 
           <!-- Busca de cliente -->
@@ -326,6 +328,7 @@
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content" style="background:#1a1a35;border:1px solid rgba(124,58,237,.3);">
       <form method="POST" id="formRenovar" enctype="multipart/form-data">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <div class="modal-header" style="border-color:var(--border);">
           <h5 class="modal-title" style="font-size:.95rem;font-weight:700;">
             <i class="bi bi-check-circle-fill me-2" style="color:#6ee7b7;"></i>Confirmar Renovação

@@ -312,6 +312,7 @@
       </div>
     </div>
     <form method="POST" action="{{ url_for('automations.auto_distribute') }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <button type="submit" class="btn btn-primary">
         <i class="bi bi-diagram-3 me-2"></i>Distribuir automaticamente ({{ unassigned|length }})
       </button>
@@ -334,6 +335,7 @@
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
       </div>
       <form id="reminderForm" method="POST">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <div class="modal-body">
           <div class="mb-3">
             <label class="form-label">Enviar para o atendente</label>

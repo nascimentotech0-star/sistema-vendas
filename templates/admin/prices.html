@@ -14,6 +14,7 @@
       </div>
       <div class="card-body">
         <form method="POST">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <div class="mb-3">
             <label class="form-label">Nome do Plano/Produto <span class="text-danger">*</span></label>
             <input type="text" name="name" class="form-control"
@@ -92,6 +93,7 @@
                 <td>
                   <div class="d-flex gap-1">
                     <form method="POST" action="{{ url_for('admin.toggle_price_item', id=item.id) }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                       <button class="btn btn-sm py-0 px-2"
                               style="background:rgba(245,158,11,.15);color:#fcd34d;border:1px solid rgba(245,158,11,.3);font-size:.75rem;"
                               title="{% if item.is_active %}Desativar{% else %}Ativar{% endif %}">
@@ -100,6 +102,7 @@
                     </form>
                     <form method="POST" action="{{ url_for('admin.delete_price_item', id=item.id) }}"
                           onsubmit="return confirm('Excluir item?')">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                       <button class="btn btn-sm py-0 px-2"
                               style="background:rgba(239,68,68,.15);color:#fca5a5;border:1px solid rgba(239,68,68,.3);font-size:.75rem;"
                               title="Excluir">

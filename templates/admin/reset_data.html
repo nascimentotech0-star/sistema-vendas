@@ -69,6 +69,7 @@
       </div>
       <div class="card-body">
         <form method="POST">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <p class="mb-3" style="color:var(--text-muted);">
             Para confirmar, digite <strong style="color:var(--text);">COMFIRMAR</strong> no campo abaixo:
           </p>

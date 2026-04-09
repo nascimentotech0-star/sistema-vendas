@@ -114,6 +114,7 @@
       </div>
       <div class="card-body">
         <form method="POST" action="{{ url_for('contacts.register_contact', client_id=client.id) }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <input type="hidden" name="tag" id="selectedTag" value="">
 
           <div class="mb-3">
@@ -270,6 +271,7 @@
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content" style="background:var(--bg-card);border:1px solid var(--border);">
       <form method="POST" action="{{ url_for('contacts.update_client_contact', client_id=client.id) }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <div class="modal-header" style="border-color:var(--border);">
           <h5 class="modal-title fw-semibold" style="font-size:.95rem;">
             <i class="bi bi-person-lines-fill me-2" style="color:#a78bfa;"></i>Editar Contato — {{ client.name }}
