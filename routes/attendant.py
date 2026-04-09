@@ -46,11 +46,7 @@ def allowed_file(filename):
 
 
 def _extract_comprovante_dt(raw, ext):
-    """Tenta extrair o datetime em que o comprovante foi gerado (EXIF para imagens).
-
-    Retorna datetime ou None se não encontrar.
-    Isso impede abuso de enviar comprovantes antigos após as 22h para obter comissão de hora extra.
-    """
+    """Tenta extrair o datetime via EXIF (funciona para fotos de câmera; WhatsApp remove EXIF)."""
     if ext in ('jpg', 'jpeg', 'png', 'webp'):
         try:
             import io as _io
@@ -58,7 +54,6 @@ def _extract_comprovante_dt(raw, ext):
             img = Image.open(_io.BytesIO(raw))
             exif = img._getexif() if hasattr(img, '_getexif') else None
             if exif:
-                # 36867=DateTimeOriginal, 36868=DateTimeDigitized, 306=DateTime
                 for tag_id in (36867, 36868, 306):
                     val = exif.get(tag_id)
                     if val:
@@ -71,33 +66,78 @@ def _extract_comprovante_dt(raw, ext):
     return None
 
 
-def _is_overtime_for_sale(comp_dt=None, form_time_str=None):
+def _extract_time_from_ocr(raw, ext):
+    """Lê o horário visível no comprovante via OCR (Tesseract).
+
+    Retorna (hora, minuto) se encontrar um horário no formato HH:MM dentro da imagem,
+    ou None se não conseguir. Funciona com screenshots de comprovantes PIX, TED etc.
+    """
+    if ext not in ('jpg', 'jpeg', 'png', 'webp'):
+        return None
+    try:
+        import io as _io
+        import re
+        import pytesseract
+        from PIL import Image, ImageEnhance, ImageFilter
+
+        img = Image.open(_io.BytesIO(raw)).convert('L')   # escala de cinza
+        # Aumenta contraste para melhorar OCR em screenshots com fundo colorido
+        img = ImageEnhance.Contrast(img).enhance(2.0)
+        img = img.filter(ImageFilter.SHARPEN)
+
+        text = pytesseract.image_to_string(img, lang='por+eng',
+                                           config='--psm 6 -c tessedit_char_whitelist=0123456789:/APMapm ')
+
+        # Remove padrões de data (DD/MM/AAAA ou DD/MM/AA) para não confundir com horário
+        text = re.sub(r'\b\d{1,2}/\d{1,2}/\d{2,4}\b', '', text)
+
+        # Busca padrões de horário: HH:MM ou H:MM (24h ou 12h)
+        matches = re.findall(r'\b([01]?\d|2[0-3]):([0-5]\d)\b', text)
+        if not matches:
+            return None
+
+        # Filtra horas impossíveis (ex: 99:99)
+        valid = [(int(h), int(m)) for h, m in matches if int(h) <= 23 and int(m) <= 59]
+        if not valid:
+            return None
+
+        # Usa a MENOR hora encontrada — comprovantes geralmente mostram a hora da
+        # transação (menor) antes de mostrar a hora de emissão do recibo (maior)
+        return min(valid, key=lambda x: x[0] * 60 + x[1])
+
+    except Exception:
+        return None
+
+
+def _is_overtime_for_sale(comp_dt=None, form_time_str=None, ocr_time=None):
     """Determina se a venda é hora extra.
 
-    Prioridade: hora informada no formulário > EXIF > hora atual do servidor.
-    Isso impede que comprovantes recebidos antes das 22h gerem comissão de hora extra
-    mesmo que o upload seja feito depois das 22h.
+    Prioridade: formulário manual > OCR do comprovante > EXIF > hora do servidor.
     """
     shift_end = _shift_end()
-    check_dt  = None
+    check_h   = None
 
-    # 1. Hora informada manualmente no formulário (mais confiável)
+    # 1. Hora informada manualmente no formulário
     if form_time_str:
         try:
-            h, m = map(int, form_time_str.strip().split(':'))
-            check_dt = now_br().replace(hour=h, minute=m, second=0, microsecond=0)
+            h, _ = map(int, form_time_str.strip().split(':'))
+            check_h = h
         except Exception:
             pass
 
-    # 2. EXIF da imagem (funciona para fotos de câmera; WhatsApp remove EXIF)
-    if check_dt is None and comp_dt is not None:
-        check_dt = comp_dt
+    # 2. OCR — hora lida diretamente do texto visível no comprovante
+    if check_h is None and ocr_time is not None:
+        check_h = ocr_time[0]
 
-    # 3. Fallback: hora atual do servidor
-    if check_dt is None:
-        check_dt = now_br()
+    # 3. EXIF — funciona apenas para fotos tiradas diretamente da câmera
+    if check_h is None and comp_dt is not None:
+        check_h = comp_dt.hour
 
-    return not (8 <= check_dt.hour < shift_end)
+    # 4. Fallback: hora atual do servidor
+    if check_h is None:
+        check_h = now_br().hour
+
+    return not (8 <= check_h < shift_end)
 
 
 def _process_comprovante(file_field='comprovante'):
@@ -125,15 +165,16 @@ def _process_comprovante(file_field='comprovante'):
             f'Se for um pagamento diferente, use outro comprovante.'
         )
 
-    ext    = file.filename.rsplit('.', 1)[1].lower()
-    fname  = f"{uuid.uuid4().hex}.{ext}"
-    path   = os.path.join(current_app.config['UPLOAD_FOLDER'], fname)
-    comp_dt = _extract_comprovante_dt(raw, ext)
+    ext      = file.filename.rsplit('.', 1)[1].lower()
+    fname    = f"{uuid.uuid4().hex}.{ext}"
+    path     = os.path.join(current_app.config['UPLOAD_FOLDER'], fname)
+    comp_dt  = _extract_comprovante_dt(raw, ext)
+    ocr_time = _extract_time_from_ocr(raw, ext)  # lê horário visível na imagem
 
     with open(path, 'wb') as f:
         f.write(raw)
 
-    return fname, sha256, comp_dt
+    return fname, sha256, comp_dt, ocr_time
 
 
 def _shift_end():
@@ -1432,16 +1473,16 @@ def new_client():
 
             # 3. comprovante (valida antes de salvar cliente)
             try:
-                comprovante_filename, comprovante_hash, comp_dt = _process_comprovante()
+                comprovante_filename, comprovante_hash, comp_dt, ocr_time = _process_comprovante()
             except ValueError as dup_err:
                 db.session.rollback()
                 flash(f'⚠️ {dup_err}', 'danger')
                 return _render_form()
 
             # Tudo validado — salva cliente e venda juntos
-            # Usa hora informada no formulário ou EXIF para definir hora extra
+            # Prioridade: formulário > OCR do comprovante > EXIF > hora do servidor
             form_time     = request.form.get('comprovante_time', '').strip()
-            sale_overtime = _is_overtime_for_sale(comp_dt, form_time)
+            sale_overtime = _is_overtime_for_sale(comp_dt, form_time, ocr_time)
             if sale_overtime:
                 commission_rate = 20.0
             else:
@@ -1578,7 +1619,7 @@ def new_sale():
         commission_amount = round(amount * (commission_rate / 100), 2)
 
         try:
-            comprovante_filename, comprovante_hash, comp_dt = _process_comprovante()
+            comprovante_filename, comprovante_hash, comp_dt, ocr_time = _process_comprovante()
         except ValueError as dup_err:
             flash(f'⚠️ {dup_err}', 'danger')
             cur_rate = get_commission_rate()
@@ -1587,7 +1628,7 @@ def new_sale():
                                    commission_rate=cur_rate, shift_end=_shift_end(), now=now_br())
 
         form_time     = request.form.get('comprovante_time', '').strip()
-        sale_overtime = _is_overtime_for_sale(comp_dt, form_time)
+        sale_overtime = _is_overtime_for_sale(comp_dt, form_time, ocr_time)
         if sale_overtime:
             commission_rate   = 20.0
         else:
