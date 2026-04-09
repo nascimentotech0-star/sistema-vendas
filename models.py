@@ -235,7 +235,7 @@ class OvertimeRequest(db.Model):
     approver = db.relationship('User', foreign_keys=[approved_by])
 
 
-DAYS_AT_RISK = 5  # dias sem contato para considerar cliente em risco
+DAYS_AT_RISK = 10  # dias sem contato para considerar cliente em risco
 
 
 class Client(db.Model):
