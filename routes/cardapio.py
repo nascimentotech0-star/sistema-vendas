@@ -1,7 +1,23 @@
 import json
 import os
-from flask import Blueprint, render_template, request, redirect, url_for, flash
+import uuid
+from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app
 from flask_login import login_required, current_user
+from werkzeug.utils import secure_filename
+
+ALLOWED_IMG = {'jpg', 'jpeg', 'png', 'webp', 'gif'}
+
+def _allowed_img(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_IMG
+
+def _save_item_img(file, subfolder='cardapio'):
+    """Salva imagem e retorna o caminho relativo para usar no template."""
+    upload_dir = os.path.join(current_app.root_path, 'static', 'uploads', subfolder)
+    os.makedirs(upload_dir, exist_ok=True)
+    ext = file.filename.rsplit('.', 1)[1].lower()
+    fname = f"{uuid.uuid4().hex}.{ext}"
+    file.save(os.path.join(upload_dir, fname))
+    return f"uploads/{subfolder}/{fname}"
 
 cardapio_bp = Blueprint('cardapio', __name__)
 from models import db, FidelidadeCliente, FidelidadePedido, Promocao
@@ -146,6 +162,58 @@ def gestao():
                 _save_gestao(g)
                 flash('Pedido removido.', 'info')
 
+        # ── COMBOS ───────────────────────────────────────────────────────────
+        elif action == 'add_combo':
+            nome_c  = request.form.get('combo_nome', '').strip()
+            desc_c  = request.form.get('combo_desc', '').strip()
+            itens_c = [i.strip() for i in request.form.get('combo_itens', '').split('\n') if i.strip()]
+            emoji_c = request.form.get('combo_emoji', '🎯').strip() or '🎯'
+            try:
+                preco_orig = float(request.form.get('combo_preco_orig', '0').replace(',', '.'))
+                preco_c    = float(request.form.get('combo_preco', '0').replace(',', '.'))
+            except ValueError:
+                preco_orig = preco_c = 0.0
+            if nome_c and preco_c > 0:
+                combo = {
+                    'id': f"combo_{uuid.uuid4().hex[:8]}",
+                    'nome': nome_c, 'desc': desc_c, 'itens': itens_c,
+                    'emoji': emoji_c, 'preco_original': preco_orig,
+                    'preco': preco_c, 'ativo': True,
+                }
+                g.setdefault('combos', []).append(combo)
+                _save_gestao(g)
+                flash(f'Combo "{nome_c}" criado!', 'success')
+
+        elif action == 'toggle_combo':
+            cid = request.form.get('combo_id', '')
+            for c in g.get('combos', []):
+                if c['id'] == cid:
+                    c['ativo'] = not c.get('ativo', True)
+                    flash(f'"{c["nome"]}" {"ativado" if c["ativo"] else "desativado"}.', 'info')
+                    break
+            _save_gestao(g)
+
+        elif action == 'remove_combo':
+            cid = request.form.get('combo_id', '')
+            antes = len(g.get('combos', []))
+            g['combos'] = [c for c in g.get('combos', []) if c['id'] != cid]
+            if len(g.get('combos', [])) < antes:
+                flash('Combo removido.', 'info')
+            _save_gestao(g)
+
+        elif action == 'update_combo_preco':
+            cid = request.form.get('combo_id', '')
+            try:
+                novo_preco = float(request.form.get('combo_preco', '0').replace(',', '.'))
+            except ValueError:
+                novo_preco = 0.0
+            for c in g.get('combos', []):
+                if c['id'] == cid:
+                    c['preco'] = novo_preco
+                    flash(f'Preço do combo "{c["nome"]}" atualizado!', 'success')
+                    break
+            _save_gestao(g)
+
         return redirect(url_for('cardapio.gestao'))
 
     return render_template('cardapio/gestao.html', g=g)
@@ -233,9 +301,54 @@ def index():
         'especiais':       especiais,
     }, ensure_ascii=False)
 
+    combos_default = [
+        {
+            "id": "combo_duplo",
+            "nome": "Combo Duplo",
+            "desc": "2 açaís de 480ml",
+            "itens": ["2x Açaí Médio 480ml"],
+            "preco_original": 61.80,
+            "preco": 55.00,
+            "emoji": "🎯",
+            "ativo": True,
+        },
+        {
+            "id": "combo_familia",
+            "nome": "Combo Família",
+            "desc": "3 açaís de 380ml",
+            "itens": ["3x Açaí Pequeno 380ml"],
+            "preco_original": 71.70,
+            "preco": 62.00,
+            "emoji": "👨‍👩‍👧",
+            "ativo": True,
+        },
+        {
+            "id": "combo_marmita_garrafa",
+            "nome": "Combo Especial",
+            "desc": "Marmita + Garrafa 500ml",
+            "itens": ["1x Marmita de Açaí", "1x Açaí na Garrafa 500ml"],
+            "preco_original": 54.69,
+            "preco": 49.90,
+            "emoji": "⭐",
+            "ativo": True,
+        },
+    ]
+    combos = [c for c in g.get('combos', combos_default) if c.get('ativo', True)]
+
+    data_json = _json.dumps({
+        'copos':           public.get('copos', []),
+        'caldas':          public.get('caldas', []),
+        'acompanhamentos': public.get('acompanhamentos', []),
+        'adicionais':      public.get('adicionais', []),
+        'sabores':         public.get('sabores', []),
+        'especiais':       especiais,
+        'combos':          combos,
+    }, ensure_ascii=False)
+
     return render_template('cardapio/index.html',
                            data=public,
                            especiais=especiais,
+                           combos=combos,
                            whatsapp=g.get('whatsapp', '77998298970'),
                            data_json=data_json,
                            loja_aberta=g.get('loja_aberta', False),
@@ -320,10 +433,40 @@ def gerenciar():
                     flash(f'Preço de "{nome}" atualizado!', 'success')
                     break
 
+        # ── Upload de imagem em item ─────────────────────────────────────────
+        elif action == 'upload_img' and nome:
+            file = request.files.get('imagem')
+            if file and _allowed_img(file.filename):
+                path = _save_item_img(file)
+                for item in data.get(category, []):
+                    if item['nome'] == nome:
+                        item['img'] = path
+                        _save(data)
+                        flash(f'Imagem de "{nome}" atualizada!', 'success')
+                        break
+            else:
+                flash('Arquivo inválido. Use JPG, PNG ou WebP.', 'danger')
+
+        # ── Upload imagem do copo ────────────────────────────────────────────
+        elif action == 'upload_copo_img':
+            tamanho = request.form.get('tamanho', '')
+            file = request.files.get('imagem')
+            if file and _allowed_img(file.filename):
+                path = _save_item_img(file)
+                for copo in data.get('copos', []):
+                    if copo['tamanho'] == tamanho:
+                        copo['img'] = path
+                        _save(data)
+                        flash(f'Imagem do copo {tamanho} atualizada!', 'success')
+                        break
+            else:
+                flash('Arquivo inválido. Use JPG, PNG ou WebP.', 'danger')
+
         return redirect(url_for('cardapio.gerenciar'))
 
     g = _load_gestao()
     return render_template('cardapio/gerenciar.html', data=data,
+                           g_gestao=g,
                            loja_aberta=g.get('loja_aberta', False))
 
 
