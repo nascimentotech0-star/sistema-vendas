@@ -16,6 +16,7 @@ from models import (db, User, Attendance, AttendanceBreak, OvertimeRequest, Clie
                     CommissionPayment, PriceItem, AttendantGoal)
 from flask import jsonify as _jsonify
 from audit import log_action
+from routes.ai_service import analyze_comprovante as _ai_analyze, ai_available
 
 attendant_bp = Blueprint('attendant', __name__)
 
@@ -140,16 +141,19 @@ def _is_overtime_for_sale(comp_dt=None, form_time_str=None, ocr_time=None):
     return not (8 <= check_h < shift_end)
 
 
-def _process_comprovante(file_field='comprovante'):
-    """Lê o comprovante do request, valida, salva e retorna (filename, sha256_hash, comp_dt).
+def _process_comprovante(file_field='comprovante', expected_amount: float = 0.0):
+    """Lê o comprovante do request, valida, salva e retorna
+    (filename, sha256_hash, comp_dt, ocr_time, ai_result).
 
-    comp_dt: datetime extraído do EXIF/metadados do arquivo (ou None).
-    Se nenhum arquivo for enviado devolve (None, None, None).
+    comp_dt:   datetime extraído do EXIF/metadados do arquivo (ou None).
+    ocr_time:  (h, m) extraído via Tesseract (ou None).
+    ai_result: dict com análise Claude Vision (ou {}).
+    Se nenhum arquivo for enviado devolve (None, None, None, None, {}).
     Se o arquivo for duplicado levanta ValueError com mensagem descritiva.
     """
     file = request.files.get(file_field)
     if not file or not file.filename or not allowed_file(file.filename):
-        return None, None, None
+        return None, None, None, None, {}
 
     raw    = file.read()
     sha256 = hashlib.sha256(raw).hexdigest()
@@ -169,12 +173,20 @@ def _process_comprovante(file_field='comprovante'):
     fname    = f"{uuid.uuid4().hex}.{ext}"
     path     = os.path.join(current_app.config['UPLOAD_FOLDER'], fname)
     comp_dt  = _extract_comprovante_dt(raw, ext)
-    ocr_time = _extract_time_from_ocr(raw, ext)  # lê horário visível na imagem
+    ocr_time = _extract_time_from_ocr(raw, ext)  # lê horário visível via Tesseract
+
+    # Análise de IA (Claude Vision) — roda em paralelo ao OCR, não bloqueia se falhar
+    ai_result = {}
+    if ai_available():
+        try:
+            ai_result = _ai_analyze(raw, ext, expected_amount) or {}
+        except Exception:
+            ai_result = {}
 
     with open(path, 'wb') as f:
         f.write(raw)
 
-    return fname, sha256, comp_dt, ocr_time
+    return fname, sha256, comp_dt, ocr_time, ai_result
 
 
 def _shift_end():
@@ -1473,22 +1485,34 @@ def new_client():
 
             # 3. comprovante (valida antes de salvar cliente)
             try:
-                comprovante_filename, comprovante_hash, comp_dt, ocr_time = _process_comprovante()
+                comprovante_filename, comprovante_hash, comp_dt, ocr_time, ai_result = \
+                    _process_comprovante(expected_amount=amount)
             except ValueError as dup_err:
                 db.session.rollback()
                 flash(f'⚠️ {dup_err}', 'danger')
                 return _render_form()
 
             # Tudo validado — salva cliente e venda juntos
-            # Prioridade: formulário > OCR do comprovante > EXIF > hora do servidor
-            form_time     = request.form.get('comprovante_time', '').strip()
-            sale_overtime = _is_overtime_for_sale(comp_dt, form_time, ocr_time)
+            # Prioridade: formulário > IA > OCR > EXIF > hora do servidor
+            form_time = request.form.get('comprovante_time', '').strip()
+            # Se IA detectou hora e formulário não foi alterado, usa hora da IA
+            ai_time_str = ai_result.get('time')  # "HH:MM" ou None
+            ai_ocr_tuple = None
+            if ai_time_str and ':' in ai_time_str:
+                try:
+                    ah, am = map(int, ai_time_str.split(':'))
+                    ai_ocr_tuple = (ah, am)
+                except Exception:
+                    pass
+            effective_ocr = ai_ocr_tuple or ocr_time
+            sale_overtime = _is_overtime_for_sale(comp_dt, form_time, effective_ocr)
             if sale_overtime:
                 commission_rate = 20.0
             else:
                 target = current_user.monthly_sales_target or 700
                 commission_rate = progressive_rate(get_month_sales_count(current_user.id), target)
             commission_amount = round(amount * commission_rate / 100, 2)
+            ocr_str = f"{ocr_time[0]:02d}:{ocr_time[1]:02d}" if ocr_time else None
             sale = Sale(
                 attendant_id=current_user.id,
                 client_id=client.id,
@@ -1502,6 +1526,13 @@ def new_client():
                 is_overtime=sale_overtime,
                 screens=screens,
                 adjustment=adjustment,
+                ocr_detected_time=ocr_str,
+                registered_payment_time=form_time or None,
+                ai_detected_time=ai_time_str,
+                ai_detected_amount=ai_result.get('amount'),
+                ai_amount_match=ai_result.get('amount_match'),
+                ai_suspicious=bool(ai_result.get('suspicious', False)),
+                ai_notes=ai_result.get('notes'),
             )
             db.session.add(sale)
             db.session.commit()
@@ -1619,7 +1650,8 @@ def new_sale():
         commission_amount = round(amount * (commission_rate / 100), 2)
 
         try:
-            comprovante_filename, comprovante_hash, comp_dt, ocr_time = _process_comprovante()
+            comprovante_filename, comprovante_hash, comp_dt, ocr_time, ai_result = \
+                _process_comprovante(expected_amount=amount)
         except ValueError as dup_err:
             flash(f'⚠️ {dup_err}', 'danger')
             cur_rate = get_commission_rate()
@@ -1627,14 +1659,26 @@ def new_sale():
                                    is_overtime=overtime, payment_methods=PAYMENT_METHODS,
                                    commission_rate=cur_rate, shift_end=_shift_end(), now=now_br())
 
-        form_time     = request.form.get('comprovante_time', '').strip()
-        sale_overtime = _is_overtime_for_sale(comp_dt, form_time, ocr_time)
+        form_time = request.form.get('comprovante_time', '').strip()
+        # IA tem prioridade sobre Tesseract para hora
+        ai_time_str = ai_result.get('time')
+        ai_ocr_tuple = None
+        if ai_time_str and ':' in ai_time_str:
+            try:
+                ah, am = map(int, ai_time_str.split(':'))
+                ai_ocr_tuple = (ah, am)
+            except Exception:
+                pass
+        effective_ocr = ai_ocr_tuple or ocr_time
+        sale_overtime = _is_overtime_for_sale(comp_dt, form_time, effective_ocr)
         if sale_overtime:
             commission_rate   = 20.0
         else:
             target = current_user.monthly_sales_target or 700
             commission_rate = progressive_rate(get_month_sales_count(current_user.id), target)
         commission_amount = round(amount * commission_rate / 100, 2)
+
+        ocr_str = f"{ocr_time[0]:02d}:{ocr_time[1]:02d}" if ocr_time else None
 
         sale = Sale(
             attendant_id=current_user.id,
@@ -1650,6 +1694,13 @@ def new_sale():
             is_overtime=sale_overtime,
             screens=screens,
             adjustment=adjustment,
+            ocr_detected_time=ocr_str,
+            registered_payment_time=form_time or None,
+            ai_detected_time=ai_time_str,
+            ai_detected_amount=ai_result.get('amount'),
+            ai_amount_match=ai_result.get('amount_match'),
+            ai_suspicious=bool(ai_result.get('suspicious', False)),
+            ai_notes=ai_result.get('notes'),
         )
         db.session.add(sale)
         db.session.flush()
@@ -1706,6 +1757,26 @@ def my_commissions():
         total_paid=round(sum(d['paid'] for d in data), 2),
         total_balance=round(sum(d['balance'] for d in data), 2),
     )
+
+
+# ── Assistente IA ─────────────────────────────────────────────────────────────
+
+@attendant_bp.route('/ia', methods=['GET', 'POST'])
+@login_required
+@attendant_required
+def ai_assistant():
+    from routes.ai_service import chat_with_ai, ai_available as _ai_ok
+    if request.method == 'POST':
+        data = request.get_json(silent=True) or {}
+        messages = data.get('messages', [])
+        if not messages:
+            return _jsonify({'error': 'Nenhuma mensagem enviada.'}), 400
+        # Garante que o histórico não é excessivo (últimas 20 mensagens)
+        messages = messages[-20:]
+        reply = chat_with_ai(messages, attendant_name=current_user.name)
+        return _jsonify({'reply': reply})
+    return render_template('attendant/ai_chat.html',
+                           ai_enabled=_ai_ok())
 
 
 # ── API Preços (para quick-select no formulário) ───────────────────────────────

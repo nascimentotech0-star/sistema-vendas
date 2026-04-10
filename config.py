@@ -28,6 +28,8 @@ class Config:
         os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static', 'uploads')
     )
 
+    ANTHROPIC_API_KEY = os.environ.get('ANTHROPIC_API_KEY', '')
+
     MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16MB
     PERMANENT_SESSION_LIFETIME = timedelta(hours=12)
     WTF_CSRF_ENABLED = True

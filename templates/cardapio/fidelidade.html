@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Fidelidade — Açaídeira 77</title>
+
+  <script>
+    !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+    n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;
+    n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;
+    t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}
+    (window,document,'script','https://connect.facebook.net/en_US/fbevents.js');
+    fbq('init','4372609193012161');fbq('track','PageView');
+  </script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800;900&display=swap" rel="stylesheet"/>
+
+  <style>
+    :root{--roxo:#7c2fd4;--roxo-c:#9d4edd;--verde:#7ab648;--verde-c:#9fd466;
+          --ouro:#f5c518;--bg:#0e0718;--card:#1e1030;--texto:#f0ebff;--texto2:#c4b8e0}
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    html{scroll-behavior:smooth}
+    body{font-family:'Poppins',sans-serif;background:var(--bg);color:var(--texto);overflow-x:hidden}
+
+    .hero{background:linear-gradient(160deg,#2a0660,#0e0718 55%,#1a0a30);
+          padding:2.5rem 1.5rem 2rem;text-align:center;position:relative}
+    .hero::before{content:'';position:absolute;inset:0;
+      background:radial-gradient(ellipse at 65% 0%,rgba(124,47,212,.35),transparent 65%);
+      pointer-events:none}
+    .hero-badge{display:inline-block;background:var(--ouro);color:#0e1a00;
+      font-size:.68rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;
+      padding:.22rem .75rem;border-radius:99px;margin-bottom:.8rem}
+    .hero h1{font-size:clamp(2rem,8vw,3.2rem);font-weight:900;line-height:1;
+      background:linear-gradient(135deg,#fff 30%,var(--roxo-c) 70%,var(--verde-c));
+      -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+      margin-bottom:.3rem}
+    .hero p{font-size:.95rem;color:var(--texto2);margin-bottom:1.5rem}
+
+    main{max-width:480px;margin:0 auto;padding:1.5rem 1.25rem 5rem}
+
+    .back-link{display:block;text-align:center;font-size:.82rem;color:var(--roxo-c);
+      text-decoration:none;margin-bottom:1.5rem}
+
+    /* LOADING */
+    #loading{text-align:center;padding:2rem;color:var(--texto2);display:none}
+    .spinner{display:inline-block;width:24px;height:24px;border:3px solid rgba(157,78,221,.2);
+      border-top-color:var(--roxo-c);border-radius:50%;animation:spin .8s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}
+
+    /* CARTÃO */
+    #card-wrap{display:none}
+    .cartao{background:linear-gradient(135deg,#251545,#1a0a30);
+      border:2px solid rgba(124,47,212,.4);border-radius:20px;padding:1.5rem;margin-bottom:1rem}
+    .cartao-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:1rem}
+    .cartao-nome{font-size:1.05rem;font-weight:700}
+    .cartao-telefone{font-size:.73rem;color:var(--texto2)}
+
+    /* TIER badge */
+    .tier-badge{display:inline-flex;align-items:center;gap:.35rem;
+      font-size:.7rem;font-weight:700;padding:.25rem .7rem;border-radius:99px;
+      text-transform:uppercase;letter-spacing:.08em}
+    .tier-0{background:rgba(255,255,255,.06);color:#9ca3af;border:1px solid rgba(255,255,255,.1)}
+    .tier-5{background:rgba(122,182,72,.12);color:var(--verde-c);border:1px solid rgba(122,182,72,.3)}
+    .tier-10{background:rgba(245,197,24,.12);color:var(--ouro);border:1px solid rgba(245,197,24,.3)}
+
+    /* SELOS */
+    .selos-titulo{font-size:.7rem;color:var(--roxo-c);font-weight:700;
+      text-transform:uppercase;letter-spacing:.1em;margin-bottom:.8rem}
+    .selos-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:.6rem;margin-bottom:.8rem}
+    .selo{aspect-ratio:1;border-radius:12px;display:flex;flex-direction:column;
+          align-items:center;justify-content:center;border:2px dashed rgba(157,78,221,.3);
+          background:rgba(255,255,255,.03);transition:all .2s}
+    .selo.on{background:linear-gradient(135deg,var(--roxo),var(--roxo-c));
+      border-color:var(--roxo-c);box-shadow:0 2px 12px rgba(124,47,212,.4)}
+    .selo-e{font-size:1.3rem}
+    .selo-n{font-size:.6rem;color:rgba(255,255,255,.35);margin-top:.1rem}
+    .selo.on .selo-n{color:rgba(255,255,255,.65)}
+
+    .cartao-prog{font-size:.78rem;color:var(--texto2);text-align:center;margin:.4rem 0 .8rem}
+    .cartao-prog strong{color:var(--verde-c)}
+
+    .badge-free{display:inline-flex;align-items:center;gap:.4rem;
+      background:linear-gradient(135deg,#f59e0b,#f5c518);color:#0e1a00;
+      font-size:.78rem;font-weight:800;padding:.4rem 1rem;border-radius:99px;
+      margin-bottom:.8rem;animation:pulse 1.5s infinite}
+    @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
+
+    /* TIER progress bar */
+    .tier-progress{background:rgba(255,255,255,.05);border-radius:10px;
+      padding:.75rem;margin-top:.6rem;margin-bottom:.6rem}
+    .tier-progress-label{font-size:.7rem;color:var(--texto2);margin-bottom:.4rem}
+    .tier-bar{height:6px;background:rgba(255,255,255,.08);border-radius:99px;overflow:hidden;margin-bottom:.3rem}
+    .tier-fill{height:100%;border-radius:99px;
+      background:linear-gradient(90deg,var(--roxo-c),var(--verde-c));transition:width .8s}
+    .tier-milestones{display:flex;justify-content:space-between;font-size:.65rem;color:#6b7280}
+
+    /* FOLLOW IG */
+    .ig-card{background:linear-gradient(135deg,rgba(131,58,180,.1),rgba(253,29,29,.06),rgba(252,176,69,.08));
+      border:1px solid rgba(225,48,108,.3);
+      border-radius:14px;padding:1rem;margin-bottom:.9rem;text-align:center}
+    .ig-card.validado{background:rgba(74,222,128,.08);border-color:rgba(74,222,128,.3)}
+    .ig-card p{font-size:.82rem;color:var(--texto2);margin:.35rem 0;line-height:1.45}
+    .ig-vantagens{display:flex;flex-direction:column;gap:.25rem;text-align:left;
+      background:rgba(0,0,0,.15);border-radius:10px;padding:.6rem .85rem;margin:.5rem 0}
+    .ig-vantagem{font-size:.78rem;color:var(--texto2);display:flex;align-items:center;gap:.4rem}
+    .btn-ig{display:inline-flex;align-items:center;gap:.4rem;
+      background:linear-gradient(135deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888);
+      color:#fff;font-family:inherit;font-size:.82rem;font-weight:700;
+      text-decoration:none;padding:.5rem 1.2rem;border-radius:99px;margin-top:.5rem}
+
+    /* HISTÓRICO */
+    .hist-titulo{font-size:.7rem;color:#6b7280;text-transform:uppercase;letter-spacing:.1em;margin-bottom:.4rem}
+    .hist-item{display:flex;justify-content:space-between;font-size:.78rem;
+      padding:.3rem 0;border-bottom:1px solid rgba(255,255,255,.05)}
+    .hist-item:last-child{border:none}
+
+    /* SHARE */
+    .share-bar{display:flex;gap:.6rem;justify-content:center;margin-top:.8rem;flex-wrap:wrap}
+    .btn-share{display:inline-flex;align-items:center;gap:.4rem;font-family:inherit;
+      font-size:.78rem;font-weight:700;padding:.45rem 1rem;border-radius:99px;
+      text-decoration:none;border:none;cursor:pointer;transition:all .2s}
+    .btn-share-wpp{background:linear-gradient(135deg,#25D366,#128C7E);color:#fff}
+    .btn-share-ig{background:linear-gradient(135deg,#833ab4,#fd1d1d,#fcb045);color:#fff}
+    .btn-sair{background:none;border:1px solid rgba(255,255,255,.15);color:var(--texto2);
+      font-size:.72rem;padding:.3rem .8rem;border-radius:99px;cursor:pointer;
+      margin-top:.5rem;display:block;margin-left:auto;margin-right:auto}
+
+    /* FORMS */
+    #forms-wrap{}
+    .alerta{padding:.8rem 1rem;border-radius:12px;font-size:.85rem;margin-bottom:1.2rem;font-weight:600}
+    .alerta.success{background:rgba(74,222,128,.1);border:1px solid rgba(74,222,128,.3);color:#86efac}
+    .alerta.info{background:rgba(99,102,241,.12);border:1px solid rgba(99,102,241,.3);color:#a5b4fc}
+    .alerta.warning{background:rgba(245,197,24,.1);border:1px solid rgba(245,197,24,.3);color:var(--ouro)}
+    .alerta.danger{background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.3);color:#fca5a5}
+
+    .form-card{background:var(--card);border:1px solid rgba(124,47,212,.25);
+      border-radius:16px;padding:1.4rem;margin-bottom:1rem}
+    .form-card h3{font-size:1rem;font-weight:700;margin-bottom:.9rem}
+    .fg{margin-bottom:.8rem}
+    .fg label{display:block;font-size:.78rem;color:var(--texto2);margin-bottom:.3rem}
+    .fg input{width:100%;background:#0e0718;border:1px solid rgba(157,78,221,.3);
+      color:var(--texto);font-family:inherit;font-size:.9rem;
+      padding:.62rem .9rem;border-radius:10px;outline:none;transition:border-color .2s}
+    .fg input:focus{border-color:var(--roxo-c)}
+    .btn{display:block;width:100%;font-family:inherit;font-size:.95rem;font-weight:700;
+      padding:.8rem;border-radius:99px;border:none;cursor:pointer;transition:all .2s}
+    .btn-roxo{background:linear-gradient(135deg,var(--roxo),var(--roxo-c));color:#fff}
+    .btn-roxo:hover{filter:brightness(1.1)}
+    .btn-verde{background:linear-gradient(135deg,#25D366,#128C7E);color:#fff}
+    .divisor{height:1px;background:linear-gradient(90deg,transparent,rgba(124,47,212,.3),transparent);margin:1.2rem 0}
+    .ou{text-align:center;font-size:.78rem;color:#6b7280;margin-bottom:.8rem}
+
+    /* COMO FUNCIONA */
+    .como{background:rgba(124,47,212,.07);border:1px solid rgba(124,47,212,.18);
+      border-radius:14px;padding:1rem;font-size:.82rem;color:var(--texto2);margin-top:1rem}
+    .como strong{color:var(--texto);display:block;margin-bottom:.4rem}
+    .como p{margin-top:.3rem}
+
+    .wpp-float{position:fixed;bottom:1.5rem;right:1.5rem;width:54px;height:54px;
+      background:linear-gradient(135deg,#25D366,#128C7E);border-radius:50%;
+      display:flex;align-items:center;justify-content:center;
+      box-shadow:0 4px 20px rgba(37,211,102,.5);z-index:999;text-decoration:none}
+    .wpp-float svg{width:28px;height:28px}
+  </style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="hero-badge">🎁 Programa de Fidelidade</div>
+  <h1>Açaídeira 77</h1>
+  <p>8 pedidos = 1 açaí grátis!<br>
+     Quanto mais você pede, <strong style="-webkit-text-fill-color:#f5c518;color:var(--ouro)">mais desconto você ganha!</strong>
+  </p>
+</header>
+
+<main>
+  <a href="{{ url_for('cardapio.index') }}" class="back-link">← Ver Cardápio Completo</a>
+
+  <!-- Loading spinner -->
+  <div id="loading">
+    <div class="spinner"></div>
+    <p style="margin-top:.6rem;font-size:.82rem">Carregando seu cartão...</p>
+  </div>
+
+  <!-- CARTÃO (preenchido via JS) -->
+  <div id="card-wrap">
+    <div class="cartao">
+      <div class="cartao-header">
+        <div>
+          <div class="cartao-nome" id="c-nome">—</div>
+          <div class="cartao-telefone" id="c-tel">—</div>
+        </div>
+        <div id="c-tier-badge"></div>
+      </div>
+
+      <div class="selos-titulo" id="c-selos-titulo">Cartão atual — 0/8</div>
+      <div class="selos-grid" id="c-selos"></div>
+
+      <div id="c-free" style="text-align:center;display:none">
+        <span class="badge-free">🎉 Açaí grátis disponível!</span>
+        <p style="font-size:.75rem;color:var(--texto2);margin-top:.4rem">
+          Informe no próximo pedido pelo WhatsApp para resgatar.
+        </p>
+      </div>
+      <div id="c-prog" class="cartao-prog"></div>
+
+      <!-- Barra de desconto progressivo -->
+      <div class="tier-progress">
+        <div class="tier-progress-label">🏆 Desconto progressivo por fidelidade</div>
+        <div class="tier-bar"><div class="tier-fill" id="c-tier-fill" style="width:0%"></div></div>
+        <div class="tier-milestones">
+          <span>0%</span><span>5% (16 ped.)</span><span>10% (31 ped.)</span>
+        </div>
+        <div id="c-tier-msg" style="font-size:.72rem;color:#9ca3af;margin-top:.3rem;text-align:center"></div>
+      </div>
+
+      <!-- Seguir Instagram -->
+      <div id="c-ig-card" class="ig-card">
+        <strong style="font-size:.9rem">📲 Siga a Açaídeira 77 no Instagram!</strong>
+        <p>Fique por dentro de novidades, promoções e sabores exclusivos.</p>
+        <div class="ig-vantagens">
+          <div class="ig-vantagem">🎁 <span>Promoções exclusivas para seguidores</span></div>
+          <div class="ig-vantagem">🆕 <span>Primeiros a saber dos novos sabores</span></div>
+          <div class="ig-vantagem">🏷️ <span>Ofertas e sorteios direto no feed</span></div>
+          <div class="ig-vantagem">✅ <span>Valida seu desconto no cartão fidelidade</span></div>
+        </div>
+        <p style="font-size:.75rem;color:#9ca3af">Após seguir, envie um print pelo WhatsApp para confirmarmos.</p>
+        <a class="btn-ig" href="https://www.instagram.com/acaideira77" target="_blank"
+           onclick="fbq('track','Lead',{content_name:'Follow Instagram'})">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/>
+          </svg>
+          Seguir @acaideira77
+        </a>
+      </div>
+      <div id="c-ig-ok" class="ig-card validado" style="display:none">
+        <strong style="font-size:.85rem;color:#86efac">✅ Seguidor confirmado!</strong>
+        <p>Obrigado por seguir a Açaídeira 77 no Instagram! 💜<br>
+           <span style="font-size:.75rem">Continue acompanhando as novidades por lá!</span>
+        </p>
+      </div>
+
+      <!-- Histórico -->
+      <div id="c-hist" class="historico" style="margin-top:.8rem;display:none">
+        <div class="hist-titulo">Últimos pedidos</div>
+        <div id="c-hist-list"></div>
+      </div>
+
+      <!-- Compartilhar -->
+      <div class="share-bar">
+        <a id="btn-wpp" class="btn-share btn-share-wpp" href="#" target="_blank">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
+            <path d="M12 0C5.373 0 0 5.373 0 12c0 2.125.557 4.117 1.529 5.845L.057 23.486a.5.5 0 0 0 .612.612l5.726-1.499A11.95 11.95 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22a9.95 9.95 0 0 1-5.058-1.372l-.363-.214-3.754.983.999-3.648-.235-.374A9.953 9.953 0 0 1 2 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/>
+          </svg>
+          Compartilhar no WhatsApp
+        </a>
+        <button class="btn-share btn-share-ig" onclick="compartilharIG()">
+          📸 Compartilhar no Instagram
+        </button>
+      </div>
+      <button class="btn-sair" onclick="sair()">Sair / Trocar conta</button>
+    </div>
+
+    <!-- Botão pedir -->
+    <a id="btn-pedir" class="btn btn-verde" href="#"
+       onclick="fbq('track','InitiateCheckout',{content_name:'Fidelidade — Pedir'})">
+      🫐 Fazer Pedido pelo WhatsApp
+    </a>
+  </div>
+
+  <!-- FORMULÁRIOS (se não estiver logado) -->
+  <div id="forms-wrap">
+
+    {% if msg %}
+    <div class="alerta {{ msg[0] }}">{{ msg[1] }}</div>
+    {% endif %}
+
+    <div class="form-card">
+      <h3>🔍 Acessar meu cartão</h3>
+      <form id="form-consultar">
+        <div class="fg">
+          <label>Seu WhatsApp (só números)</label>
+          <input type="tel" id="inp-tel" placeholder="77 99999-9999"
+                 autocomplete="tel" inputmode="numeric">
+        </div>
+        <button type="submit" class="btn btn-roxo" id="btn-consultar">Ver Meu Cartão</button>
+      </form>
+    </div>
+
+    <div class="divisor"></div>
+    <p class="ou">Ainda não tem cadastro?</p>
+
+    <div class="form-card">
+      <h3>🫐 Criar meu cartão grátis</h3>
+      <form method="POST" id="form-cadastrar" onsubmit="onCadastrar()">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="action" value="cadastrar">
+        <div class="fg">
+          <label>Nome completo</label>
+          <input type="text" name="nome" required placeholder="Seu nome"
+                 autocomplete="name">
+        </div>
+        <div class="fg">
+          <label>WhatsApp (só números)</label>
+          <input type="tel" name="telefone" id="inp-tel-cad" required
+                 placeholder="77 99999-9999" autocomplete="tel" inputmode="numeric">
+        </div>
+        <div class="fg">
+          <label>E-mail (opcional)</label>
+          <input type="email" name="email" placeholder="seu@email.com" autocomplete="email">
+        </div>
+        <div class="fg">
+          <label>Código de indicação (opcional)</label>
+          <input type="text" name="codigo_influencer" id="inp-codigo"
+                 placeholder="ex: JOAO10 ou BLOGUEIRO" autocomplete="off"
+                 style="text-transform:uppercase">
+          <small style="font-size:.7rem;color:#6b7280;margin-top:.25rem;display:block">
+            Recebeu um código de alguém? Digite aqui para ativar o desconto especial.
+          </small>
+        </div>
+        <button type="submit" class="btn btn-roxo"
+                onclick="fbq('track','CompleteRegistration')">
+          Criar Meu Cartão
+        </button>
+      </form>
+    </div>
+
+    <div class="como">
+      <strong>Como funciona:</strong>
+      <p>🫐 A cada pedido delivery → 1 selo no cartão</p>
+      <p>🎁 Com 8 selos → 1 açaí grátis no próximo pedido</p>
+      <p>📈 16 pedidos → 5% de desconto permanente</p>
+      <p>🏆 31 pedidos → 10% de desconto permanente</p>
+      <p>📲 Siga <strong>@acaideira77</strong> e fique por dentro das promoções — além de validar seu desconto!</p>
+    </div>
+
+  </div>
+</main>
+
+<a class="wpp-float"
+   href="https://wa.me/557799828970?text=Olá!%20Quero%20fazer%20um%20pedido%20%F0%9F%AB%90">
+  <svg viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.125.557 4.117 1.529 5.845L.057 23.486a.5.5 0 0 0 .612.612l5.726-1.499A11.95 11.95 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22a9.95 9.95 0 0 1-5.058-1.372l-.363-.214-3.754.983.999-3.648-.235-.374A9.953 9.953 0 0 1 2 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>
+</a>
+
+<script>
+const WPP = 'https://wa.me/557799828970';
+const LS_KEY = 'acai77_tel';
+
+// ── Auto-login via localStorage ──────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', () => {
+  const tel = localStorage.getItem(LS_KEY);
+  if (tel) {
+    mostrarLoading(true);
+    buscarCliente(tel);
+  }
+  // pre-preenche campo se tiver salvo
+  const inp = document.getElementById('inp-tel');
+  if (inp && tel) inp.value = tel;
+});
+
+// ── Formulário de consulta (sem reload) ─────────────────────────────────────
+document.getElementById('form-consultar').addEventListener('submit', e => {
+  e.preventDefault();
+  const tel = limparTel(document.getElementById('inp-tel').value);
+  if (!tel) return;
+  mostrarLoading(true);
+  buscarCliente(tel);
+});
+
+function limparTel(v) {
+  return v.replace(/\D/g,'');
+}
+
+function buscarCliente(tel) {
+  fetch('/cardapio/api/cliente/' + tel)
+    .then(r => {
+      if (r.status === 404) { mostrarLoading(false); mostrarErro(); return null; }
+      return r.json();
+    })
+    .then(c => {
+      if (!c) return;
+      localStorage.setItem(LS_KEY, c.telefone);
+      renderCartao(c);
+    })
+    .catch(() => { mostrarLoading(false); });
+}
+
+function mostrarLoading(on) {
+  document.getElementById('loading').style.display    = on ? 'block' : 'none';
+  document.getElementById('forms-wrap').style.display = on ? 'none'  : 'block';
+}
+
+function mostrarErro() {
+  const div = document.createElement('div');
+  div.className = 'alerta warning';
+  div.textContent = 'Número não encontrado. Faça seu cadastro abaixo.';
+  document.getElementById('forms-wrap').prepend(div);
+}
+
+// ── Render do cartão via JS ──────────────────────────────────────────────────
+function renderCartao(c) {
+  document.getElementById('loading').style.display    = 'none';
+  document.getElementById('forms-wrap').style.display = 'none';
+  document.getElementById('card-wrap').style.display  = 'block';
+
+  document.getElementById('c-nome').textContent = c.nome;
+  document.getElementById('c-tel').textContent  = '📱 ' + c.telefone;
+
+  // Tier badge
+  const tierBadge = document.getElementById('c-tier-badge');
+  if (c.desconto) {
+    tierBadge.innerHTML = `<span class="tier-badge tier-${c.desconto}">🏆 ${c.desconto}% desconto</span>`;
+  } else {
+    tierBadge.innerHTML = `<span class="tier-badge tier-0">Fidelidade</span>`;
+  }
+
+  // Selos
+  document.getElementById('c-selos-titulo').textContent = `Cartão atual — ${c.selos}/8`;
+  const grid = document.getElementById('c-selos');
+  grid.innerHTML = '';
+  for (let i = 1; i <= 8; i++) {
+    const d = document.createElement('div');
+    d.className = 'selo' + (i <= c.selos ? ' on' : '');
+    d.innerHTML = `<div class="selo-e">${i <= c.selos ? '🫐' : ''}</div><div class="selo-n">${i}</div>`;
+    grid.appendChild(d);
+  }
+
+  // Free pendente
+  const freeEl = document.getElementById('c-free');
+  const progEl = document.getElementById('c-prog');
+  if (c.free) {
+    freeEl.style.display = 'block';
+    progEl.textContent = '';
+  } else {
+    freeEl.style.display = 'none';
+    progEl.innerHTML = `Faltam <strong>${c.proximos} pedido(s)</strong> para ganhar seu açaí grátis!`;
+  }
+
+  // Tier progress bar
+  const maxPed = 31;
+  const pct = Math.min(c.total / maxPed * 100, 100);
+  document.getElementById('c-tier-fill').style.width = pct + '%';
+  const tierMsg = document.getElementById('c-tier-msg');
+  if (c.desconto >= 10) {
+    tierMsg.innerHTML = '🏆 <strong style="color:#f5c518">Nível máximo!</strong> 10% de desconto em todos os pedidos.';
+  } else if (c.proximo_tier) {
+    tierMsg.innerHTML = `Faltam <strong style="color:#9fd466">${c.proximo_tier[0]} pedidos</strong> para ganhar ${c.proximo_tier[1]}% de desconto!`;
+  }
+
+  // Instagram follow
+  if (c.seguidor_validado) {
+    document.getElementById('c-ig-card').style.display = 'none';
+    document.getElementById('c-ig-ok').style.display   = 'block';
+  } else {
+    document.getElementById('c-ig-card').style.display = 'block';
+    document.getElementById('c-ig-ok').style.display   = 'none';
+  }
+
+  // Botão pedir com desconto
+  const btnPedir = document.getElementById('btn-pedir');
+  let txtPedir = `Olá! Meu cartão fidelidade: ${c.nome} (${c.telefone})`;
+  if (c.free) txtPedir += ' — tenho 1 AÇAÍ GRÁTIS para resgatar! 🎁';
+  if (c.desconto) txtPedir += ` — tenho ${c.desconto}% de desconto 🏷️`;
+  txtPedir += ' 🫐';
+  btnPedir.href = WPP + '?text=' + encodeURIComponent(txtPedir);
+
+  // Share WhatsApp
+  const shareMsg = `Já sou cliente fidelidade da Açaídeira 77! 🫐\nTenho ${c.total} pedido(s) e ${c.selos} selos no cartão.\nPeça também: ${window.location.origin}/cardapio/fidelidade`;
+  document.getElementById('btn-wpp').href = 'https://wa.me/?text=' + encodeURIComponent(shareMsg);
+
+  // Histórico (via server render já incluído)
+}
+
+function compartilharIG() {
+  const txt = 'Sou cliente fidelidade da Açaídeira 77! 🫐🔥 Cada pedido vira um selo e com 8 selos eu ganho um açaí GRÁTIS! Acessa o cardápio deles e cria o teu cartão também! #acaideira77 #açaí #fidelidade';
+  navigator.clipboard.writeText(txt).then(() => {
+    alert('Texto copiado! Cole na legenda do seu post/story no Instagram. 📸');
+    window.open('https://www.instagram.com', '_blank');
+  });
+}
+
+function sair() {
+  localStorage.removeItem(LS_KEY);
+  location.reload();
+}
+
+// Salva telefone no localStorage quando cadastrar
+function onCadastrar() {
+  const tel = limparTel(document.getElementById('inp-tel-cad').value);
+  if (tel) localStorage.setItem(LS_KEY, tel);
+}
+</script>
+</body>
+</html>

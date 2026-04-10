@@ -1,0 +1,312 @@
+{% extends "cardapio/base_acai.html" %}
+{% block title %}Promoções — Açaídeira 77{% endblock %}
+
+{% block content %}
+<div style="max-width:900px">
+
+  <div class="mb-4">
+    <h4 class="mb-0 fw-bold" style="color:var(--texto)">🔥 Promoções e Campanhas</h4>
+    <small style="color:var(--texto2)">Crie promoções que aparecem no cardápio e na página de promoções</small>
+  </div>
+
+  <!-- ═══ CRIAR PROMOÇÃO ═══ -->
+  <div class="card border-secondary mb-4" style="background:#1a1a2e">
+    <div class="card-header border-secondary d-flex align-items-center justify-content-between">
+      <strong>➕ Nova Promoção</strong>
+      <button class="btn btn-link p-0 text-muted" data-bs-toggle="collapse"
+              data-bs-target="#form-criar">
+        <i class="bi bi-chevron-down"></i>
+      </button>
+    </div>
+    <div class="collapse show" id="form-criar">
+      <div class="card-body">
+        <form method="POST">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input type="hidden" name="action"     value="criar">
+
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label text-muted" style="font-size:.78rem">Título da promoção *</label>
+              <input type="text" name="titulo" required
+                     placeholder="ex: Semana da Entrega Grátis!"
+                     class="form-control bg-dark text-light border-secondary">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label text-muted" style="font-size:.78rem">Tipo *</label>
+              <select name="tipo" id="sel-tipo" onchange="ajustarCampos()"
+                      class="form-select bg-dark text-light border-secondary">
+                {% for key, (label, desc) in tipos.items() %}
+                <option value="{{ key }}">{{ label }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-3" id="col-valor">
+              <label class="form-label text-muted" style="font-size:.78rem">
+                Desconto (%) — deixe vazio se não tiver
+              </label>
+              <div class="input-group">
+                <input type="number" name="valor" min="1" max="100" step="1"
+                       placeholder="ex: 10"
+                       class="form-control bg-dark text-light border-secondary">
+                <span class="input-group-text bg-dark border-secondary text-muted">%</span>
+              </div>
+            </div>
+
+            <div class="col-12">
+              <label class="form-label text-muted" style="font-size:.78rem">Descrição (aparece no cardápio)</label>
+              <textarea name="descricao" rows="2"
+                        placeholder="Ex: Nessa semana todos os pedidos delivery têm entrega grátis!"
+                        class="form-control bg-dark text-light border-secondary"></textarea>
+            </div>
+
+            <div class="col-12" id="col-condicao">
+              <label class="form-label text-muted" style="font-size:.78rem">
+                Como o cliente participa (instrução visível)
+              </label>
+              <textarea name="condicao" rows="2"
+                        placeholder="Ex: Siga @acaideira77 no Instagram, tire print e envie no WhatsApp ao pedir"
+                        class="form-control bg-dark text-light border-secondary"></textarea>
+            </div>
+
+            <div class="col-md-3">
+              <label class="form-label text-muted" style="font-size:.78rem">Código (opcional)</label>
+              <input type="text" name="codigo" maxlength="20"
+                     placeholder="ex: FRETE7DIAS"
+                     class="form-control bg-dark text-light border-secondary"
+                     style="text-transform:uppercase"
+                     oninput="this.value=this.value.toUpperCase()">
+              <div style="font-size:.7rem;color:#6b7280;margin-top:.2rem">
+                Cliente menciona no WhatsApp para receber o desconto
+              </div>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label text-muted" style="font-size:.78rem">Data início</label>
+              <input type="date" name="data_inicio"
+                     value="{{ hoje.isoformat() }}"
+                     class="form-control bg-dark text-light border-secondary">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label text-muted" style="font-size:.78rem">Data fim (opcional)</label>
+              <input type="date" name="data_fim"
+                     class="form-control bg-dark text-light border-secondary">
+            </div>
+            <div class="col-md-3 d-flex align-items-end">
+              <div class="form-check">
+                <input type="checkbox" name="destaque" id="chk-destaque"
+                       class="form-check-input" value="1">
+                <label for="chk-destaque" class="form-check-label text-light" style="font-size:.85rem">
+                  ⭐ Destacar no topo
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <div class="mt-3">
+            <button type="submit" class="btn btn-success px-4">
+              <i class="bi bi-plus-lg"></i> Criar Promoção
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ MODELOS RÁPIDOS ═══ -->
+  <div class="card border-secondary mb-4" style="background:#1a1a2e">
+    <div class="card-header border-secondary"><strong>⚡ Modelos Rápidos</strong></div>
+    <div class="card-body">
+      <div class="d-flex flex-wrap gap-2">
+        {% set modelos = [
+          ('🚚 Semana Entrega Grátis', 'frete_gratis', '', 'Todos os pedidos delivery com entrega grátis esta semana!', 'Faça seu pedido pelo WhatsApp e informe o código', 'FRETEGRATIS'),
+          ('📸 Poste e Ganhe 10%',     'social_post',  '10','Postou uma foto tomando açaí? Ganhe 10% de desconto!', 'Poste uma foto tomando nosso açaí, marque @acaideira77 e envie o print no WhatsApp ao pedir', 'POSTE10'),
+          ('📲 Siga e Ganhe 5%',       'social_seguir','5', 'Siga nosso Instagram e ganhe 5% de desconto em todos os pedidos!', 'Siga @acaideira77, tire print e envie no WhatsApp ao pedir', 'SIGA5'),
+          ('📢 Mencione e Ganhe 8%',   'social_mencionar','8','Mencionou a Açaídeira 77? Ganhe 8% de desconto!', 'Publique um story mencionando @acaideira77, envie o print no WhatsApp ao pedir', 'MENCIONE8'),
+          ('🎉 Leve 3 Pague 2',        'leve3_pague2', '', 'A cada 3 açaís pedidos, o menor sai de graça!', 'Peça 3 açaís e informe o código no WhatsApp', 'LEVE3'),
+          ('💜 10% na Primeira Compra','desconto_pct', '10','É seu primeiro pedido? Ganhe 10% de desconto!', 'Informe o código ao fazer seu primeiro pedido pelo WhatsApp', 'BEMVINDO10'),
+          ('🌟 Código de Blogueiro',   'desconto_pct', '10','Nosso parceiro indicou um desconto especial pra você!', 'Informe o código ao pedir pelo WhatsApp para receber seu desconto', 'BLOGUEIRO10'),
+        ] %}
+        {% for label, tipo, val, desc, cond, cod in modelos %}
+        <button type="button" class="btn btn-sm btn-outline-secondary"
+                onclick="preencherModelo('{{ tipo }}','{{ label }}','{{ val }}','{{ desc | e }}','{{ cond | e }}','{{ cod }}')">
+          {{ label }}
+        </button>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ RANKING DE INFLUENCIADORES ═══ -->
+  {% set inf_promos = promocoes | selectattr('codigo') | list | sort(attribute='usos', reverse=True) %}
+  {% if inf_promos %}
+  <div class="card border-secondary mb-4" style="background:#1a1a2e">
+    <div class="card-header border-secondary d-flex align-items-center justify-content-between">
+      <strong>🌟 Ranking de Códigos / Influenciadores</strong>
+      <small class="text-muted">Quantas pessoas cada código trouxe</small>
+    </div>
+    <div class="card-body p-0">
+      <table class="table table-dark table-sm mb-0" style="border-color:rgba(255,255,255,.07)">
+        <thead>
+          <tr style="font-size:.72rem;color:#6b7280;text-transform:uppercase;letter-spacing:.06em">
+            <th class="ps-3">#</th>
+            <th>Código</th>
+            <th>Promoção</th>
+            <th>Usos</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for p in inf_promos %}
+          <tr style="font-size:.82rem;border-color:rgba(255,255,255,.05)">
+            <td class="ps-3 text-muted">{{ loop.index }}</td>
+            <td>
+              <strong style="color:#a5b4fc;letter-spacing:.08em">{{ p.codigo }}</strong>
+            </td>
+            <td style="color:#c4b8e0">{{ p.titulo }}</td>
+            <td>
+              {% if p.usos %}
+              <span style="color:#86efac;font-weight:700">{{ p.usos }}</span>
+              {% else %}
+              <span class="text-muted">0</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if p.vigente %}<span class="badge bg-success">Ativa</span>
+              {% elif not p.ativa %}<span class="badge bg-secondary">Pausada</span>
+              {% else %}<span class="badge bg-danger">Expirada</span>{% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="card-footer border-secondary" style="font-size:.72rem;color:#6b7280">
+      💡 Para cada blogueiro/influenciador, crie uma promoção com um código exclusivo (ex: JOAO10, MARIA15) e acompanhe os resultados aqui.
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- ═══ LISTA DE PROMOÇÕES ═══ -->
+  {% if not promocoes %}
+  <div class="text-center text-muted py-5">
+    <div style="font-size:2.5rem">🔥</div>
+    <p class="mt-2">Nenhuma promoção criada ainda.</p>
+  </div>
+  {% endif %}
+
+  {% for p in promocoes %}
+  <div class="card border-secondary mb-3"
+       style="background:#1a1a2e;
+       {% if p.destaque %}border-color:rgba(245,197,24,.5)!important{% endif %}
+       {% if not p.vigente %}opacity:.6{% endif %}">
+    <div class="card-body py-3">
+      <div class="row align-items-start g-2">
+        <div class="col-12 col-md-7">
+          <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
+            <span style="font-size:.72rem;font-weight:700;text-transform:uppercase;
+                  color:{{ '#f5c518' if p.destaque else '#9d4edd' }};letter-spacing:.08em">
+              {{ p.tipo_label }}
+            </span>
+            {% if p.destaque %}<span class="badge" style="background:#f5c518;color:#0e1a00">⭐ Destaque</span>{% endif %}
+            {% if p.vigente %}
+              <span class="badge bg-success">● Ativa</span>
+            {% elif not p.ativa %}
+              <span class="badge bg-secondary">⏸ Pausada</span>
+            {% else %}
+              <span class="badge bg-danger">⏰ Expirada</span>
+            {% endif %}
+          </div>
+          <div style="font-size:1rem;font-weight:700;color:#fff">{{ p.titulo }}</div>
+          <div style="font-size:.78rem;color:var(--verde-c);font-weight:700">{{ p.desconto_texto }}</div>
+          {% if p.descricao %}
+          <div style="font-size:.78rem;color:#9ca3af;margin-top:.3rem">{{ p.descricao }}</div>
+          {% endif %}
+          {% if p.condicao %}
+          <div style="font-size:.75rem;color:#6b7280;margin-top:.2rem;font-style:italic">
+            📋 {{ p.condicao }}
+          </div>
+          {% endif %}
+          {% if p.codigo %}
+          <div style="display:inline-flex;align-items:center;gap:.6rem;background:rgba(124,47,212,.15);
+               border:1px dashed rgba(157,78,221,.4);border-radius:8px;
+               padding:.2rem .6rem;font-size:.78rem;margin-top:.3rem;flex-wrap:wrap">
+            <span>Código: <strong style="color:#a5b4fc;letter-spacing:.1em">{{ p.codigo }}</strong></span>
+            {% if p.usos %}
+            <span style="background:rgba(74,222,128,.12);border:1px solid rgba(74,222,128,.3);
+                  color:#86efac;border-radius:99px;padding:.1rem .5rem;font-size:.7rem;font-weight:700">
+              {{ p.usos }} uso{{ 's' if p.usos != 1 else '' }}
+            </span>
+            {% else %}
+            <span style="color:#4b5563;font-size:.7rem">0 usos</span>
+            {% endif %}
+          </div>
+          {% endif %}
+          {% if p.data_inicio or p.data_fim %}
+          <div style="font-size:.7rem;color:#4b5563;margin-top:.3rem">
+            {% if p.data_inicio %}De {{ p.data_inicio.strftime('%d/%m/%Y') }}{% endif %}
+            {% if p.data_fim %} até {{ p.data_fim.strftime('%d/%m/%Y') }}{% endif %}
+          </div>
+          {% endif %}
+        </div>
+        <div class="col-12 col-md-5 d-flex gap-2 flex-wrap justify-content-md-end align-items-start">
+          <!-- Toggle ativo -->
+          <form method="POST" class="d-inline">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="action" value="toggle">
+            <input type="hidden" name="pid"    value="{{ p.id }}">
+            <button type="submit" class="btn btn-sm {{ 'btn-outline-warning' if p.ativa else 'btn-outline-success' }}">
+              {{ '⏸ Pausar' if p.ativa else '▶ Ativar' }}
+            </button>
+          </form>
+          <!-- Toggle destaque -->
+          <form method="POST" class="d-inline">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="action" value="toggle_destaque">
+            <input type="hidden" name="pid"    value="{{ p.id }}">
+            <button type="submit" class="btn btn-sm {{ 'btn-warning' if p.destaque else 'btn-outline-secondary' }}">
+              ⭐
+            </button>
+          </form>
+          <!-- Excluir -->
+          <form method="POST" class="d-inline">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="action" value="excluir">
+            <input type="hidden" name="pid"    value="{{ p.id }}">
+            <button type="submit" class="btn btn-sm btn-outline-danger"
+                    onclick="return confirm('Excluir promoção?')">✕</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+
+</div>
+
+<script>
+const form = document.querySelector('#form-criar form');
+
+function ajustarCampos() {
+  const tipo = document.getElementById('sel-tipo').value;
+  const colValor = document.getElementById('col-valor');
+  colValor.style.display = (tipo === 'frete_gratis' || tipo === 'leve3_pague2') ? 'none' : '';
+}
+ajustarCampos();
+
+function preencherModelo(tipo, titulo, valor, desc, cond, codigo) {
+  form.querySelector('[name=tipo]').value      = tipo;
+  form.querySelector('[name=titulo]').value    = titulo.replace(/^[^ ]+ /,'');
+  form.querySelector('[name=valor]').value     = valor;
+  form.querySelector('[name=descricao]').value = desc;
+  form.querySelector('[name=condicao]').value  = cond;
+  form.querySelector('[name=codigo]').value    = codigo;
+  ajustarCampos();
+  // abre o formulário e scrolla
+  const collapse = document.getElementById('form-criar');
+  if (!collapse.classList.contains('show')) {
+    collapse.classList.add('show');
+  }
+  form.querySelector('[name=titulo]').focus();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+</script>
+{% endblock %}

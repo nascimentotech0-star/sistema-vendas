@@ -1,0 +1,23 @@
+{
+  "custos_fixos": [
+    {"nome": "Aluguel",           "valor": 2000.00},
+    {"nome": "Energia Elétrica",  "valor": 700.00},
+    {"nome": "Água",              "valor": 80.00}
+  ],
+  "custos_variaveis": {
+    "cmv_pct": 40,
+    "embalagem_por_pedido": 1.50,
+    "taxa_entrega_por_pedido": 0.00
+  },
+  "ticket_medio": 30.00,
+  "pedidos_dia_estimado": 20,
+  "meta_caixa": 10000.00,
+  "caixa_atual": 0.00,
+  "pedidos_fornecedor": [
+    {
+      "data": "2026-03-10",
+      "descricao": "Pedido açaí + cremes (25 itens)",
+      "valor": 6005.00
+    }
+  ]
+}

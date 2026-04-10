@@ -515,6 +515,14 @@ class Sale(db.Model):
     is_overtime = db.Column(db.Boolean, default=False)
     screens     = db.Column(db.Integer, nullable=True, default=1)    # telas vendidas
     adjustment  = db.Column(db.Float, nullable=True, default=0.0)    # desconto (neg) / acréscimo (pos)
+    ocr_detected_time    = db.Column(db.String(5), nullable=True)   # hora lida via OCR do comprovante (HH:MM)
+    registered_payment_time = db.Column(db.String(5), nullable=True) # hora enviada no formulário pelo atendente
+    # ── Análise de IA ──────────────────────────────────────────────────────────
+    ai_detected_time   = db.Column(db.String(5),   nullable=True)   # hora detectada pela IA
+    ai_detected_amount = db.Column(db.Float,        nullable=True)   # valor detectado pela IA
+    ai_amount_match    = db.Column(db.Boolean,      nullable=True)   # valor confere?
+    ai_suspicious      = db.Column(db.Boolean,      default=False)   # suspeito de fraude?
+    ai_notes           = db.Column(db.Text,         nullable=True)   # observações da IA
     created_at = db.Column(db.DateTime, nullable=False, default=now_br)
 
     @property
@@ -526,3 +534,144 @@ class Sale(db.Model):
         if self.client:
             return self.client.name
         return self.client_name_manual or 'Cliente não informado'
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  FIDELIDADE — Açaídeira 77
+# ══════════════════════════════════════════════════════════════════════════════
+
+class Promocao(db.Model):
+    """Promoções e campanhas da Açaídeira 77."""
+    __tablename__ = 'acai_promocoes'
+
+    TIPOS = {
+        'frete_gratis':    ('🚚 Entrega Grátis',          'Entrega sem custo por tempo limitado'),
+        'desconto_pct':    ('🏷️ Desconto %',              'Percentual de desconto no pedido'),
+        'leve3_pague2':    ('🎉 Leve 3, Pague 2',         'Terceiro item grátis'),
+        'social_seguir':   ('📲 Siga e Ganhe',            'Seguiu no Instagram → desconto'),
+        'social_post':     ('📸 Poste e Ganhe',           'Foto com hashtag → desconto'),
+        'social_mencionar':('📢 Mencione e Ganhe',        'Story/menção → desconto'),
+        'indicacao':       ('👥 Indique um Amigo',        'Cliente indica → desconto para os dois'),
+        'custom':          ('✨ Promoção Especial',       'Promoção personalizada'),
+    }
+
+    id          = db.Column(db.Integer, primary_key=True)
+    titulo      = db.Column(db.String(120), nullable=False)
+    descricao   = db.Column(db.Text, nullable=True)
+    tipo        = db.Column(db.String(30), nullable=False, default='custom')
+    valor       = db.Column(db.Float, nullable=True)      # % ou 0 para frete grátis
+    condicao    = db.Column(db.Text, nullable=True)        # instrução para o cliente
+    codigo      = db.Column(db.String(30), nullable=True)  # código a mencionar no WhatsApp
+    usos        = db.Column(db.Integer, default=0)          # quantas vezes o código foi usado
+    ativa       = db.Column(db.Boolean, default=True)
+    destaque    = db.Column(db.Boolean, default=False)    # aparece em banner no topo
+    data_inicio = db.Column(db.Date, nullable=True)
+    data_fim    = db.Column(db.Date, nullable=True)
+    created_at  = db.Column(db.DateTime, default=now_br)
+
+    @property
+    def tipo_label(self):
+        return self.TIPOS.get(self.tipo, ('✨ Promoção', ''))[0]
+
+    @property
+    def vigente(self):
+        from datetime import date
+        hoje = date.today()
+        if self.data_inicio and hoje < self.data_inicio:
+            return False
+        if self.data_fim and hoje > self.data_fim:
+            return False
+        return self.ativa
+
+    @property
+    def desconto_texto(self):
+        if self.tipo == 'frete_gratis':
+            return 'Entrega Grátis'
+        if self.tipo == 'leve3_pague2':
+            return 'Leve 3, Pague 2'
+        if self.valor:
+            return f'{self.valor:.0f}% de desconto'
+        return 'Desconto especial'
+
+
+class FidelidadeCliente(db.Model):
+    """Cliente cadastrado no programa de fidelidade da açaídeira."""
+    __tablename__ = 'fidelidade_clientes'
+    id         = db.Column(db.Integer, primary_key=True)
+    nome       = db.Column(db.String(100), nullable=False)
+    telefone   = db.Column(db.String(20),  unique=True, nullable=False)
+    email      = db.Column(db.String(120), nullable=True)
+    created_at = db.Column(db.DateTime, default=now_br)
+
+    seguidor_ig       = db.Column(db.Boolean, default=False)   # seguiu @açaídeira77
+    seguidor_validado = db.Column(db.Boolean, default=False)   # admin confirmou o follow
+    codigo_origem     = db.Column(db.String(30), nullable=True) # código do influenciador que indicou
+
+    pedidos = db.relationship('FidelidadePedido', backref='cliente',
+                              lazy=True, order_by='FidelidadePedido.created_at')
+
+    # Tiers de desconto progressivo
+    TIERS = [
+        (0,  0,   None),    # 0–15 pedidos  → sem desconto
+        (16, 30,  5),       # 16–30 pedidos → 5%
+        (31, 999, 10),      # 31+  pedidos  → 10%
+    ]
+
+    @property
+    def desconto_tier(self):
+        """Percentual de desconto baseado no volume de pedidos."""
+        n = self.total_pagos
+        for inicio, fim, pct in self.TIERS:
+            if inicio <= n <= fim:
+                return pct
+        return None
+
+    @property
+    def proximo_tier(self):
+        """Quantos pedidos faltam para o próximo tier de desconto."""
+        n = self.total_pagos
+        for inicio, fim, pct in self.TIERS:
+            if n < inicio:
+                return (inicio - n, pct)
+        return None
+
+    @property
+    def pedidos_pagos(self):
+        return [p for p in self.pedidos if not p.is_free]
+
+    @property
+    def total_pagos(self):
+        return len(self.pedidos_pagos)
+
+    @property
+    def selos_atuais(self):
+        """Quantos selos no cartão em andamento (0–8)."""
+        return self.total_pagos % 8
+
+    @property
+    def cartoes_completos(self):
+        return self.total_pagos // 8
+
+    @property
+    def free_resgatados(self):
+        return len([p for p in self.pedidos if p.is_free])
+
+    @property
+    def tem_free_pendente(self):
+        """Completou um cartão mas ainda não resgatou o açaí grátis."""
+        return self.cartoes_completos > self.free_resgatados
+
+    @property
+    def proximos_selos(self):
+        """Quantos selos faltam para completar o cartão atual."""
+        return 8 - self.selos_atuais if self.selos_atuais > 0 else 8
+
+
+class FidelidadePedido(db.Model):
+    """Registro de cada pedido do programa de fidelidade."""
+    __tablename__ = 'fidelidade_pedidos'
+    id         = db.Column(db.Integer, primary_key=True)
+    cliente_id = db.Column(db.Integer, db.ForeignKey('fidelidade_clientes.id'), nullable=False)
+    is_free    = db.Column(db.Boolean, default=False)
+    obs        = db.Column(db.String(200), nullable=True)
+    created_at = db.Column(db.DateTime, default=now_br)

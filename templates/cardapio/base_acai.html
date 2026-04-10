@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>{% block title %}Açaídeira 77 — Admin{% endblock %}</title>
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <meta name="csrf-token" content="{{ csrf_token() }}">
+
+  <style>
+    :root {
+      --roxo:   #7c2fd4;
+      --roxo-c: #9d4edd;
+      --verde:  #7ab648;
+      --ouro:   #f5c518;
+      --bg:     #0e0718;
+      --card:   #1a1030;
+      --borda:  rgba(157,78,221,.25);
+      --texto:  #f0ebff;
+      --texto2: #9ca3af;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: var(--bg);
+      color: var(--texto);
+      min-height: 100vh;
+    }
+
+    /* ── TOPBAR ── */
+    .acai-topbar {
+      background: linear-gradient(90deg, #1a0a30, #0e0718);
+      border-bottom: 1px solid var(--borda);
+      padding: .6rem 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .acai-brand {
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+      text-decoration: none;
+      font-weight: 800;
+      font-size: 1.05rem;
+      color: var(--texto);
+    }
+    .acai-brand-icon {
+      width: 32px; height: 32px;
+      background: linear-gradient(135deg, var(--roxo), var(--roxo-c));
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1rem;
+    }
+    .acai-badge {
+      font-size: .62rem;
+      font-weight: 700;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      background: rgba(157,78,221,.2);
+      color: var(--roxo-c);
+      border: 1px solid rgba(157,78,221,.35);
+      padding: .15rem .5rem;
+      border-radius: 99px;
+    }
+
+    /* ── NAV LINKS ── */
+    .acai-nav {
+      display: flex;
+      align-items: center;
+      gap: .15rem;
+      margin-left: .5rem;
+      flex-wrap: wrap;
+    }
+    .acai-nav a {
+      display: flex;
+      align-items: center;
+      gap: .3rem;
+      font-size: .78rem;
+      font-weight: 500;
+      color: var(--texto2);
+      text-decoration: none;
+      padding: .35rem .75rem;
+      border-radius: 8px;
+      transition: all .15s;
+      white-space: nowrap;
+    }
+    .acai-nav a:hover {
+      background: rgba(157,78,221,.12);
+      color: var(--texto);
+    }
+    .acai-nav a.active {
+      background: rgba(157,78,221,.18);
+      color: var(--roxo-c);
+      font-weight: 600;
+    }
+    .acai-nav a.nav-publico {
+      color: rgba(122,182,72,.8);
+    }
+    .acai-nav a.nav-publico:hover {
+      color: var(--verde);
+      background: rgba(122,182,72,.08);
+    }
+
+    .ms-acai-auto { margin-left: auto; }
+
+    .acai-topbar .btn-logout {
+      font-size: .75rem;
+      color: var(--texto2);
+      background: none;
+      border: 1px solid rgba(255,255,255,.1);
+      border-radius: 8px;
+      padding: .3rem .7rem;
+      text-decoration: none;
+      white-space: nowrap;
+      transition: all .15s;
+    }
+    .acai-topbar .btn-logout:hover {
+      border-color: rgba(248,113,113,.4);
+      color: #fca5a5;
+    }
+
+    /* ── MOBILE NAV TOGGLE ── */
+    .nav-toggler {
+      display: none;
+      background: none;
+      border: 1px solid var(--borda);
+      border-radius: 8px;
+      color: var(--texto2);
+      padding: .3rem .55rem;
+      cursor: pointer;
+      font-size: 1rem;
+    }
+    @media (max-width: 768px) {
+      .nav-toggler { display: flex; align-items: center; }
+      .acai-nav { display: none; width: 100%; order: 10; padding: .5rem 0; }
+      .acai-nav.open { display: flex; flex-direction: column; align-items: flex-start; }
+      .acai-nav a { width: 100%; }
+      .acai-topbar { flex-wrap: wrap; }
+    }
+
+    /* ── CONTEÚDO ── */
+    .acai-content {
+      padding: 1.75rem 1.25rem;
+      max-width: 960px;
+      margin: 0 auto;
+    }
+
+    /* ── FLASH MESSAGES ── */
+    .acai-alerts { padding: .5rem 1.25rem 0; max-width: 960px; margin: 0 auto; }
+
+    /* ── OVERRIDE bootstrap dark cards ── */
+    .card { background: var(--card) !important; border-color: var(--borda) !important; }
+    .card-header { background: rgba(0,0,0,.2) !important; border-color: var(--borda) !important; }
+    .card-footer { border-color: var(--borda) !important; }
+    .form-control, .form-select, .input-group-text {
+      background-color: #0e0718 !important;
+      color: var(--texto) !important;
+      border-color: rgba(157,78,221,.3) !important;
+    }
+    .form-control:focus, .form-select:focus {
+      border-color: var(--roxo-c) !important;
+      box-shadow: 0 0 0 2px rgba(157,78,221,.15) !important;
+    }
+    .table { --bs-table-bg: transparent; --bs-table-color: var(--texto); }
+    .table-dark { --bs-table-bg: rgba(0,0,0,.15); }
+    .badge.bg-success { background: rgba(74,222,128,.15) !important; color: #86efac !important; border: 1px solid rgba(74,222,128,.3); }
+    .badge.bg-secondary { background: rgba(255,255,255,.06) !important; color: #9ca3af !important; }
+    .badge.bg-danger { background: rgba(248,113,113,.12) !important; color: #fca5a5 !important; border: 1px solid rgba(248,113,113,.3); }
+
+    /* scrollbar */
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(157,78,221,.25); border-radius: 99px; }
+  </style>
+</head>
+<body>
+
+<!-- ── TOPBAR ── -->
+<header class="acai-topbar">
+  <a href="{{ url_for('cardapio.index') }}" class="acai-brand">
+    <div class="acai-brand-icon">🫐</div>
+    <span>Açaídeira 77</span>
+  </a>
+  <span class="acai-badge">Admin</span>
+
+  <button class="nav-toggler ms-auto" onclick="toggleNav()" aria-label="Menu">
+    <i class="bi bi-list"></i>
+  </button>
+
+  <nav class="acai-nav" id="acaiNav">
+    <a href="{{ url_for('cardapio.gerenciar') }}"
+       class="{% if request.endpoint == 'cardapio.gerenciar' %}active{% endif %}">
+      <i class="bi bi-grid-3x3-gap-fill"></i> Cardápio
+    </a>
+    <a href="{{ url_for('cardapio.promocoes_admin') }}"
+       class="{% if request.endpoint == 'cardapio.promocoes_admin' %}active{% endif %}">
+      <i class="bi bi-fire"></i> Promoções
+    </a>
+    <a href="{{ url_for('cardapio.fidelidade_admin') }}"
+       class="{% if request.endpoint == 'cardapio.fidelidade_admin' %}active{% endif %}">
+      <i class="bi bi-gift-fill"></i> Fidelidade
+    </a>
+    <a href="{{ url_for('cardapio.gestao') }}"
+       class="{% if request.endpoint == 'cardapio.gestao' %}active{% endif %}">
+      <i class="bi bi-graph-up-arrow"></i> Gestão
+    </a>
+    <a href="{{ url_for('cardapio.calculadora') }}"
+       class="{% if request.endpoint == 'cardapio.calculadora' %}active{% endif %}">
+      <i class="bi bi-calculator-fill"></i> Calculadora
+    </a>
+    <a href="{{ url_for('cardapio.index') }}" target="_blank" class="nav-publico">
+      <i class="bi bi-eye-fill"></i> Ver Cardápio
+    </a>
+
+    <div class="ms-acai-auto d-flex align-items-center gap-2 ms-md-3 mt-2 mt-md-0">
+      {% if current_user.is_authenticated %}
+      <span style="font-size:.72rem;color:#4b5563">{{ current_user.name }}</span>
+      <a href="{{ url_for('auth.logout') }}" class="btn-logout">
+        <i class="bi bi-box-arrow-right"></i> Sair
+      </a>
+      {% endif %}
+    </div>
+  </nav>
+</header>
+
+<!-- ── FLASH MESSAGES ── -->
+<div class="acai-alerts">
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for cat, msg in messages %}
+      <div class="alert alert-{{ cat }} alert-dismissible fade show py-2 mt-2" role="alert"
+           style="background:rgba({% if cat=='success' %}74,222,128,.1{% elif cat=='danger' %}248,113,113,.1{% elif cat=='warning' %}245,197,24,.1{% else %}99,102,241,.12{% endif %});
+                  border:1px solid rgba({% if cat=='success' %}74,222,128,.3{% elif cat=='danger' %}248,113,113,.3{% elif cat=='warning' %}245,197,24,.3{% else %}99,102,241,.3{% endif %});
+                  color:{{ '#86efac' if cat=='success' else '#fca5a5' if cat=='danger' else '#fcd34d' if cat=='warning' else '#a5b4fc' }}">
+        {{ msg }}
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="alert"></button>
+      </div>
+    {% endfor %}
+  {% endwith %}
+</div>
+
+<!-- ── CONTEÚDO ── -->
+<main class="acai-content">
+  {% block content %}{% endblock %}
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+function toggleNav() {
+  document.getElementById('acaiNav').classList.toggle('open');
+}
+</script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

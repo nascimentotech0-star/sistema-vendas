@@ -1,0 +1,364 @@
+{% extends "cardapio/base_acai.html" %}
+{% block title %}Calculadora de Precificação{% endblock %}
+
+{% block content %}
+<div style="max-width:900px">
+
+  <div class="mb-4">
+    <h4 class="mb-0 fw-bold" style="color:var(--texto)">🧮 Calculadora de Precificação</h4>
+    <small style="color:var(--texto2)">Descubra o preço ideal para cada calda e complemento no delivery</small>
+  </div>
+
+  <!-- ── COMO FUNCIONA ── -->
+  <div class="alert alert-dark border-secondary mb-4" style="font-size:.85rem">
+    <strong>Como funciona:</strong> No delivery você controla a porção, então dá para precificar com precisão.
+    Informe o custo e o peso da embalagem — a calculadora mostra o custo real por porção e o preço mínimo
+    para ter lucro. No self-service (R$59,99/kg) o preço do quilo já cobre os complementos.
+  </div>
+
+  <!-- ── FORMULÁRIO ── -->
+  <div class="card border-secondary mb-4" style="background:#1a1a2e">
+    <div class="card-header border-secondary"><strong>➕ Adicionar Produto</strong></div>
+    <div class="card-body">
+      <div class="row g-3">
+        <div class="col-12 col-md-4">
+          <label class="form-label text-muted" style="font-size:.8rem">Nome do produto</label>
+          <input type="text" id="f_nome" class="form-control bg-dark text-light border-secondary"
+                 placeholder="ex: Lacriori, Dorela, Coco Branco">
+        </div>
+        <div class="col-6 col-md-2">
+          <label class="form-label text-muted" style="font-size:.8rem">Custo (R$)</label>
+          <input type="number" id="f_custo" class="form-control bg-dark text-light border-secondary"
+                 placeholder="179,90" step="0.01" min="0">
+        </div>
+        <div class="col-6 col-md-2">
+          <label class="form-label text-muted" style="font-size:.8rem">Peso da embal. (kg)</label>
+          <input type="number" id="f_peso" class="form-control bg-dark text-light border-secondary"
+                 placeholder="4" step="0.1" min="0.1" value="4">
+        </div>
+        <div class="col-6 col-md-2">
+          <label class="form-label text-muted" style="font-size:.8rem">Porção delivery (g)</label>
+          <input type="number" id="f_porcao" class="form-control bg-dark text-light border-secondary"
+                 placeholder="30" step="5" min="5" value="30">
+          <div style="font-size:.7rem;color:#6b7280;margin-top:.25rem">30g ≈ 2 colheres</div>
+        </div>
+        <div class="col-6 col-md-2">
+          <label class="form-label text-muted" style="font-size:.8rem">Margem lucro (%)</label>
+          <input type="number" id="f_margem" class="form-control bg-dark text-light border-secondary"
+                 placeholder="100" step="10" min="10" value="100">
+        </div>
+      </div>
+      <div class="mt-3">
+        <button onclick="adicionarProduto()" class="btn btn-success">
+          <i class="bi bi-plus-lg"></i> Calcular e Adicionar
+        </button>
+        <button onclick="limparTudo()" class="btn btn-outline-secondary ms-2">
+          Limpar tudo
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── TABELA DE RESULTADOS ── -->
+  <div id="tabela-wrap" style="display:none">
+    <div class="card border-secondary mb-4" style="background:#1a1a2e">
+      <div class="card-header border-secondary d-flex justify-content-between align-items-center">
+        <strong>📊 Análise de Produtos</strong>
+        <small class="text-muted" id="resumo-texto"></small>
+      </div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-dark table-hover mb-0" style="font-size:.85rem">
+            <thead style="font-size:.75rem;text-transform:uppercase;letter-spacing:.06em;color:#9ca3af">
+              <tr>
+                <th class="ps-3">Produto</th>
+                <th>Embalagem</th>
+                <th>Custo/Porção</th>
+                <th>Preço Sugerido</th>
+                <th>Porções/Embal.</th>
+                <th>Pedidos p/ repor</th>
+                <th>Lucro/Embal.</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="tabela-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── SIMULADOR DE VENDAS ── -->
+    <div class="card border-secondary mb-4" style="background:#1a1a2e">
+      <div class="card-header border-secondary">
+        <strong>📈 Simulador — Quantos pedidos você precisa vender?</strong>
+      </div>
+      <div class="card-body">
+        <div class="row g-3 align-items-end mb-3">
+          <div class="col-md-4">
+            <label class="form-label text-muted" style="font-size:.8rem">Produto</label>
+            <select id="sim_produto" class="form-select bg-dark text-light border-secondary"
+                    onchange="simular()"></select>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label text-muted" style="font-size:.8rem">Meta de lucro (R$)</label>
+            <input type="number" id="sim_meta" class="form-control bg-dark text-light border-secondary"
+                   value="200" min="0" oninput="simular()">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label text-muted" style="font-size:.8rem">% dos pedidos que pedem essa calda</label>
+            <input type="number" id="sim_freq" class="form-control bg-dark text-light border-secondary"
+                   value="40" min="1" max="100" oninput="simular()">
+            <div style="font-size:.7rem;color:#6b7280;margin-top:.25rem">
+              Ex: 40% = a cada 10 pedidos, 4 pedem essa calda
+            </div>
+          </div>
+        </div>
+        <div id="sim_resultado" class="p-3 rounded" style="background:#0e0718;display:none">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── REFERÊNCIA RÁPIDA ── -->
+  <div class="card border-secondary" style="background:#1a1a2e">
+    <div class="card-header border-secondary">
+      <strong>📌 Produtos já cadastrados (referência)</strong>
+    </div>
+    <div class="card-body">
+      <div class="row g-2" id="produtos-fixos">
+        <!-- preenchido pelo JS com os produtos padrão da açaídeira -->
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ── Estado ──────────────────────────────────────────────────────────────────
+let produtos = [];
+
+// Produtos padrão da Açaídeira 77
+const PRODUTOS_FIXOS = [
+  { nome: 'Lacriori',            custo: 179.90, peso: 5 },
+  { nome: 'Dorela',              custo: 220.00, peso: 5 },
+  { nome: 'Recheio Coco Branco', custo: 178.95, peso: 5 },
+];
+
+// ── Inicializar referência rápida ────────────────────────────────────────────
+(function() {
+  const wrap = document.getElementById('produtos-fixos');
+  PRODUTOS_FIXOS.forEach(p => {
+    const card = document.createElement('div');
+    card.className = 'col-md-4';
+    card.innerHTML = `
+      <div class="d-flex align-items-center justify-content-between p-2 rounded"
+           style="background:#13102a;border:1px solid rgba(255,255,255,.08)">
+        <div>
+          <div style="font-size:.85rem;font-weight:600;color:#f0ebff">${p.nome}</div>
+          <div style="font-size:.75rem;color:#9ca3af">R$ ${p.custo.toFixed(2).replace('.',',')} · ${p.peso}kg</div>
+        </div>
+        <button class="btn btn-sm btn-outline-success"
+                onclick="preencherFixo('${p.nome}',${p.custo},${p.peso})">
+          Calcular
+        </button>
+      </div>`;
+    wrap.appendChild(card);
+  });
+})();
+
+function preencherFixo(nome, custo, peso) {
+  document.getElementById('f_nome').value  = nome;
+  document.getElementById('f_custo').value = custo;
+  document.getElementById('f_peso').value  = peso;
+  window.scrollTo({top: 0, behavior: 'smooth'});
+  document.getElementById('f_nome').focus();
+}
+
+// ── Adicionar produto ────────────────────────────────────────────────────────
+function adicionarProduto() {
+  const nome   = document.getElementById('f_nome').value.trim();
+  const custo  = parseFloat(document.getElementById('f_custo').value)  || 0;
+  const peso   = parseFloat(document.getElementById('f_peso').value)   || 0;
+  const porcao = parseFloat(document.getElementById('f_porcao').value) || 30;
+  const margem = parseFloat(document.getElementById('f_margem').value) || 100;
+
+  if (!nome || custo <= 0 || peso <= 0) {
+    alert('Preencha o nome, custo e peso do produto.');
+    return;
+  }
+
+  const pesoGramas     = peso * 1000;
+  const porcoes        = Math.floor(pesoGramas / porcao);
+  const custoPorcao    = custo / porcoes;
+  const precoSugerido  = arredondar(custoPorcao * (1 + margem / 100));
+  const pedidosRepor   = Math.ceil(custo / precoSugerido);
+  const lucroEmbalagem = (precoSugerido * porcoes) - custo;
+
+  produtos.push({ nome, custo, peso, porcao, margem, porcoes,
+                  custoPorcao, precoSugerido, pedidosRepor, lucroEmbalagem });
+
+  renderTabela();
+  atualizarSimulador();
+
+  // Limpar campos
+  document.getElementById('f_nome').value = '';
+  document.getElementById('f_custo').value = '';
+}
+
+// ── Arredondar para R$0,50 mais próximo ──────────────────────────────────────
+function arredondar(v) {
+  return Math.ceil(v / 0.5) * 0.5;
+}
+
+// ── Renderizar tabela ────────────────────────────────────────────────────────
+function renderTabela() {
+  if (produtos.length === 0) {
+    document.getElementById('tabela-wrap').style.display = 'none';
+    return;
+  }
+  document.getElementById('tabela-wrap').style.display = '';
+
+  const tbody = document.getElementById('tabela-body');
+  tbody.innerHTML = '';
+
+  produtos.forEach((p, i) => {
+    const lucroColor = p.lucroEmbalagem >= 0 ? '#4ade80' : '#f87171';
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="ps-3 fw-semibold">${p.nome}</td>
+      <td>
+        <span style="color:#c4b8e0">R$ ${p.custo.toFixed(2).replace('.',',')} / ${p.peso}kg</span><br>
+        <span style="font-size:.72rem;color:#6b7280">${p.porcao}g por porção</span>
+      </td>
+      <td style="color:#fca5a5">R$ ${p.custoPorcao.toFixed(2).replace('.',',')}</td>
+      <td>
+        <strong style="color:#f5c518;font-size:1rem">R$ ${p.precoSugerido.toFixed(2).replace('.',',')}</strong><br>
+        <span style="font-size:.7rem;color:#9ca3af">${p.margem}% de margem</span>
+      </td>
+      <td style="color:#c4b8e0">${p.porcoes} porções</td>
+      <td>
+        <strong style="color:#86efac">${p.pedidosRepor} pedidos</strong><br>
+        <span style="font-size:.7rem;color:#6b7280">para repor a embalagem</span>
+      </td>
+      <td>
+        <strong style="color:${lucroColor}">
+          R$ ${p.lucroEmbalagem.toFixed(2).replace('.',',')}
+        </strong><br>
+        <span style="font-size:.7rem;color:#6b7280">se vender tudo</span>
+      </td>
+      <td>
+        <button class="btn btn-sm btn-link text-danger p-0"
+                onclick="removerProduto(${i})">✕</button>
+      </td>`;
+    tbody.appendChild(tr);
+  });
+
+  document.getElementById('resumo-texto').textContent =
+    `${produtos.length} produto(s) analisado(s)`;
+}
+
+// ── Remover produto ──────────────────────────────────────────────────────────
+function removerProduto(i) {
+  produtos.splice(i, 1);
+  renderTabela();
+  atualizarSimulador();
+}
+
+// ── Simulador ────────────────────────────────────────────────────────────────
+function atualizarSimulador() {
+  const sel = document.getElementById('sim_produto');
+  const val = sel.value;
+  sel.innerHTML = '';
+  produtos.forEach((p, i) => {
+    const opt = document.createElement('option');
+    opt.value = i;
+    opt.textContent = p.nome;
+    if (String(i) === val) opt.selected = true;
+    sel.appendChild(opt);
+  });
+  simular();
+}
+
+function simular() {
+  const idx  = parseInt(document.getElementById('sim_produto').value);
+  const meta  = parseFloat(document.getElementById('sim_meta').value)  || 0;
+  const freq  = parseFloat(document.getElementById('sim_freq').value)  || 40;
+  const div   = document.getElementById('sim_resultado');
+
+  if (isNaN(idx) || !produtos[idx]) { div.style.display = 'none'; return; }
+
+  const p = produtos[idx];
+  const fator = freq / 100;
+
+  // Pedidos totais para atingir a meta de lucro com essa calda
+  // Lucro por pedido (com a calda) = precoSugerido - custoPorcao
+  const lucroPorPedidoComCalda = p.precoSugerido - p.custoPorcao;
+  const lucroPorPedidoTotal    = lucroPorPedidoComCalda * fator;
+
+  const pedidosMeta = meta > 0 ? Math.ceil(meta / lucroPorPedidoTotal) : 0;
+  const pedidosRepor = Math.ceil(p.custo / (p.precoSugerido * fator));
+
+  // Projeção diária (20 pedidos/dia)
+  const diasMeta  = pedidosMeta  > 0 ? Math.ceil(pedidosMeta  / 20) : 0;
+  const diasRepor = pedidosRepor > 0 ? Math.ceil(pedidosRepor / 20) : 0;
+
+  div.style.display = '';
+  div.innerHTML = `
+    <div class="row g-3 text-center">
+      <div class="col-6 col-md-3">
+        <div style="font-size:.7rem;color:#9ca3af;text-transform:uppercase;letter-spacing:.08em">
+          Lucro p/ pedido com calda
+        </div>
+        <div style="font-size:1.4rem;font-weight:800;color:#4ade80">
+          R$ ${lucroPorPedidoComCalda.toFixed(2).replace('.',',')}
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div style="font-size:.7rem;color:#9ca3af;text-transform:uppercase;letter-spacing:.08em">
+          Repor embalagem em
+        </div>
+        <div style="font-size:1.4rem;font-weight:800;color:#f5c518">
+          ${pedidosRepor} pedidos
+        </div>
+        <div style="font-size:.72rem;color:#6b7280">≈ ${diasRepor} dias (20 ped/dia)</div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div style="font-size:.7rem;color:#9ca3af;text-transform:uppercase;letter-spacing:.08em">
+          Meta R$ ${meta.toFixed(0)} em
+        </div>
+        <div style="font-size:1.4rem;font-weight:800;color:#a78bfa">
+          ${pedidosMeta} pedidos
+        </div>
+        <div style="font-size:.72rem;color:#6b7280">≈ ${diasMeta} dias (20 ped/dia)</div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div style="font-size:.7rem;color:#9ca3af;text-transform:uppercase;letter-spacing:.08em">
+          Lucro/embalagem completa
+        </div>
+        <div style="font-size:1.4rem;font-weight:800;color:#86efac">
+          R$ ${p.lucroEmbalagem.toFixed(2).replace('.',',')}
+        </div>
+        <div style="font-size:.72rem;color:#6b7280">${p.porcoes} porções vendidas</div>
+      </div>
+    </div>
+
+    <div class="mt-3 p-3 rounded" style="background:#1a1a2e;font-size:.82rem;color:#c4b8e0">
+      <strong style="color:#f0ebff">📋 Resumo ${p.nome}:</strong>
+      Embalagem de ${p.peso}kg custa <strong>R$ ${p.custo.toFixed(2).replace('.',',')}</strong> →
+      rende <strong>${p.porcoes} porções de ${p.porcao}g</strong> →
+      custo real por porção: <strong style="color:#fca5a5">R$ ${p.custoPorcao.toFixed(2).replace('.',',')}</strong> →
+      cobrando <strong style="color:#f5c518">R$ ${p.precoSugerido.toFixed(2).replace('.',',')}</strong> você repõe
+      a embalagem com apenas <strong style="color:#86efac">${p.pedidosRepor} vendas</strong> dessa calda,
+      e lucra <strong>R$ ${p.lucroEmbalagem.toFixed(2).replace('.',',')}</strong> quando vender as ${p.porcoes} porções.
+    </div>`;
+}
+
+function limparTudo() {
+  if (confirm('Limpar todos os produtos da análise?')) {
+    produtos = [];
+    renderTabela();
+    document.getElementById('sim_resultado').style.display = 'none';
+  }
+}
+</script>
+{% endblock %}

@@ -52,6 +52,11 @@
          href="{{ url_for('attendant.my_commissions') }}">
         <i class="bi bi-cash-coin"></i> Minhas Comissões
       </a>
+      <a class="nt-nav-link {% if request.endpoint == 'attendant.ai_assistant' %}active{% endif %}"
+         href="{{ url_for('attendant.ai_assistant') }}">
+        <i class="bi bi-robot" style="color:#a78bfa;"></i>
+        <span style="color:#a78bfa;">Assistente IA</span>
+      </a>
       <div class="nt-nav-label mt-2">Gestão</div>
       {% endif %}
       <a class="nt-nav-link {% if 'attendant' in request.endpoint %}active{% endif %}"
@@ -219,6 +224,12 @@
         {% if unread_chat_count %}
           <span class="badge ms-auto rounded-pill" style="background:#7c3aed;font-size:.65rem;">{{ unread_chat_count }}</span>
         {% endif %}
+      </a>
+      <a class="nt-nav-link {% if request.endpoint == 'attendant.ai_assistant' %}active{% endif %}"
+         href="{{ url_for('attendant.ai_assistant') }}"
+         style="{% if request.endpoint == 'attendant.ai_assistant' %}background:rgba(124,58,237,.2);{% endif %}">
+        <i class="bi bi-robot" style="color:#a78bfa;"></i>
+        <span style="color:#a78bfa;">Assistente IA</span>
       </a>
       <div style="border-top:1px solid var(--border);margin:10px 0;"></div>
       <button onclick="Tour.start(TOUR_STEPS)" class="nt-nav-link w-100 text-start"

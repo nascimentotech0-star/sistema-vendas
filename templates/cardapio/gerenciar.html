@@ -1,0 +1,251 @@
+{% extends "cardapio/base_acai.html" %}
+{% block title %}Gerenciar Cardápio — Açaídeira 77{% endblock %}
+
+{% block content %}
+<div style="max-width:860px">
+
+  <div class="d-flex align-items-center gap-2 mb-4">
+    <div>
+      <h4 class="mb-0 fw-bold" style="color:var(--texto)">🫐 Gerenciar Cardápio</h4>
+      <small style="color:var(--texto2)">Preços, ativações e calculadora de custo</small>
+    </div>
+  </div>
+
+  <!-- ═══ PREÇOS DOS COPOS ═══ -->
+  <div class="card border-secondary mb-4" style="background:#1a1a2e">
+    <div class="card-header border-secondary">
+      <strong>🥤 Preços dos Copos (Delivery)</strong>
+    </div>
+    <div class="card-body">
+      <div class="row g-3">
+        {% for copo in data.copos %}
+        <div class="col-md-4">
+          <form method="POST" class="d-flex gap-2 align-items-center">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="action"  value="update_copo">
+            <input type="hidden" name="tamanho" value="{{ copo.tamanho }}">
+            <label class="text-light" style="white-space:nowrap;min-width:110px">
+              {{ copo.nome }} <small class="text-muted">({{ copo.tamanho }})</small>
+            </label>
+            <div class="input-group input-group-sm">
+              <span class="input-group-text bg-dark border-secondary text-muted">R$</span>
+              <input type="text" name="preco"
+                     value="{{ '%.2f'|format(copo.preco) }}"
+                     class="form-control bg-dark text-light border-secondary"
+                     style="max-width:80px">
+              <button type="submit" class="btn btn-sm btn-outline-success">✓</button>
+            </div>
+          </form>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ CALCULADORA DE CALDA ═══ -->
+  <div class="card border-secondary mb-4" style="background:#1a1a2e">
+    <div class="card-header border-secondary d-flex align-items-center gap-2">
+      <strong>🧮 Calculadora de Preço de Calda/Complemento</strong>
+      <button class="btn btn-link p-0 ms-auto text-muted" type="button"
+              data-bs-toggle="collapse" data-bs-target="#calc">
+        <i class="bi bi-chevron-down"></i>
+      </button>
+    </div>
+    <div class="collapse show" id="calc">
+      <div class="card-body">
+        <div class="row g-3 align-items-end">
+          <div class="col-6 col-md-3">
+            <label class="form-label text-muted" style="font-size:.8rem">Custo da embalagem (R$)</label>
+            <input type="number" id="c_custo" class="form-control bg-dark text-light border-secondary"
+                   placeholder="179,90" step="0.01" oninput="calcPreco()">
+          </div>
+          <div class="col-6 col-md-3">
+            <label class="form-label text-muted" style="font-size:.8rem">Porções por embalagem</label>
+            <input type="number" id="c_porcoes" class="form-control bg-dark text-light border-secondary"
+                   placeholder="ex: 80" oninput="calcPreco()">
+          </div>
+          <div class="col-6 col-md-3">
+            <label class="form-label text-muted" style="font-size:.8rem">Margem de lucro (%)</label>
+            <input type="number" id="c_margem" class="form-control bg-dark text-light border-secondary"
+                   value="80" step="5" oninput="calcPreco()">
+          </div>
+          <div class="col-6 col-md-3">
+            <label class="form-label text-muted" style="font-size:.8rem">Resultado sugerido</label>
+            <div id="c_resultado"
+                 class="form-control bg-dark border-secondary text-center fw-bold"
+                 style="color:#f5c518;font-size:1.1rem">
+              —
+            </div>
+          </div>
+        </div>
+        <div id="c_detalhe" class="mt-2" style="font-size:.8rem;color:#9ca3af"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ CATEGORIAS DE COMPLEMENTOS ═══ -->
+  {% set categorias = [
+    ('acompanhamentos', '✅ Acompanhamentos', 'Até 3 grátis (preco = 0) ou cobrado',  'success'),
+    ('caldas',          '🍫 Caldas',          'Preço por porção',                       'info'),
+    ('adicionais',      '🍬 Adicionais',      'Preço por unidade',                      'warning'),
+    ('sabores',         '🍇 Sabores',         'Flavors do copo — ativar/desativar',     'purple')
+  ] %}
+
+  {% for key, titulo, subtitulo, cor in categorias %}
+  {% set ativos   = data[key] | selectattr('ativo') | list %}
+  {% set inativos = data[key] | rejectattr('ativo') | list %}
+
+  <div class="card border-secondary mb-4" style="background:#1a1a2e">
+    <div class="card-header d-flex align-items-center justify-content-between border-secondary">
+      <div>
+        <strong>{{ titulo }}</strong>
+        <small class="text-muted ms-2">{{ subtitulo }}</small>
+      </div>
+      <div class="d-flex gap-2">
+        <span class="badge bg-success">{{ ativos|length }} ativos</span>
+        {% if inativos %}<span class="badge bg-secondary">{{ inativos|length }} inativos</span>{% endif %}
+      </div>
+    </div>
+
+    <div class="card-body">
+
+      <!-- Itens ativos -->
+      {% if ativos %}
+      <p class="text-muted mb-2" style="font-size:.72rem;text-transform:uppercase;letter-spacing:.08em">
+        Visíveis no cardápio
+      </p>
+      <div class="mb-3">
+        {% for item in ativos %}
+        <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
+
+          <!-- Nome -->
+          <span class="badge rounded-pill"
+                style="background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.3);color:#86efac;font-weight:600;font-size:.8rem">
+            {{ item.nome }}
+          </span>
+
+          <!-- Preço (apenas para não-sabores) -->
+          {% if key != 'sabores' %}
+          <form method="POST" class="d-flex align-items-center gap-1">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="action"   value="update_preco">
+            <input type="hidden" name="category" value="{{ key }}">
+            <input type="hidden" name="nome"     value="{{ item.nome }}">
+            <div class="input-group input-group-sm" style="width:130px">
+              <span class="input-group-text bg-dark border-secondary text-muted"
+                    style="font-size:.72rem">R$</span>
+              <input type="text" name="preco"
+                     value="{{ '%.2f'|format(item.preco) if item.preco else '0.00' }}"
+                     class="form-control bg-dark text-light border-secondary"
+                     style="font-size:.78rem">
+              <button type="submit" class="btn btn-sm btn-outline-secondary"
+                      style="font-size:.72rem">✓</button>
+            </div>
+            {% if item.preco == 0 %}
+              <span style="font-size:.7rem;color:#4ade80">grátis</span>
+            {% endif %}
+          </form>
+          {% endif %}
+
+          <!-- Toggle off -->
+          <form method="POST" class="d-inline">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="action"   value="toggle">
+            <input type="hidden" name="category" value="{{ key }}">
+            <input type="hidden" name="nome"     value="{{ item.nome }}">
+            <button type="submit" class="btn btn-link p-0 border-0"
+                    title="Desativar" style="color:#f87171;font-size:.9rem">⏸</button>
+          </form>
+
+          <!-- Remover -->
+          <form method="POST" class="d-inline">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="action"   value="remove">
+            <input type="hidden" name="category" value="{{ key }}">
+            <input type="hidden" name="nome"     value="{{ item.nome }}">
+            <button type="submit" class="btn btn-link p-0 border-0"
+                    title="Remover" style="color:#6b7280;font-size:.8rem"
+                    onclick="return confirm('Remover permanentemente?')">✕</button>
+          </form>
+
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      <!-- Itens inativos -->
+      {% if inativos %}
+      <p class="text-muted mb-2 mt-3" style="font-size:.72rem;text-transform:uppercase;letter-spacing:.08em">
+        Ocultos — clique ▶ para ativar
+      </p>
+      <div class="d-flex flex-wrap gap-2 mb-3">
+        {% for item in inativos %}
+        <div class="d-flex align-items-center gap-1 rounded-pill px-2 py-1"
+             style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1)">
+          <span style="font-size:.78rem;color:#6b7280">{{ item.nome }}</span>
+          <form method="POST" class="d-inline ms-1">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="action"   value="toggle">
+            <input type="hidden" name="category" value="{{ key }}">
+            <input type="hidden" name="nome"     value="{{ item.nome }}">
+            <button type="submit" class="btn btn-link p-0 border-0"
+                    title="Ativar" style="color:#4ade80;font-size:.85rem">▶</button>
+          </form>
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      <!-- Adicionar novo -->
+      <form method="POST" class="d-flex gap-2 align-items-center flex-wrap mt-2">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="action"   value="add">
+        <input type="hidden" name="category" value="{{ key }}">
+        <input type="text" name="nome" required placeholder="Novo item..."
+               class="form-control form-control-sm border-secondary text-light"
+               style="background:#0e0718;max-width:220px">
+        {% if key != 'sabores' %}
+        <div class="input-group input-group-sm" style="max-width:120px">
+          <span class="input-group-text bg-dark border-secondary text-muted">R$</span>
+          <input type="text" name="preco" value="0.00"
+                 class="form-control bg-dark text-light border-secondary"
+                 placeholder="0.00">
+        </div>
+        {% endif %}
+        <button type="submit" class="btn btn-sm btn-outline-success">
+          <i class="bi bi-plus-lg"></i> Adicionar
+        </button>
+      </form>
+
+    </div>
+  </div>
+  {% endfor %}
+
+</div>
+
+{% endblock %}
+{% block scripts %}
+<script>
+function calcPreco() {
+  const custo   = parseFloat(document.getElementById('c_custo').value)   || 0;
+  const porcoes = parseInt(document.getElementById('c_porcoes').value)    || 0;
+  const margem  = parseFloat(document.getElementById('c_margem').value)   || 80;
+  const res     = document.getElementById('c_resultado');
+  const det     = document.getElementById('c_detalhe');
+
+  if (custo <= 0 || porcoes <= 0) {
+    res.textContent = '—'; det.textContent = ''; return;
+  }
+
+  const custoPorcao = custo / porcoes;
+  const precoSuger  = custoPorcao * (1 + margem / 100);
+  const precoFinal  = Math.ceil(precoSuger / 0.5) * 0.5; // arredonda p/ R$0,50
+
+  res.textContent = 'R$ ' + precoFinal.toFixed(2).replace('.', ',');
+  det.innerHTML =
+    `Custo por porção: <strong>R$ ${custoPorcao.toFixed(2).replace('.', ',')}</strong> · ` +
+    `Com ${margem}% de margem: R$ ${precoSuger.toFixed(2).replace('.', ',')} · ` +
+    `Você repõe a embalagem após <strong>${Math.ceil(custo / precoFinal)} vendas</strong> dessa calda.`;
+}
+</script>
+{% endblock %}

@@ -78,15 +78,58 @@
               {% else %}
                 <span class="badge bg-light text-muted border">Normal</span>
               {% endif %}
+              {# Alerta: OCR detectou horário normal mas venda marcada como hora extra #}
+              {% if s.is_overtime and s.ocr_detected_time %}
+                {% set ocr_h = s.ocr_detected_time.split(':')[0]|int %}
+                {% if ocr_h >= 8 and ocr_h < 22 %}
+                  <span class="badge ms-1" style="background:rgba(239,68,68,.2);color:#fca5a5;border:1px solid rgba(239,68,68,.3);"
+                        title="OCR detectou {{ s.ocr_detected_time }}h no comprovante — horário de turno normal">
+                    <i class="bi bi-exclamation-triangle-fill me-1"></i>OCR {{ s.ocr_detected_time }}
+                  </span>
+                {% endif %}
+              {% elif not s.is_overtime and s.ocr_detected_time %}
+                <small class="text-muted ms-1" title="Hora lida do comprovante via OCR">{{ s.ocr_detected_time }}</small>
+              {% endif %}
             </td>
             <td>
+              {# Botão do comprovante #}
               {% if s.comprovante_filename %}
-                <a href="{{ url_for('serve_upload', filename=s.comprovante_filename) }}" target="_blank" class="btn btn-sm btn-outline-info py-0">
+                <a href="{{ url_for('serve_upload', filename=s.comprovante_filename) }}" target="_blank" class="btn btn-sm btn-outline-info py-0"
+                   title="Ver comprovante">
                   <i class="bi bi-file-image"></i>
                 </a>
               {% else %}
                 <span class="text-muted">—</span>
               {% endif %}
+
+              {# Badge IA suspeito #}
+              {% if s.ai_suspicious %}
+                <span class="badge ms-1 d-block mt-1"
+                      style="background:rgba(239,68,68,.2);color:#fca5a5;border:1px solid rgba(239,68,68,.4);cursor:pointer;"
+                      title="{{ s.ai_notes or 'IA detectou possível irregularidade neste comprovante' }}">
+                  <i class="bi bi-shield-exclamation me-1"></i>IA: Suspeito
+                </span>
+              {% endif %}
+
+              {# Valor não confere #}
+              {% if s.ai_amount_match == false %}
+                <span class="badge ms-1 d-block mt-1"
+                      style="background:rgba(245,158,11,.15);color:#fcd34d;border:1px solid rgba(245,158,11,.3);"
+                      title="IA detectou R$ {{ '%.2f'|format(s.ai_detected_amount) if s.ai_detected_amount else '?' }} no comprovante — esperado R$ {{ '%.2f'|format(s.amount) }}">
+                  <i class="bi bi-currency-dollar me-1"></i>Valor diverge
+                </span>
+              {% endif %}
+
+              {# Hora IA / hora informada #}
+              {% if s.ai_detected_time %}
+                <small class="text-muted d-block mt-1" title="Hora detectada pela IA">
+                  <i class="bi bi-robot me-1" style="color:#a78bfa;"></i>{{ s.ai_detected_time }}
+                </small>
+              {% elif s.registered_payment_time %}
+                <small class="text-muted d-block mt-1" title="Hora informada pelo atendente">{{ s.registered_payment_time }}</small>
+              {% endif %}
+
+              {# Nota da IA (tooltip já está nos badges; exibe para suspeito) #}
             </td>
             <td class="text-muted small">{{ s.created_at.strftime('%d/%m/%Y %H:%M') }}</td>
             <td class="d-flex gap-1">

@@ -1,0 +1,393 @@
+{% extends "cardapio/base_acai.html" %}
+{% block title %}Gestão da Açaídeira 77{% endblock %}
+
+{% block content %}
+{% set custos_fixos_total = g.custos_fixos | sum(attribute='valor') %}
+{% set cv = g.custos_variaveis %}
+{% set ticket = g.ticket_medio %}
+{% set cmv = ticket * cv.cmv_pct / 100 %}
+{% set custo_variavel_total = cmv + cv.embalagem_por_pedido + cv.taxa_entrega_por_pedido %}
+{% set margem_contribuicao = ticket - custo_variavel_total %}
+{% set ponto_equilibrio = (custos_fixos_total / margem_contribuicao) | round(0, 'ceil') | int if margem_contribuicao > 0 else 0 %}
+{% set pedidos_dia = g.pedidos_dia_estimado %}
+{% set dias_para_pagar = (ponto_equilibrio / pedidos_dia) | round(1) if pedidos_dia > 0 else 0 %}
+{% set receita_mensal_est = ticket * pedidos_dia * 30 %}
+{% set lucro_mensal_est = receita_mensal_est - (custo_variavel_total * pedidos_dia * 30) - custos_fixos_total %}
+{% set total_fornecedor = g.pedidos_fornecedor | sum(attribute='valor') %}
+{% set pedidos_repor_fornecedor = (total_fornecedor / margem_contribuicao) | round(0, 'ceil') | int if margem_contribuicao > 0 else 0 %}
+{% set pedidos_meta_caixa = ((g.meta_caixa - g.caixa_atual) / margem_contribuicao) | round(0, 'ceil') | int if margem_contribuicao > 0 and g.meta_caixa > g.caixa_atual else 0 %}
+{% set pct_caixa = [(g.caixa_atual / g.meta_caixa * 100), 100] | min | round(1) if g.meta_caixa > 0 else 0 %}
+
+<div style="max-width:960px">
+
+  <!-- Cabeçalho -->
+  <div class="mb-4">
+    <h4 class="mb-0 fw-bold" style="color:var(--texto)">📊 Gestão da Açaídeira 77</h4>
+    <small style="color:var(--texto2)">Ponto de equilíbrio, metas e controle financeiro</small>
+  </div>
+
+  <!-- ═══ CARDS DE RESUMO ═══ -->
+  <div class="row g-3 mb-4">
+
+    <div class="col-6 col-md-3">
+      <div class="card border-0 h-100 text-center p-3" style="background:#1a1a2e">
+        <div style="font-size:.7rem;text-transform:uppercase;letter-spacing:.1em;color:#9ca3af">
+          Custo Fixo/Mês
+        </div>
+        <div style="font-size:1.7rem;font-weight:900;color:#f87171">
+          R$ {{ '%.0f'|format(custos_fixos_total) }}
+        </div>
+        <div style="font-size:.72rem;color:#6b7280">aluguel + energia + água</div>
+      </div>
+    </div>
+
+    <div class="col-6 col-md-3">
+      <div class="card border-0 h-100 text-center p-3" style="background:#1a1a2e">
+        <div style="font-size:.7rem;text-transform:uppercase;letter-spacing:.1em;color:#9ca3af">
+          Margem por Pedido
+        </div>
+        <div style="font-size:1.7rem;font-weight:900;color:#4ade80">
+          R$ {{ '%.2f'|format(margem_contribuicao)|replace('.', ',') }}
+        </div>
+        <div style="font-size:.72rem;color:#6b7280">ticket R${{ '%.0f'|format(ticket) }} − custos variáveis</div>
+      </div>
+    </div>
+
+    <div class="col-6 col-md-3">
+      <div class="card border-0 h-100 text-center p-3" style="background:#1a1a2e">
+        <div style="font-size:.7rem;text-transform:uppercase;letter-spacing:.1em;color:#9ca3af">
+          Ponto de Equilíbrio
+        </div>
+        <div style="font-size:1.7rem;font-weight:900;color:#f5c518">
+          {{ ponto_equilibrio }} pedidos
+        </div>
+        <div style="font-size:.72rem;color:#6b7280">≈ {{ dias_para_pagar }} dias ({{ pedidos_dia }}/dia)</div>
+      </div>
+    </div>
+
+    <div class="col-6 col-md-3">
+      <div class="card border-0 h-100 text-center p-3" style="background:#1a1a2e">
+        <div style="font-size:.7rem;text-transform:uppercase;letter-spacing:.1em;color:#9ca3af">
+          Lucro Estimado/Mês
+        </div>
+        <div style="font-size:1.7rem;font-weight:900;
+             color:{{ '#4ade80' if lucro_mensal_est >= 0 else '#f87171' }}">
+          R$ {{ '%.0f'|format(lucro_mensal_est) }}
+        </div>
+        <div style="font-size:.72rem;color:#6b7280">com {{ pedidos_dia }} pedidos/dia</div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="row g-4">
+    <div class="col-md-7">
+
+      <!-- ═══ PONTO DE EQUILÍBRIO DETALHADO ═══ -->
+      <div class="card border-secondary mb-4" style="background:#1a1a2e">
+        <div class="card-header border-secondary">
+          <strong>⚖️ Ponto de Equilíbrio — Quanto precisa vender</strong>
+        </div>
+        <div class="card-body">
+
+          <div class="mb-3">
+            <div class="d-flex justify-content-between mb-1" style="font-size:.82rem">
+              <span class="text-muted">Cobrir custos fixos mensais</span>
+              <strong style="color:#f5c518">{{ ponto_equilibrio }} pedidos</strong>
+            </div>
+            <div class="progress" style="height:8px;background:#0e0718">
+              <div class="progress-bar bg-warning"
+                   style="width:{{ [pedidos_dia * 30 / ponto_equilibrio * 100, 100]|min|round if ponto_equilibrio > 0 else 0 }}%"></div>
+            </div>
+            <div style="font-size:.72rem;color:#6b7280;margin-top:.3rem">
+              {{ pedidos_dia }} pedidos/dia = {{ pedidos_dia * 30 }} pedidos/mês
+              {% if pedidos_dia * 30 >= ponto_equilibrio %}
+                <span class="text-success ms-1">✅ Meta atingível!</span>
+              {% else %}
+                <span class="text-warning ms-1">⚠ Precisa aumentar volume</span>
+              {% endif %}
+            </div>
+          </div>
+
+          {% if total_fornecedor > 0 %}
+          <div class="mb-3">
+            <div class="d-flex justify-content-between mb-1" style="font-size:.82rem">
+              <span class="text-muted">Repor pedidos ao fornecedor (R$ {{ '%.0f'|format(total_fornecedor) }})</span>
+              <strong style="color:#a78bfa">{{ pedidos_repor_fornecedor }} pedidos</strong>
+            </div>
+            <div class="progress" style="height:8px;background:#0e0718">
+              <div class="progress-bar" style="background:#a78bfa;
+                   width:{{ [pedidos_dia * 30 / pedidos_repor_fornecedor * 100, 100]|min|round if pedidos_repor_fornecedor > 0 else 0 }}%"></div>
+            </div>
+          </div>
+          {% endif %}
+
+          {% if pedidos_meta_caixa > 0 %}
+          <div class="mb-3">
+            <div class="d-flex justify-content-between mb-1" style="font-size:.82rem">
+              <span class="text-muted">Construir caixa de R$ {{ '%.0f'|format(g.meta_caixa) }}</span>
+              <strong style="color:#86efac">{{ pedidos_meta_caixa }} pedidos</strong>
+            </div>
+            <div class="progress" style="height:8px;background:#0e0718">
+              <div class="progress-bar bg-success" style="width:{{ pct_caixa }}%"></div>
+            </div>
+            <div style="font-size:.72rem;color:#6b7280;margin-top:.3rem">
+              Caixa atual: R$ {{ '%.2f'|format(g.caixa_atual)|replace('.', ',') }}
+              ({{ pct_caixa }}% da meta)
+            </div>
+          </div>
+          {% endif %}
+
+          <!-- Tabela de simulação diária -->
+          <div class="mt-3">
+            <p style="font-size:.78rem;font-weight:700;color:#9ca3af;
+               text-transform:uppercase;letter-spacing:.08em;margin-bottom:.6rem">
+              Simulação de lucro mensal por volume de vendas
+            </p>
+            <div class="table-responsive">
+              <table class="table table-dark table-sm mb-0" style="font-size:.82rem">
+                <thead style="color:#6b7280">
+                  <tr>
+                    <th>Pedidos/dia</th>
+                    <th>Receita/mês</th>
+                    <th>Custos/mês</th>
+                    <th>Lucro/mês</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for qtd in [10, 20, 30, 50, 80, 120] %}
+                  {% set rec = ticket * qtd * 30 %}
+                  {% set cus = custo_variavel_total * qtd * 30 + custos_fixos_total %}
+                  {% set luc = rec - cus %}
+                  <tr {% if qtd == pedidos_dia %}style="background:rgba(124,47,212,.15)"{% endif %}>
+                    <td>
+                      <strong {% if qtd == pedidos_dia %}style="color:#f5c518"{% endif %}>{{ qtd }}/dia</strong>
+                    </td>
+                    <td>R$ {{ '%.0f'|format(rec) }}</td>
+                    <td>R$ {{ '%.0f'|format(cus) }}</td>
+                    <td style="color:{{ '#4ade80' if luc >= 0 else '#f87171' }};font-weight:700">
+                      R$ {{ '%.0f'|format(luc) }}
+                    </td>
+                    <td style="font-size:.72rem">
+                      {% if luc >= g.meta_caixa / 12 %}
+                        <span style="color:#4ade80">🚀 Crescendo</span>
+                      {% elif luc > 0 %}
+                        <span style="color:#f5c518">✅ No lucro</span>
+                      {% else %}
+                        <span style="color:#f87171">❌ Prejuízo</span>
+                      {% endif %}
+                    </td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ═══ PEDIDOS AO FORNECEDOR ═══ -->
+      <div class="card border-secondary mb-4" style="background:#1a1a2e">
+        <div class="card-header border-secondary d-flex justify-content-between">
+          <strong>📦 Pedidos ao Fornecedor</strong>
+          <span style="color:#a78bfa;font-weight:700">Total: R$ {{ '%.2f'|format(total_fornecedor)|replace('.', ',') }}</span>
+        </div>
+        <div class="card-body">
+          {% for ped in g.pedidos_fornecedor %}
+          <div class="d-flex align-items-center justify-content-between mb-2 p-2 rounded"
+               style="background:#13102a">
+            <div>
+              <div style="font-size:.85rem;font-weight:600">{{ ped.descricao }}</div>
+              <div style="font-size:.72rem;color:#6b7280">{{ ped.data }}</div>
+            </div>
+            <div class="d-flex align-items-center gap-3">
+              <strong style="color:#fca5a5">R$ {{ '%.2f'|format(ped.valor)|replace('.', ',') }}</strong>
+              <form method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="action" value="remove_pedido">
+                <input type="hidden" name="idx" value="{{ loop.index0 }}">
+                <button type="submit" class="btn btn-link p-0 text-danger"
+                        onclick="return confirm('Remover?')" style="font-size:.8rem">✕</button>
+              </form>
+            </div>
+          </div>
+          {% else %}
+          <p class="text-muted fst-italic" style="font-size:.85rem">Nenhum pedido registrado.</p>
+          {% endfor %}
+
+          <form method="POST" class="mt-3">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="action" value="add_pedido">
+            <div class="row g-2">
+              <div class="col-md-5">
+                <input type="text" name="desc" required placeholder="Descrição (ex: Pedido açaí março)"
+                       class="form-control form-control-sm bg-dark text-light border-secondary">
+              </div>
+              <div class="col-md-3">
+                <input type="date" name="data_ped"
+                       value="{{ '' }}"
+                       class="form-control form-control-sm bg-dark text-light border-secondary">
+              </div>
+              <div class="col-md-2">
+                <input type="text" name="valor_ped" required placeholder="R$ valor"
+                       class="form-control form-control-sm bg-dark text-light border-secondary">
+              </div>
+              <div class="col-md-2">
+                <button type="submit" class="btn btn-sm btn-outline-success w-100">
+                  + Registrar
+                </button>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="col-md-5">
+
+      <!-- ═══ CUSTOS FIXOS ═══ -->
+      <div class="card border-secondary mb-4" style="background:#1a1a2e">
+        <div class="card-header border-secondary d-flex justify-content-between">
+          <strong>🏪 Custos Fixos Mensais</strong>
+          <strong style="color:#f87171">R$ {{ '%.2f'|format(custos_fixos_total)|replace('.', ',') }}</strong>
+        </div>
+        <div class="card-body">
+          {% for custo in g.custos_fixos %}
+          <div class="d-flex align-items-center gap-2 mb-2">
+            <span class="text-light flex-grow-1" style="font-size:.85rem">{{ custo.nome }}</span>
+            <form method="POST" class="d-flex gap-1">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <input type="hidden" name="action" value="update_custo">
+              <input type="hidden" name="idx"    value="{{ loop.index0 }}">
+              <div class="input-group input-group-sm" style="width:120px">
+                <span class="input-group-text bg-dark border-secondary text-muted">R$</span>
+                <input type="text" name="valor"
+                       value="{{ '%.2f'|format(custo.valor)|replace('.', ',') }}"
+                       class="form-control bg-dark text-light border-secondary">
+                <button type="submit" class="btn btn-outline-secondary">✓</button>
+              </div>
+            </form>
+            <form method="POST">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <input type="hidden" name="action" value="remove_custo">
+              <input type="hidden" name="idx"    value="{{ loop.index0 }}">
+              <button type="submit" class="btn btn-link p-0 text-danger"
+                      onclick="return confirm('Remover?')" style="font-size:.8rem">✕</button>
+            </form>
+          </div>
+          {% endfor %}
+
+          <form method="POST" class="d-flex gap-2 mt-3">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="action" value="add_custo">
+            <input type="text" name="custo_nome" required placeholder="Nome do custo"
+                   class="form-control form-control-sm bg-dark text-light border-secondary">
+            <div class="input-group input-group-sm" style="max-width:120px">
+              <span class="input-group-text bg-dark border-secondary text-muted">R$</span>
+              <input type="text" name="custo_valor" required placeholder="0,00"
+                     class="form-control bg-dark text-light border-secondary">
+            </div>
+            <button type="submit" class="btn btn-sm btn-outline-success">+</button>
+          </form>
+        </div>
+      </div>
+
+      <!-- ═══ META DO CAIXA ═══ -->
+      <div class="card border-secondary mb-4" style="background:#1a1a2e">
+        <div class="card-header border-secondary"><strong>🏦 Meta de Caixa</strong></div>
+        <div class="card-body text-center">
+          <div style="font-size:2.2rem;font-weight:900;color:#86efac">
+            R$ {{ '%.2f'|format(g.caixa_atual)|replace('.', ',') }}
+          </div>
+          <div style="font-size:.8rem;color:#9ca3af;margin-bottom:.8rem">
+            de R$ {{ '%.0f'|format(g.meta_caixa) }} ({{ pct_caixa }}%)
+          </div>
+          <div class="progress mb-3" style="height:14px;background:#0e0718;border-radius:99px">
+            <div class="progress-bar bg-success" role="progressbar"
+                 style="width:{{ pct_caixa }}%;border-radius:99px;
+                        background:linear-gradient(90deg,#4ade80,#86efac)!important"></div>
+          </div>
+          {% if pedidos_meta_caixa > 0 %}
+          <div style="font-size:.8rem;color:#6b7280">
+            Faltam <strong style="color:#86efac">{{ pedidos_meta_caixa }} pedidos</strong>
+            (≈ {{ (pedidos_meta_caixa / pedidos_dia)|round(0,'ceil')|int if pedidos_dia > 0 else '?' }} dias)
+            para atingir a meta
+          </div>
+          {% else %}
+          <div class="text-success fw-bold">🎉 Meta atingida!</div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- ═══ CONFIGURAÇÕES ═══ -->
+      <div class="card border-secondary" style="background:#1a1a2e">
+        <div class="card-header border-secondary"><strong>⚙️ Parâmetros do Cálculo</strong></div>
+        <div class="card-body">
+          <form method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="action" value="update_config">
+
+            <div class="mb-2">
+              <label class="form-label text-muted" style="font-size:.78rem">Ticket médio delivery (R$)</label>
+              <input type="text" name="ticket_medio"
+                     value="{{ '%.2f'|format(g.ticket_medio)|replace('.', ',') }}"
+                     class="form-control form-control-sm bg-dark text-light border-secondary">
+            </div>
+            <div class="mb-2">
+              <label class="form-label text-muted" style="font-size:.78rem">
+                CMV — % do ticket que vai para produto
+                <span style="font-size:.7rem">(custo açaí + complementos)</span>
+              </label>
+              <div class="input-group input-group-sm">
+                <input type="number" name="cmv_pct"
+                       value="{{ cv.cmv_pct }}"
+                       class="form-control bg-dark text-light border-secondary"
+                       min="1" max="99">
+                <span class="input-group-text bg-dark border-secondary text-muted">%</span>
+              </div>
+            </div>
+            <div class="mb-2">
+              <label class="form-label text-muted" style="font-size:.78rem">Custo embalagem por pedido (R$)</label>
+              <input type="text" name="embalagem"
+                     value="{{ '%.2f'|format(cv.embalagem_por_pedido)|replace('.', ',') }}"
+                     class="form-control form-control-sm bg-dark text-light border-secondary">
+            </div>
+            <div class="mb-2">
+              <label class="form-label text-muted" style="font-size:.78rem">Taxa de entrega (R$ por pedido)</label>
+              <input type="text" name="taxa_entrega"
+                     value="{{ '%.2f'|format(cv.taxa_entrega_por_pedido)|replace('.', ',') }}"
+                     class="form-control form-control-sm bg-dark text-light border-secondary">
+            </div>
+            <div class="mb-2">
+              <label class="form-label text-muted" style="font-size:.78rem">Pedidos/dia estimados</label>
+              <input type="number" name="pedidos_dia"
+                     value="{{ g.pedidos_dia_estimado }}"
+                     class="form-control form-control-sm bg-dark text-light border-secondary"
+                     min="1">
+            </div>
+            <div class="mb-2">
+              <label class="form-label text-muted" style="font-size:.78rem">Meta do caixa (R$)</label>
+              <input type="text" name="meta_caixa"
+                     value="{{ '%.2f'|format(g.meta_caixa)|replace('.', ',') }}"
+                     class="form-control form-control-sm bg-dark text-light border-secondary">
+            </div>
+            <div class="mb-3">
+              <label class="form-label text-muted" style="font-size:.78rem">Caixa atual (R$)</label>
+              <input type="text" name="caixa_atual"
+                     value="{{ '%.2f'|format(g.caixa_atual)|replace('.', ',') }}"
+                     class="form-control form-control-sm bg-dark text-light border-secondary">
+            </div>
+            <button type="submit" class="btn btn-sm btn-success w-100">
+              Salvar Configurações
+            </button>
+          </form>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+{% endblock %}

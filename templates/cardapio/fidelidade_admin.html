@@ -1,0 +1,200 @@
+{% extends "cardapio/base_acai.html" %}
+{% block title %}Fidelidade — Clientes{% endblock %}
+
+{% block content %}
+<div style="max-width:900px">
+
+  <div class="mb-4">
+    <h4 class="mb-0 fw-bold" style="color:var(--texto)">🎁 Fidelidade — Clientes</h4>
+    <small style="color:var(--texto2)">Gerencie os cartões dos clientes de delivery</small>
+  </div>
+
+  <!-- Resumo rápido -->
+  {% set total_clientes = clientes | length %}
+  {% set com_free = clientes | selectattr('tem_free_pendente') | list | length %}
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+      <div class="card border-0 text-center p-3" style="background:#1a1a2e">
+        <div style="font-size:.68rem;text-transform:uppercase;letter-spacing:.1em;color:#9ca3af">Clientes</div>
+        <div style="font-size:1.8rem;font-weight:900;color:#a5b4fc">{{ total_clientes }}</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card border-0 text-center p-3" style="background:#1a1a2e">
+        <div style="font-size:.68rem;text-transform:uppercase;letter-spacing:.1em;color:#9ca3af">Free Pendente</div>
+        <div style="font-size:1.8rem;font-weight:900;color:#f5c518">{{ com_free }}</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card border-0 text-center p-3" style="background:#1a1a2e">
+        <div style="font-size:.68rem;text-transform:uppercase;letter-spacing:.1em;color:#9ca3af">Total Pedidos</div>
+        <div style="font-size:1.8rem;font-weight:900;color:#4ade80">
+          {{ clientes | sum(attribute='total_pagos') }}
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card border-0 text-center p-3" style="background:#1a1a2e">
+        <div style="font-size:.68rem;text-transform:uppercase;letter-spacing:.1em;color:#9ca3af">Free Resgatados</div>
+        <div style="font-size:1.8rem;font-weight:900;color:#86efac">
+          {{ clientes | sum(attribute='free_resgatados') }}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Busca -->
+  <form method="GET" class="d-flex gap-2 mb-4">
+    <input type="text" name="q" value="{{ busca }}"
+           placeholder="Buscar por nome ou telefone..."
+           class="form-control bg-dark text-light border-secondary">
+    <button type="submit" class="btn btn-outline-secondary">🔍</button>
+    {% if busca %}
+      <a href="{{ url_for('cardapio.fidelidade_admin') }}" class="btn btn-outline-danger">✕</a>
+    {% endif %}
+  </form>
+
+  <!-- Lista de clientes -->
+  {% if not clientes %}
+    <div class="text-center text-muted py-5">
+      <div style="font-size:3rem">🫐</div>
+      <p class="mt-2">Nenhum cliente cadastrado ainda.</p>
+    </div>
+  {% endif %}
+
+  {% for c in clientes %}
+  <div class="card border-secondary mb-3" style="background:#1a1a2e;
+       {% if c.tem_free_pendente %}border-color:rgba(245,197,24,.5)!important{% endif %}">
+    <div class="card-body py-3">
+      <div class="row align-items-center g-2">
+
+        <!-- Nome e info -->
+        <div class="col-12 col-md-3">
+          <div class="fw-bold" style="font-size:.95rem">{{ c.nome }}</div>
+          <div style="font-size:.75rem;color:#9ca3af">📱 {{ c.telefone }}</div>
+          {% if c.email %}
+          <div style="font-size:.72rem;color:#6b7280">✉ {{ c.email }}</div>
+          {% endif %}
+          <div style="font-size:.7rem;color:#4b5563;margin-top:.2rem">
+            Desde {{ c.created_at.strftime('%d/%m/%y') }}
+          </div>
+        </div>
+
+        <!-- Selos visuais -->
+        <div class="col-12 col-md-5">
+          <div style="font-size:.7rem;color:#9ca3af;margin-bottom:.4rem">
+            Cartão atual — {{ c.selos_atuais }}/8
+            {% if c.cartoes_completos > 0 %}
+              · <span style="color:#a78bfa">{{ c.cartoes_completos }} completo(s)</span>
+            {% endif %}
+          </div>
+          <div style="display:flex;gap:.3rem;flex-wrap:wrap">
+            {% for i in range(1, 9) %}
+            <div style="width:28px;height:28px;border-radius:8px;display:flex;
+                 align-items:center;justify-content:center;font-size:.9rem;
+                 {% if i <= c.selos_atuais %}
+                   background:linear-gradient(135deg,#7c2fd4,#9d4edd);border:1px solid #9d4edd
+                 {% else %}
+                   background:rgba(255,255,255,.04);border:1px dashed rgba(157,78,221,.25)
+                 {% endif %}">
+              {{ '🫐' if i <= c.selos_atuais else '' }}
+            </div>
+            {% endfor %}
+          </div>
+          {% if c.tem_free_pendente %}
+          <div class="mt-1" style="font-size:.75rem;font-weight:700;color:#f5c518">
+            🎉 Açaí grátis pendente de resgate!
+          </div>
+          {% endif %}
+        </div>
+
+        <!-- Ações -->
+        <div class="col-12 col-md-4 d-flex gap-2 flex-wrap justify-content-md-end">
+
+          {% if c.tem_free_pendente %}
+          <form method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="action"     value="resgatar">
+            <input type="hidden" name="cliente_id" value="{{ c.id }}">
+            <button type="submit" class="btn btn-sm btn-warning fw-bold"
+                    onclick="return confirm('Marcar açaí grátis de {{ c.nome }} como resgatado?')">
+              🎁 Resgatar Free
+            </button>
+          </form>
+          {% endif %}
+
+          <!-- Registrar pedido -->
+          <button class="btn btn-sm btn-outline-success"
+                  data-bs-toggle="collapse"
+                  data-bs-target="#pedido-{{ c.id }}">
+            ➕ Novo Pedido
+          </button>
+
+          <!-- Ver histórico -->
+          <button class="btn btn-sm btn-outline-secondary"
+                  data-bs-toggle="collapse"
+                  data-bs-target="#hist-{{ c.id }}">
+            📋 Histórico
+          </button>
+
+        </div>
+      </div>
+
+      <!-- Form: novo pedido -->
+      <div class="collapse mt-3" id="pedido-{{ c.id }}">
+        <form method="POST" class="d-flex gap-2 align-items-center flex-wrap"
+              style="background:#13102a;padding:.8rem;border-radius:10px">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input type="hidden" name="action"     value="add_pedido">
+          <input type="hidden" name="cliente_id" value="{{ c.id }}">
+          <input type="text" name="obs" placeholder="Observação (opcional)"
+                 class="form-control form-control-sm bg-dark text-light border-secondary"
+                 style="max-width:280px">
+          <button type="submit" class="btn btn-sm btn-success">
+            Confirmar Pedido
+          </button>
+        </form>
+      </div>
+
+      <!-- Histórico de pedidos -->
+      <div class="collapse mt-3" id="hist-{{ c.id }}">
+        <div style="background:#13102a;padding:.8rem;border-radius:10px;font-size:.8rem">
+          {% if c.pedidos %}
+          <div style="display:grid;grid-template-columns:1fr auto auto;gap:.3rem .8rem;color:#9ca3af;
+               font-size:.7rem;text-transform:uppercase;letter-spacing:.06em;margin-bottom:.4rem">
+            <span>Tipo</span><span>Data</span><span></span>
+          </div>
+          {% for ped in c.pedidos | reverse %}
+          <div style="display:grid;grid-template-columns:1fr auto auto;gap:.3rem .8rem;
+               padding:.3rem 0;border-bottom:1px solid rgba(255,255,255,.05);align-items:center">
+            <span>
+              {% if ped.is_free %}
+                <span style="color:#f5c518">🎁 Açaí Grátis</span>
+              {% else %}
+                <span style="color:#86efac">🫐 Pedido</span>
+              {% endif %}
+              {% if ped.obs %}<span style="color:#6b7280;font-size:.72rem"> — {{ ped.obs }}</span>{% endif %}
+            </span>
+            <span style="color:#6b7280">{{ ped.created_at.strftime('%d/%m/%y %H:%M') }}</span>
+            <form method="POST">
+              <input type="hidden" name="csrf_token"  value="{{ csrf_token() }}">
+              <input type="hidden" name="action"      value="remover_pedido">
+              <input type="hidden" name="pedido_id"   value="{{ ped.id }}">
+              <button type="submit" class="btn btn-link p-0 text-danger"
+                      style="font-size:.75rem"
+                      onclick="return confirm('Remover este pedido?')">✕</button>
+            </form>
+          </div>
+          {% endfor %}
+          {% else %}
+          <span style="color:#4b5563;font-style:italic">Sem pedidos registrados.</span>
+          {% endif %}
+        </div>
+      </div>
+
+    </div>
+  </div>
+  {% endfor %}
+
+</div>
+{% endblock %}

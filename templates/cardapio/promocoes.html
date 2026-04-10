@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Promoções — Açaídeira 77</title>
+
+  <script>
+    !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+    n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;
+    n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;
+    t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}
+    (window,document,'script','https://connect.facebook.net/en_US/fbevents.js');
+    fbq('init','4372609193012161');fbq('track','PageView');
+    fbq('track','ViewContent',{content_name:'Promoções Açaídeira 77',content_category:'Promoções'});
+  </script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800;900&display=swap" rel="stylesheet"/>
+
+  <style>
+    :root{--roxo:#7c2fd4;--roxo-c:#9d4edd;--verde:#7ab648;--verde-c:#9fd466;
+          --ouro:#f5c518;--bg:#0e0718;--card:#1e1030;--texto:#f0ebff;--texto2:#c4b8e0}
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    html{scroll-behavior:smooth}
+    body{font-family:'Poppins',sans-serif;background:var(--bg);color:var(--texto);overflow-x:hidden}
+
+    .hero{background:linear-gradient(160deg,#2a0660,#0e0718 55%,#1a0a30);
+          padding:2.5rem 1.5rem 2rem;text-align:center;position:relative}
+    .hero::before{content:'';position:absolute;inset:0;
+      background:radial-gradient(ellipse at 65% 0%,rgba(124,47,212,.35) 0%,transparent 65%);
+      pointer-events:none}
+    .hero-badge{display:inline-block;background:var(--ouro);color:#0e1a00;
+      font-size:.68rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;
+      padding:.22rem .75rem;border-radius:99px;margin-bottom:.8rem}
+    .hero h1{font-size:clamp(1.8rem,7vw,3rem);font-weight:900;
+      background:linear-gradient(135deg,#fff 30%,var(--ouro) 70%,var(--verde-c));
+      -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+      margin-bottom:.4rem}
+    .hero p{font-size:.9rem;color:var(--texto2)}
+
+    main{max-width:600px;margin:0 auto;padding:1.5rem 1.25rem 5rem}
+
+    .back-link{display:block;text-align:center;font-size:.82rem;color:var(--roxo-c);
+      text-decoration:none;margin-bottom:1.5rem}
+    .back-link:hover{text-decoration:underline}
+
+    /* CARD DE PROMOÇÃO */
+    .promo-card{border-radius:18px;padding:1.4rem;margin-bottom:1rem;position:relative;overflow:hidden;
+      transition:transform .2s}
+    .promo-card:hover{transform:translateY(-2px)}
+
+    .promo-card.destaque{
+      background:linear-gradient(135deg,#2a1a00,#1a0a00);
+      border:2px solid var(--ouro);
+      box-shadow:0 4px 24px rgba(245,197,24,.2)}
+    .promo-card.normal{
+      background:var(--card);
+      border:1px solid rgba(124,47,212,.3)}
+
+    .promo-card.destaque::before{content:'⭐ DESTAQUE';position:absolute;top:0;right:0;
+      background:var(--ouro);color:#0e1a00;font-size:.6rem;font-weight:800;
+      letter-spacing:.1em;padding:.18rem .7rem;border-radius:0 18px 0 10px}
+
+    .promo-tipo{font-size:.68rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
+      margin-bottom:.4rem}
+    .promo-card.destaque .promo-tipo{color:var(--ouro)}
+    .promo-card.normal  .promo-tipo{color:var(--roxo-c)}
+
+    .promo-titulo{font-size:1.15rem;font-weight:800;color:#fff;margin-bottom:.3rem;line-height:1.2}
+    .promo-desconto{display:inline-block;font-size:1.5rem;font-weight:900;
+      margin-bottom:.5rem;line-height:1}
+    .promo-card.destaque .promo-desconto{color:var(--ouro)}
+    .promo-card.normal  .promo-desconto{color:var(--verde-c)}
+
+    .promo-desc{font-size:.82rem;color:var(--texto2);margin-bottom:.8rem;line-height:1.5}
+
+    .promo-condicao{background:rgba(255,255,255,.05);border-radius:10px;
+      padding:.65rem .85rem;font-size:.78rem;color:var(--texto2);margin-bottom:.8rem;
+      border-left:3px solid var(--roxo-c)}
+    .promo-card.destaque .promo-condicao{border-left-color:var(--ouro)}
+
+    .promo-codigo{display:inline-flex;align-items:center;gap:.5rem;
+      background:rgba(124,47,212,.15);border:1px dashed rgba(157,78,221,.5);
+      border-radius:10px;padding:.45rem .85rem;font-size:.85rem;margin-bottom:.85rem;cursor:pointer}
+    .promo-card.destaque .promo-codigo{background:rgba(245,197,24,.1);
+      border-color:rgba(245,197,24,.5)}
+    .promo-codigo-label{font-size:.65rem;color:#9ca3af;text-transform:uppercase;
+      letter-spacing:.08em;display:block}
+    .promo-codigo-valor{font-size:1rem;font-weight:800;letter-spacing:.1em}
+    .promo-card.destaque .promo-codigo-valor{color:var(--ouro)}
+    .promo-card.normal  .promo-codigo-valor{color:#a5b4fc}
+
+    .promo-validade{font-size:.72rem;color:#6b7280;margin-bottom:.85rem}
+
+    .btn-pedir{display:inline-flex;align-items:center;gap:.5rem;
+      background:linear-gradient(135deg,#25D366,#128C7E);color:#fff;
+      font-family:inherit;font-size:.88rem;font-weight:700;text-decoration:none;
+      padding:.65rem 1.4rem;border-radius:99px;
+      box-shadow:0 3px 16px rgba(37,211,102,.35);transition:all .2s}
+    .btn-pedir:hover{transform:translateY(-1px);filter:brightness(1.1)}
+    .btn-pedir svg{width:18px;height:18px}
+
+    .vazio{text-align:center;padding:3rem 1rem;color:var(--texto2)}
+    .vazio-emoji{font-size:3rem;margin-bottom:.8rem}
+
+    .wpp-float{position:fixed;bottom:1.5rem;right:1.5rem;width:54px;height:54px;
+      background:linear-gradient(135deg,#25D366,#128C7E);border-radius:50%;
+      display:flex;align-items:center;justify-content:center;
+      box-shadow:0 4px 20px rgba(37,211,102,.5);z-index:999;text-decoration:none}
+    .wpp-float svg{width:28px;height:28px}
+
+    .copied-toast{position:fixed;bottom:5rem;left:50%;transform:translateX(-50%);
+      background:#4ade80;color:#0e1a00;font-size:.82rem;font-weight:700;
+      padding:.5rem 1.2rem;border-radius:99px;display:none;z-index:1000}
+  </style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="hero-badge">🔥 Promoções Ativas</div>
+  <h1>Açaídeira 77</h1>
+  <p>Aproveite nossas promoções e peça agora!</p>
+</header>
+
+<main>
+  <a href="{{ url_for('cardapio.index') }}" class="back-link">← Ver Cardápio Completo</a>
+
+  {% if not promocoes %}
+  <div class="vazio">
+    <div class="vazio-emoji">🫐</div>
+    <p>Nenhuma promoção ativa no momento.<br>
+    <a href="{{ url_for('cardapio.index') }}" style="color:var(--roxo-c)">Ver cardápio completo →</a></p>
+  </div>
+  {% endif %}
+
+  {% for p in promocoes %}
+  <div class="promo-card {{ 'destaque' if p.destaque else 'normal' }}">
+
+    <div class="promo-tipo">{{ p.tipo_label }}</div>
+    <div class="promo-titulo">{{ p.titulo }}</div>
+    <div class="promo-desconto">{{ p.desconto_texto }}</div>
+
+    {% if p.descricao %}
+    <p class="promo-desc">{{ p.descricao }}</p>
+    {% endif %}
+
+    {% if p.condicao %}
+    <div class="promo-condicao">
+      <strong>Como participar:</strong><br>{{ p.condicao }}
+    </div>
+    {% endif %}
+
+    {% if p.codigo %}
+    <div class="promo-codigo" onclick="copiarCodigo('{{ p.codigo }}', this)"
+         title="Clique para copiar">
+      <div>
+        <span class="promo-codigo-label">Código da promoção</span>
+        <span class="promo-codigo-valor">{{ p.codigo }}</span>
+      </div>
+      <span style="font-size:.75rem;color:#6b7280">📋</span>
+    </div>
+    {% endif %}
+
+    {% if p.data_fim %}
+    <div class="promo-validade">
+      ⏳ Válido até {{ p.data_fim.strftime('%d/%m/%Y') }}
+    </div>
+    {% endif %}
+
+    <a class="btn-pedir"
+       href="https://wa.me/557799828970?text=Olá!%20Quero%20aproveitar%20a%20promoção%20%22{{ p.titulo | urlencode }}%22{% if p.codigo %}%20—%20Código%3A%20{{ p.codigo }}{% endif %}%20%F0%9F%AB%90"
+       onclick="fbq('track','InitiateCheckout',{content_name:'Promo — {{ p.titulo }}'})">
+      <svg viewBox="0 0 24 24" fill="currentColor">
+        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
+        <path d="M12 0C5.373 0 0 5.373 0 12c0 2.125.557 4.117 1.529 5.845L.057 23.486a.5.5 0 0 0 .612.612l5.726-1.499A11.95 11.95 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22a9.95 9.95 0 0 1-5.058-1.372l-.363-.214-3.754.983.999-3.648-.235-.374A9.953 9.953 0 0 1 2 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/>
+      </svg>
+      Quero Aproveitar!
+    </a>
+
+  </div>
+  {% endfor %}
+</main>
+
+<div class="copied-toast" id="toast">✅ Código copiado!</div>
+
+<a class="wpp-float"
+   href="https://wa.me/557799828970?text=Olá!%20Quero%20fazer%20um%20pedido%20na%20Açaídeira%2077%20%F0%9F%AB%90">
+  <svg viewBox="0 0 24 24" fill="white">
+    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
+    <path d="M12 0C5.373 0 0 5.373 0 12c0 2.125.557 4.117 1.529 5.845L.057 23.486a.5.5 0 0 0 .612.612l5.726-1.499A11.95 11.95 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22a9.95 9.95 0 0 1-5.058-1.372l-.363-.214-3.754.983.999-3.648-.235-.374A9.953 9.953 0 0 1 2 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/>
+  </svg>
+</a>
+
+<script>
+function copiarCodigo(codigo, el) {
+  navigator.clipboard.writeText(codigo).then(() => {
+    const toast = document.getElementById('toast');
+    toast.style.display = 'block';
+    setTimeout(() => toast.style.display = 'none', 2000);
+  });
+}
+</script>
+</body>
+</html>

@@ -89,6 +89,7 @@ def create_app():
     from routes.financial import financial_bp
     from routes.exports import exports_bp
     from routes.notifications import notifications_bp
+    from routes.cardapio import cardapio_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(admin_bp,        url_prefix='/admin')
@@ -100,6 +101,7 @@ def create_app():
     app.register_blueprint(financial_bp,    url_prefix='/financeiro')
     app.register_blueprint(exports_bp,        url_prefix='/exportar')
     app.register_blueprint(notifications_bp,  url_prefix='/notificacoes')
+    app.register_blueprint(cardapio_bp)
 
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
@@ -110,6 +112,20 @@ def create_app():
     @app.route('/uploads/<path:filename>')
     @_lr
     def serve_upload(filename):
+        from flask import render_template_string
+        upload_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        if not os.path.isfile(upload_path):
+            return render_template_string("""
+                <!doctype html><html><head><title>Arquivo não encontrado</title>
+                <meta charset="utf-8">
+                <style>body{font-family:sans-serif;text-align:center;padding:4rem;background:#0d0d1a;color:#e2e8f0;}
+                h2{color:#fca5a5;}a{color:#a5b4fc;}</style></head><body>
+                <h2><i>⚠</i> Comprovante não disponível</h2>
+                <p>Este arquivo foi armazenado antes da configuração do volume persistente e não está mais disponível.</p>
+                <p>Comprovantes enviados após a configuração do volume são mantidos permanentemente.</p>
+                <p><a href="javascript:history.back()">← Voltar</a></p>
+                </body></html>
+            """), 404
         return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
     with app.app_context():
@@ -148,6 +164,17 @@ def _upgrade_db():
         ('users',          'perm_delete_sales',    'BOOLEAN DEFAULT FALSE'),
         ('clients',        'panel_name',           'VARCHAR(60)'),
         ('clients',        'support_type',         'VARCHAR(60)'),
+        ('sales',          'ocr_detected_time',         'VARCHAR(5)'),
+        ('sales',          'registered_payment_time',   'VARCHAR(5)'),
+        ('sales',          'ai_detected_time',          'VARCHAR(5)'),
+        ('sales',          'ai_detected_amount',        'REAL'),
+        ('sales',          'ai_amount_match',           'BOOLEAN'),
+        ('sales',          'ai_suspicious',             'BOOLEAN DEFAULT FALSE'),
+        ('sales',          'ai_notes',                  'TEXT'),
+        ('fidelidade_clientes', 'seguidor_ig',       'BOOLEAN DEFAULT FALSE'),
+        ('fidelidade_clientes', 'seguidor_validado', 'BOOLEAN DEFAULT FALSE'),
+        ('fidelidade_clientes', 'codigo_origem',     'VARCHAR(30)'),
+        ('acai_promocoes',      'usos',              'INTEGER DEFAULT 0'),
     ]
     # Cria tabela notifications se não existir (PostgreSQL)
     try:
@@ -237,3 +264,4 @@ app = create_app()
 
 if __name__ == '__main__':
     app.run(debug=False, host='0.0.0.0', port=5000)
+ 
