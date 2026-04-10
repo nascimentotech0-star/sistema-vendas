@@ -356,17 +356,55 @@
 </head>
 <body>
 
+{% if not loja_aberta %}
+<!-- BANNER LOJA FECHADA -->
+<div style="background:linear-gradient(90deg,#1a0808,#200a0a);
+            border-bottom:2px solid rgba(248,113,113,.4);
+            padding:1rem 1.25rem;text-align:center;position:sticky;top:0;z-index:50">
+  <div style="font-size:1.05rem;font-weight:800;color:#fca5a5;margin-bottom:.2rem">
+    🔒 Estamos fechados no momento
+  </div>
+  <div style="font-size:.82rem;color:rgba(252,165,165,.7)">
+    Voltamos às <strong style="color:#fca5a5">{{ horario_abertura }}</strong> —
+    funcionamos das <strong style="color:#fca5a5">{{ horario_abertura }}</strong>
+    às <strong style="color:#fca5a5">{{ horario_fechamento }}</strong>
+  </div>
+  <a href="https://wa.me/557799828970?text=Olá!%20Vi%20o%20cardápio%20e%20quero%20fazer%20um%20pedido%20no%20horário%20de%20funcionamento%20%F0%9F%AB%90"
+     style="display:inline-block;margin-top:.6rem;
+            background:rgba(248,113,113,.12);border:1px solid rgba(248,113,113,.3);
+            color:#fca5a5;font-size:.75rem;font-weight:700;padding:.3rem .9rem;
+            border-radius:99px;text-decoration:none">
+    📲 Avisar quando abrir
+  </a>
+</div>
+{% else %}
+<!-- BANNER LOJA ABERTA -->
+<div style="background:linear-gradient(90deg,#0a1a0e,#0e1a10);
+            border-bottom:1px solid rgba(74,222,128,.25);
+            padding:.6rem 1.25rem;text-align:center">
+  <span style="font-size:.82rem;color:#86efac;font-weight:600">
+    🟢 Estamos abertos! Pedidos até as <strong>{{ horario_fechamento }}</strong>
+  </span>
+</div>
+{% endif %}
+
 <!-- HERO -->
 <header class="hero">
   <div class="hero-badge">🫐 Delivery • Gurupi – TO</div>
   <h1>Açaídeira 77</h1>
   <p class="hero-sub">O açaí mais cremoso da região.<br>Monte do seu jeito e receba na sua porta!</p>
+  {% if loja_aberta %}
   <a class="btn-hero"
      href="https://wa.me/557799828970?text=Olá!%20Vim%20pelo%20cardápio%20e%20quero%20fazer%20um%20pedido%20%F0%9F%AB%90"
      onclick="fbq('track','InitiateCheckout',{content_name:'Hero CTA'})">
     <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.125.557 4.117 1.529 5.845L.057 23.486a.5.5 0 0 0 .612.612l5.726-1.499A11.95 11.95 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22a9.95 9.95 0 0 1-5.058-1.372l-.363-.214-3.754.983.999-3.648-.235-.374A9.953 9.953 0 0 1 2 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>
     Fazer Pedido
   </a>
+  {% else %}
+  <a class="btn-hero" href="#" style="opacity:.45;cursor:not-allowed;pointer-events:none">
+    🔒 Fechado agora
+  </a>
+  {% endif %}
 </header>
 
 <!-- COPOS -->

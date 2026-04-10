@@ -2,12 +2,31 @@
 {% block title %}Gerenciar Cardápio — Açaídeira 77{% endblock %}
 
 {% block content %}
+{% set g = data.get('_gestao', {}) %}
 <div style="max-width:860px">
 
-  <div class="d-flex align-items-center gap-2 mb-4">
+  <div class="d-flex align-items-center gap-2 mb-4 flex-wrap">
     <div>
       <h4 class="mb-0 fw-bold" style="color:var(--texto)">🫐 Gerenciar Cardápio</h4>
       <small style="color:var(--texto2)">Preços, ativações e calculadora de custo</small>
+    </div>
+    <!-- STATUS + TOGGLE LOJA -->
+    <div class="ms-auto d-flex align-items-center gap-2 flex-wrap">
+      <span id="loja-badge" class="d-inline-flex align-items-center gap-1 px-3 py-1 rounded-pill fw-bold"
+            style="font-size:.78rem;
+            {{ 'background:rgba(74,222,128,.12);border:1px solid rgba(74,222,128,.4);color:#86efac' if loja_aberta else 'background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.3);color:#fca5a5' }}">
+        <span id="loja-dot" style="width:8px;height:8px;border-radius:50%;background:{{ '#4ade80' if loja_aberta else '#ef4444' }};display:inline-block"></span>
+        <span id="loja-txt">{{ 'Aberta' if loja_aberta else 'Fechada' }}</span>
+      </span>
+      <button id="btn-loja" onclick="toggleLoja()"
+              class="btn btn-sm fw-bold"
+              style="{{ 'background:rgba(248,113,113,.15);border:1px solid rgba(248,113,113,.4);color:#fca5a5' if loja_aberta else 'background:rgba(74,222,128,.12);border:1px solid rgba(74,222,128,.4);color:#86efac' }}">
+        {{ '🔒 Fechar Loja' if loja_aberta else '🔓 Abrir Loja' }}
+      </button>
+      <a href="{{ url_for('cardapio.status_loja') }}"
+         class="btn btn-sm btn-outline-secondary" title="Página simplificada">
+        📱 Tela da mãe
+      </a>
     </div>
   </div>
 
@@ -226,6 +245,44 @@
 {% endblock %}
 {% block scripts %}
 <script>
+let _lojaAberta = {{ 'true' if loja_aberta else 'false' }};
+
+async function toggleLoja() {
+  const btn = document.getElementById('btn-loja');
+  btn.disabled = true;
+  btn.textContent = '⏳';
+  try {
+    const res = await fetch('{{ url_for("cardapio.toggle_loja") }}', {
+      method: 'POST',
+      headers: {
+        'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content,
+        'Accept': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest',
+      }
+    });
+    const d = await res.json();
+    _lojaAberta = d.aberta;
+    // badge
+    const badge = document.getElementById('loja-badge');
+    const dot   = document.getElementById('loja-dot');
+    const txt   = document.getElementById('loja-txt');
+    if (_lojaAberta) {
+      badge.style.cssText = 'background:rgba(74,222,128,.12);border:1px solid rgba(74,222,128,.4);color:#86efac';
+      dot.style.background = '#4ade80';
+      txt.textContent = 'Aberta';
+      btn.style.cssText = 'background:rgba(248,113,113,.15);border:1px solid rgba(248,113,113,.4);color:#fca5a5';
+      btn.textContent = '🔒 Fechar Loja';
+    } else {
+      badge.style.cssText = 'background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.3);color:#fca5a5';
+      dot.style.background = '#ef4444';
+      txt.textContent = 'Fechada';
+      btn.style.cssText = 'background:rgba(74,222,128,.12);border:1px solid rgba(74,222,128,.4);color:#86efac';
+      btn.textContent = '🔓 Abrir Loja';
+    }
+  } catch(e) { alert('Erro ao alterar status.'); }
+  btn.disabled = false;
+}
+
 function calcPreco() {
   const custo   = parseFloat(document.getElementById('c_custo').value)   || 0;
   const porcoes = parseInt(document.getElementById('c_porcoes').value)    || 0;

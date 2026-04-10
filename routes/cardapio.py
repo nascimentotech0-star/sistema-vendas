@@ -161,18 +161,63 @@ def calculadora():
     return render_template('cardapio/calculadora.html')
 
 
+# ── API: status da loja (aberta/fechada) ─────────────────────────────────────
+
+@cardapio_bp.route('/cardapio/api/status_loja')
+def api_status_loja():
+    from flask import jsonify
+    g = _load_gestao()
+    return jsonify({
+        'aberta':   g.get('loja_aberta', False),
+        'abertura': g.get('horario_abertura', '14:00'),
+        'fechamento': g.get('horario_fechamento', '22:00'),
+    })
+
+
+# ── Toggle loja (admin) ───────────────────────────────────────────────────────
+
+@cardapio_bp.route('/cardapio/toggle_loja', methods=['POST'])
+@login_required
+def toggle_loja():
+    from flask import jsonify
+    g = _load_gestao()
+    g['loja_aberta'] = not g.get('loja_aberta', False)
+    _save_gestao(g)
+    estado = 'aberta' if g['loja_aberta'] else 'fechada'
+    # Responde JSON se for chamada AJAX, senão redireciona
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or \
+       request.headers.get('Accept', '').startswith('application/json'):
+        return jsonify({'aberta': g['loja_aberta'], 'estado': estado})
+    flash(f'Loja {estado}!', 'success' if g['loja_aberta'] else 'warning')
+    next_url = request.form.get('next') or url_for('cardapio.status_loja')
+    return redirect(next_url)
+
+
+# ── Página de status (para a mãe) ────────────────────────────────────────────
+
+@cardapio_bp.route('/cardapio/status')
+@login_required
+def status_loja():
+    g = _load_gestao()
+    return render_template('cardapio/status_loja.html', g=g)
+
+
 # ── Cardápio público ─────────────────────────────────────────────────────────
 
 @cardapio_bp.route('/cardapio')
 def index():
-    raw = _load()
+    raw  = _load()
+    g    = _load_gestao()
     public = {}
     for k, v in raw.items():
         if k == 'copos':
             public[k] = v
         else:
             public[k] = [i for i in v if i.get('ativo', True)]
-    return render_template('cardapio/index.html', data=public)
+    return render_template('cardapio/index.html', data=public,
+                           loja_aberta=g.get('loja_aberta', False),
+                           horario_abertura=g.get('horario_abertura', '14:00'),
+                           horario_fechamento=g.get('horario_fechamento', '22:00'))
 
 
 # ── Painel admin ─────────────────────────────────────────────────────────────
@@ -254,7 +299,9 @@ def gerenciar():
 
         return redirect(url_for('cardapio.gerenciar'))
 
-    return render_template('cardapio/gerenciar.html', data=data)
+    g = _load_gestao()
+    return render_template('cardapio/gerenciar.html', data=data,
+                           loja_aberta=g.get('loja_aberta', False))
 
 
 # ── Fidelidade — API (remember-me via localStorage) ─────────────────────────
