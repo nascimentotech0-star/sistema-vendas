@@ -221,12 +221,9 @@
     </a>
 
     <div class="ms-acai-auto d-flex align-items-center gap-2 ms-md-3 mt-2 mt-md-0">
-      {% if current_user.is_authenticated %}
-      <span style="font-size:.72rem;color:#4b5563">{{ current_user.name }}</span>
-      <a href="{{ url_for('auth.logout') }}" class="btn-logout">
+      <a href="{{ url_for('cardapio.admin_sair') }}" class="btn-logout">
         <i class="bi bi-box-arrow-right"></i> Sair
       </a>
-      {% endif %}
     </div>
   </nav>
 </header>

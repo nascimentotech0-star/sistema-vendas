@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+  <meta name="theme-color" content="#3b0764"/>
+  <title>Admin — Açaídeira 77</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800;900&display=swap" rel="stylesheet"/>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+    body{
+      font-family:'Poppins',sans-serif;
+      background:linear-gradient(160deg,#3b0764 0%,#5b21b6 60%,#7c3aed 100%);
+      min-height:100vh;display:flex;align-items:center;justify-content:center;
+      padding:1.5rem 1rem calc(1.5rem + env(safe-area-inset-bottom,0px));
+    }
+    .box{
+      background:#fff;border-radius:24px;
+      width:100%;max-width:380px;
+      padding:2rem 1.5rem;
+      box-shadow:0 24px 80px rgba(0,0,0,.35);
+    }
+    .logo{text-align:center;margin-bottom:1.75rem}
+    .logo-ico{
+      width:72px;height:72px;border-radius:22px;
+      background:linear-gradient(135deg,#5b21b6,#d946ef);
+      display:flex;align-items:center;justify-content:center;
+      font-size:2.2rem;margin:0 auto .65rem;
+      box-shadow:0 8px 24px rgba(91,33,182,.3);
+    }
+    .logo h1{font-size:1.25rem;font-weight:900;color:#1e1030;letter-spacing:-.02em}
+    .logo p{font-size:.78rem;color:#7c3aed;font-weight:600;margin-top:.15rem}
+    .alerta{
+      border-radius:12px;padding:.75rem 1rem;margin-bottom:1rem;
+      font-size:.8rem;font-weight:600;
+      background:#fef2f2;border:1.5px solid #fca5a5;color:#dc2626;
+    }
+    .label{font-size:.8rem;font-weight:700;color:#4c1d95;margin-bottom:.4rem;display:block}
+    .pin-inp{
+      width:100%;border:2px solid #e9d5ff;border-radius:14px;
+      padding:.85rem 1rem;font-family:'Poppins',sans-serif;font-size:1.5rem;
+      font-weight:800;text-align:center;letter-spacing:.5rem;
+      color:#3b0764;outline:none;transition:border-color .2s;
+    }
+    .pin-inp:focus{border-color:#7c3aed}
+    .btn{
+      width:100%;border:none;border-radius:14px;padding:.9rem;
+      font-family:'Poppins',sans-serif;font-size:.95rem;font-weight:800;
+      cursor:pointer;margin-top:.75rem;
+      background:#5b21b6;color:#fff;
+      box-shadow:0 6px 20px rgba(91,33,182,.3);
+      transition:background .18s;
+    }
+    .btn:hover{background:#4c1d95}
+    .back{display:block;text-align:center;font-size:.72rem;color:#9ca3af;margin-top:1rem;text-decoration:none}
+    .back:hover{color:#7c3aed}
+  </style>
+</head>
+<body>
+<div class="box">
+
+  <div class="logo">
+    <div class="logo-ico">🫐</div>
+    <h1>Açaídeira 77</h1>
+    <p>Painel Administrativo</p>
+  </div>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for cat, msg in messages %}
+    <div class="alerta">{{ msg }}</div>
+    {% endfor %}
+  {% endwith %}
+
+  <form method="POST">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="next" value="{{ next }}">
+    <label class="label">🔑 PIN de acesso</label>
+    <input type="password" name="pin" class="pin-inp"
+           inputmode="numeric" maxlength="8"
+           autofocus placeholder="• • • •" required/>
+    <button type="submit" class="btn">Entrar →</button>
+  </form>
+
+  <a href="{{ url_for('cardapio.index') }}" class="back">← Voltar ao cardápio</a>
+
+</div>
+</body>
+</html>

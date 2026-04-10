@@ -322,6 +322,26 @@
         </div>
       </div>
 
+      <!-- ═══ PIN DO ADMIN ═══ -->
+      <div class="card border-secondary mb-3" style="background:#1a1a2e">
+        <div class="card-header border-secondary"><strong>🛡️ PIN de Acesso ao Admin</strong></div>
+        <div class="card-body">
+          <p class="text-muted" style="font-size:.78rem;margin-bottom:.75rem">
+            Protege todas as páginas do painel admin (<code>/cardapio/gestao</code>, <code>/cardapio/gerenciar</code> etc.)
+            PIN padrão: <strong style="color:#f5c518">0000</strong> — altere agora!
+          </p>
+          <form method="POST" class="d-flex gap-2 align-items-center">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="action" value="update_admin_pin">
+            <input type="text" name="acai_admin_pin" inputmode="numeric" maxlength="8"
+                   placeholder="Ex: 8844" value="{{ g.get('acai_admin_pin', '0000') }}"
+                   class="form-control form-control-sm bg-dark text-light border-secondary"
+                   style="max-width:120px;letter-spacing:.2rem;font-weight:700">
+            <button type="submit" class="btn btn-sm btn-outline-warning">💾 Salvar PIN</button>
+          </form>
+        </div>
+      </div>
+
       <!-- ═══ PIN DO CARIMBO ═══ -->
       <div class="card border-secondary mb-3" style="background:#1a1a2e">
         <div class="card-header border-secondary"><strong>🔑 PIN do Carimbo de Fidelidade</strong></div>

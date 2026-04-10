@@ -2,7 +2,19 @@ import json
 import os
 import uuid
 from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app, session
-from flask_login import login_required, current_user
+try:
+    from flask_login import login_required, current_user
+except Exception:
+    pass
+
+
+def _acai_admin_ok():
+    return session.get('acai_admin_ok') is True
+
+
+def _acai_admin_gate():
+    """Redireciona para login da açaídeira se não autenticado."""
+    return redirect(url_for('cardapio.admin_login', next=request.url))
 from werkzeug.utils import secure_filename
 
 ALLOWED_IMG = {'jpg', 'jpeg', 'png', 'webp', 'gif'}
@@ -107,18 +119,55 @@ def _save_gestao(data):
         json.dump(data, f, ensure_ascii=False, indent=2)
 
 
+# ── Login / Logout admin da açaídeira ────────────────────────────────────────
+
+@cardapio_bp.route('/cardapio/admin/login', methods=['GET', 'POST'])
+def admin_login():
+    if _acai_admin_ok():
+        return redirect(request.args.get('next') or url_for('cardapio.gestao'))
+
+    g = _load_gestao()
+    pin_correto = str(g.get('acai_admin_pin', '0000'))
+
+    if request.method == 'POST':
+        if request.form.get('pin', '') == pin_correto:
+            session['acai_admin_ok'] = True
+            next_url = request.form.get('next') or url_for('cardapio.gestao')
+            return redirect(next_url)
+        flash('PIN incorreto.', 'danger')
+
+    return render_template('cardapio/admin_login.html',
+                           next=request.args.get('next', ''))
+
+
+@cardapio_bp.route('/cardapio/admin/sair')
+def admin_sair():
+    session.pop('acai_admin_ok', None)
+    return redirect(url_for('cardapio.index'))
+
+
 @cardapio_bp.route('/cardapio/gestao', methods=['GET', 'POST'])
-@login_required
 def gestao():
-    if not current_user.is_admin():
-        return redirect(url_for('cardapio.index'))
+    if not _acai_admin_ok():
+        return _acai_admin_gate()
 
     g = _load_gestao()
 
     if request.method == 'POST':
         action = request.form.get('action')
 
-        if action == 'update_pin_fidelidade':
+        if action == 'update_admin_pin':
+            novo_pin = request.form.get('acai_admin_pin', '').strip()
+            if novo_pin.isdigit() and 4 <= len(novo_pin) <= 8:
+                g['acai_admin_pin'] = novo_pin
+                _save_gestao(g)
+                session.pop('acai_admin_ok', None)  # força novo login com PIN novo
+                flash('PIN do admin atualizado! Faça login novamente.', 'success')
+                return redirect(url_for('cardapio.admin_login'))
+            else:
+                flash('PIN deve ter entre 4 e 8 dígitos numéricos.', 'danger')
+
+        elif action == 'update_pin_fidelidade':
             novo_pin = request.form.get('fidelidade_pin', '').strip()
             if novo_pin.isdigit() and 4 <= len(novo_pin) <= 8:
                 g['fidelidade_pin'] = novo_pin
@@ -347,10 +396,9 @@ def gestao():
 # ── Calculadora de precificação (admin) ──────────────────────────────────────
 
 @cardapio_bp.route('/cardapio/calculadora')
-@login_required
 def calculadora():
-    if not current_user.is_admin():
-        return redirect(url_for('cardapio.index'))
+    if not _acai_admin_ok():
+        return _acai_admin_gate()
     return render_template('cardapio/calculadora.html')
 
 
@@ -370,8 +418,10 @@ def api_status_loja():
 # ── Toggle loja (admin) ───────────────────────────────────────────────────────
 
 @cardapio_bp.route('/cardapio/toggle_loja', methods=['POST'])
-@login_required
 def toggle_loja():
+    if not _acai_admin_ok():
+        from flask import jsonify
+        return jsonify({'erro': 'não autorizado'}), 403
     from flask import jsonify
     g = _load_gestao()
     g['loja_aberta'] = not g.get('loja_aberta', False)
@@ -389,8 +439,9 @@ def toggle_loja():
 # ── Página de status (para a mãe) ────────────────────────────────────────────
 
 @cardapio_bp.route('/cardapio/status')
-@login_required
 def status_loja():
+    if not _acai_admin_ok():
+        return _acai_admin_gate()
     g = _load_gestao()
     return render_template('cardapio/status_loja.html', g=g)
 
@@ -485,10 +536,9 @@ def index():
 # ── Painel admin ─────────────────────────────────────────────────────────────
 
 @cardapio_bp.route('/cardapio/gerenciar', methods=['GET', 'POST'])
-@login_required
 def gerenciar():
-    if not current_user.is_admin():
-        return redirect(url_for('cardapio.index'))
+    if not _acai_admin_ok():
+        return _acai_admin_gate()
 
     data = _load()
 
@@ -735,10 +785,9 @@ def fidelidade():
 # ── Fidelidade — painel admin ─────────────────────────────────────────────────
 
 @cardapio_bp.route('/cardapio/fidelidade/admin', methods=['GET', 'POST'])
-@login_required
 def fidelidade_admin():
-    if not current_user.is_admin():
-        return redirect(url_for('cardapio.index'))
+    if not _acai_admin_ok():
+        return _acai_admin_gate()
 
     if request.method == 'POST':
         action     = request.form.get('action')
@@ -809,10 +858,9 @@ def promocoes():
 # ── Promoções — painel admin ──────────────────────────────────────────────────
 
 @cardapio_bp.route('/cardapio/promocoes/admin', methods=['GET', 'POST'])
-@login_required
 def promocoes_admin():
-    if not current_user.is_admin():
-        return redirect(url_for('cardapio.index'))
+    if not _acai_admin_ok():
+        return _acai_admin_gate()
 
     if request.method == 'POST':
         action = request.form.get('action')
