@@ -30,7 +30,7 @@ class Config:
 
     ANTHROPIC_API_KEY = os.environ.get('ANTHROPIC_API_KEY', '')
 
-    MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16MB
+    MAX_CONTENT_LENGTH = 200 * 1024 * 1024  # 200MB (suporta vídeos)
     PERMANENT_SESSION_LIFETIME = timedelta(hours=12)
     WTF_CSRF_ENABLED = True
     WTF_CSRF_TIME_LIMIT = 3600  # token válido por 1 hora
