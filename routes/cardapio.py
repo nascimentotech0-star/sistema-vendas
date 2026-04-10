@@ -147,6 +147,17 @@ def _save_gestao(data):
         json.dump(data, f, ensure_ascii=False, indent=2)
 
 
+def _loja_esta_aberta(g):
+    """Retorna True se a loja está aberta agora (automático por horário, com override de emergência)."""
+    from datetime import datetime
+    if g.get('forcar_fechado'):
+        return False
+    abertura   = g.get('horario_abertura',  '14:00')
+    fechamento = g.get('horario_fechamento', '22:00')
+    agora = datetime.now().strftime('%H:%M')
+    return abertura <= agora < fechamento
+
+
 # ── Login / Logout admin da açaídeira ────────────────────────────────────────
 
 @cardapio_bp.route('/cardapio/admin/login', methods=['GET', 'POST'])
@@ -436,10 +447,12 @@ def calculadora():
 def api_status_loja():
     from flask import jsonify
     g = _load_gestao()
+    aberta = _loja_esta_aberta(g)
     return jsonify({
-        'aberta':   g.get('loja_aberta', False),
-        'abertura': g.get('horario_abertura', '14:00'),
-        'fechamento': g.get('horario_fechamento', '22:00'),
+        'aberta':        aberta,
+        'forcar_fechado': g.get('forcar_fechado', False),
+        'abertura':      g.get('horario_abertura',  '14:00'),
+        'fechamento':    g.get('horario_fechamento', '22:00'),
     })
 
 
@@ -452,14 +465,15 @@ def toggle_loja():
         return jsonify({'erro': 'não autorizado'}), 403
     from flask import jsonify
     g = _load_gestao()
-    g['loja_aberta'] = not g.get('loja_aberta', False)
+    # Toggle do override de emergência (não altera o automático por horário)
+    g['forcar_fechado'] = not g.get('forcar_fechado', False)
     _save_gestao(g)
-    estado = 'aberta' if g['loja_aberta'] else 'fechada'
-    # Responde JSON se for chamada AJAX, senão redireciona
+    aberta = _loja_esta_aberta(g)
+    estado = 'aberta' if aberta else 'fechada'
     if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or \
        request.headers.get('Accept', '').startswith('application/json'):
-        return jsonify({'aberta': g['loja_aberta'], 'estado': estado})
-    flash(f'Loja {estado}!', 'success' if g['loja_aberta'] else 'warning')
+        return jsonify({'aberta': aberta, 'forcar_fechado': g['forcar_fechado'], 'estado': estado})
+    flash(f'Loja {estado}!', 'success' if aberta else 'warning')
     next_url = request.form.get('next') or url_for('cardapio.status_loja')
     return redirect(next_url)
 
@@ -471,7 +485,8 @@ def status_loja():
     if not _acai_admin_ok():
         return _acai_admin_gate()
     g = _load_gestao()
-    return render_template('cardapio/status_loja.html', g=g)
+    return render_template('cardapio/status_loja.html', g=g,
+                           loja_aberta=_loja_esta_aberta(g))
 
 
 # ── Cardápio público ─────────────────────────────────────────────────────────
@@ -556,7 +571,7 @@ def index():
                            combos=combos,
                            whatsapp=g.get('whatsapp', '77998298970'),
                            data_json=data_json,
-                           loja_aberta=g.get('loja_aberta', False),
+                           loja_aberta=_loja_esta_aberta(g),
                            horario_abertura=g.get('horario_abertura', '14:00'),
                            horario_fechamento=g.get('horario_fechamento', '22:00'))
 
@@ -684,7 +699,7 @@ def gerenciar():
     g = _load_gestao()
     return render_template('cardapio/gerenciar.html', data=data,
                            g_gestao=g,
-                           loja_aberta=g.get('loja_aberta', False))
+                           loja_aberta=_loja_esta_aberta(g))
 
 
 # ── Carimbar — página isolada para a loja (sem login do sistema) ─────────────
