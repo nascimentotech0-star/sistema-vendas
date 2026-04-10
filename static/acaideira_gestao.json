@@ -2,6 +2,15 @@
   "loja_aberta": false,
   "horario_abertura": "14:00",
   "horario_fechamento": "22:00",
+  "whatsapp": "77998298970",
+  "instagram": "@acaideira77",
+  "especiais": [
+    {"id": "marmita",   "nome": "Marmita de Açaí",        "desc": "Serve 2 pessoas 💜",         "preco": 28.70, "emoji": "🥡", "ativo": true},
+    {"id": "garrafa",   "nome": "Açaí na Garrafa 500ml",  "desc": "Cremoso, para o caminho",    "preco": 25.99, "emoji": "🥤", "ativo": true},
+    {"id": "ovo250",    "nome": "Ovo de Páscoa 250g",      "desc": "Especial de Páscoa 🐣",      "preco": 28.70, "emoji": "🥚", "ativo": true},
+    {"id": "ovo350",    "nome": "Ovo de Páscoa 350g",      "desc": "Especial de Páscoa 🐣",      "preco": 31.90, "emoji": "🥚", "ativo": true}
+  ],
+  "videos": [],
   "custos_fixos": [
     {"nome": "Aluguel",           "valor": 2000.00},
     {"nome": "Energia Elétrica",  "valor": 700.00},

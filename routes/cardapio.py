@@ -206,6 +206,7 @@ def status_loja():
 
 @cardapio_bp.route('/cardapio')
 def index():
+    import json as _json
     raw  = _load()
     g    = _load_gestao()
     public = {}
@@ -214,7 +215,29 @@ def index():
             public[k] = v
         else:
             public[k] = [i for i in v if i.get('ativo', True)]
-    return render_template('cardapio/index.html', data=public,
+
+    especiais_default = [
+        {"id": "marmita",  "nome": "Marmita de Açaí",       "desc": "Serve 2 pessoas 💜",       "preco": 28.70, "emoji": "🥡", "ativo": True},
+        {"id": "garrafa",  "nome": "Açaí na Garrafa 500ml", "desc": "Cremoso, para o caminho",  "preco": 25.99, "emoji": "🥤", "ativo": True},
+        {"id": "ovo250",   "nome": "Ovo de Páscoa 250g",     "desc": "Especial de Páscoa 🐣",   "preco": 28.70, "emoji": "🥚", "ativo": True},
+        {"id": "ovo350",   "nome": "Ovo de Páscoa 350g",     "desc": "Especial de Páscoa 🐣",   "preco": 31.90, "emoji": "🥚", "ativo": True},
+    ]
+    especiais = [e for e in g.get('especiais', especiais_default) if e.get('ativo', True)]
+
+    data_json = _json.dumps({
+        'copos':           public.get('copos', []),
+        'caldas':          public.get('caldas', []),
+        'acompanhamentos': public.get('acompanhamentos', []),
+        'adicionais':      public.get('adicionais', []),
+        'sabores':         public.get('sabores', []),
+        'especiais':       especiais,
+    }, ensure_ascii=False)
+
+    return render_template('cardapio/index.html',
+                           data=public,
+                           especiais=especiais,
+                           whatsapp=g.get('whatsapp', '77998298970'),
+                           data_json=data_json,
                            loja_aberta=g.get('loja_aberta', False),
                            horario_abertura=g.get('horario_abertura', '14:00'),
                            horario_fechamento=g.get('horario_fechamento', '22:00'))
