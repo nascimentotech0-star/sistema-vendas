@@ -31,13 +31,12 @@ def create_app():
     from werkzeug.middleware.proxy_fix import ProxyFix
     app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
 
-    # Força HTTPS em produção (Railway)
-    if os.environ.get('RAILWAY_ENVIRONMENT'):
-        from flask import request as _req, redirect as _redir
-        @app.before_request
-        def force_https():
-            if _req.headers.get('X-Forwarded-Proto') == 'http':
-                return _redir(_req.url.replace('http://', 'https://', 1), 301)
+    # Força HTTPS quando atrás de proxy (Railway)
+    from flask import request as _req, redirect as _redir
+    @app.before_request
+    def force_https():
+        if _req.headers.get('X-Forwarded-Proto') == 'http':
+            return _redir(_req.url.replace('http://', 'https://', 1), 301)
 
     login_manager = LoginManager()
     login_manager.init_app(app)
