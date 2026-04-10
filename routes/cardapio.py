@@ -35,7 +35,24 @@ cardapio_bp = Blueprint('cardapio', __name__)
 from models import db, FidelidadeCliente, FidelidadePedido, Promocao
 from datetime import date as _date
 
-DATA_FILE = os.path.join(os.path.dirname(__file__), '..', 'static', 'cardapio_complementos.json')
+_STATIC_DIR = os.path.join(os.path.dirname(__file__), '..', 'static')
+_VOLUME_DIR = os.path.join(_STATIC_DIR, 'uploads')
+
+# Em produção os JSONs ficam no volume (persistem entre deploys)
+# Em local ficam na pasta static (comportamento original)
+def _data_file():
+    vol = os.path.join(_VOLUME_DIR, 'cardapio_complementos.json')
+    if os.path.exists(_VOLUME_DIR) and os.access(_VOLUME_DIR, os.W_OK):
+        if not os.path.exists(vol):
+            # primeira vez: copia o arquivo estático para o volume
+            src = os.path.join(_STATIC_DIR, 'cardapio_complementos.json')
+            if os.path.exists(src):
+                import shutil
+                shutil.copy2(src, vol)
+        return vol
+    return os.path.join(_STATIC_DIR, 'cardapio_complementos.json')
+
+DATA_FILE = None  # resolvido dinamicamente via _data_file()
 
 
 def _default_data():
@@ -73,10 +90,23 @@ def _default_data():
     }
 
 
+def _gestao_file():
+    vol = os.path.join(_VOLUME_DIR, 'acaideira_gestao.json')
+    if os.path.exists(_VOLUME_DIR) and os.access(_VOLUME_DIR, os.W_OK):
+        if not os.path.exists(vol):
+            src = os.path.join(_STATIC_DIR, 'acaideira_gestao.json')
+            if os.path.exists(src):
+                import shutil
+                shutil.copy2(src, vol)
+        return vol
+    return os.path.join(_STATIC_DIR, 'acaideira_gestao.json')
+
+
 def _load():
-    if os.path.exists(DATA_FILE):
+    path = _data_file()
+    if os.path.exists(path):
         try:
-            with open(DATA_FILE, 'r', encoding='utf-8') as f:
+            with open(path, 'r', encoding='utf-8') as f:
                 raw = json.load(f)
             # migração: listas antigas de strings → objetos
             for key in raw:
@@ -97,17 +127,15 @@ def _load():
 
 
 def _save(data):
-    with open(DATA_FILE, 'w', encoding='utf-8') as f:
+    with open(_data_file(), 'w', encoding='utf-8') as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
 
 
-GESTAO_FILE = os.path.join(os.path.dirname(__file__), '..', 'static', 'acaideira_gestao.json')
-
-
 def _load_gestao():
-    if os.path.exists(GESTAO_FILE):
+    path = _gestao_file()
+    if os.path.exists(path):
         try:
-            with open(GESTAO_FILE, 'r', encoding='utf-8') as f:
+            with open(path, 'r', encoding='utf-8') as f:
                 return json.load(f)
         except Exception:
             pass
@@ -115,7 +143,7 @@ def _load_gestao():
 
 
 def _save_gestao(data):
-    with open(GESTAO_FILE, 'w', encoding='utf-8') as f:
+    with open(_gestao_file(), 'w', encoding='utf-8') as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
 
 
