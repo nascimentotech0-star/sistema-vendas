@@ -79,6 +79,11 @@ def create_app():
             }
         return {'unread_chat_count': 0, 'renewals_overdue_count': 0, 'fraud_count': 0}
 
+    # Teste Jinja2 customizado para selectattr com startswith
+    @app.template_test('startswith')
+    def jinja_startswith(value, prefix):
+        return str(value).startswith(prefix)
+
     from routes.auth import auth_bp
     from routes.admin import admin_bp
     from routes.attendant import attendant_bp

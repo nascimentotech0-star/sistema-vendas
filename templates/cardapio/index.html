@@ -443,11 +443,11 @@
     Escolha um dos sabores abaixo para o seu copo. Todos são cremosos e preparados na hora! ✨
   </p>
 
-  {% set acais    = data.sabores | selectattr('nome', 'match', '^Açaí')    | list %}
-  {% set cremes   = data.sabores | selectattr('nome', 'match', '^Creme')   | list %}
-  {% set gelatos  = data.sabores | selectattr('nome', 'match', '^Gelato')  | list %}
-  {% set iogurtes = data.sabores | selectattr('nome', 'match', '^Iogurte') | list %}
-  {% set outros   = data.sabores | rejectattr('nome', 'match', '^(Açaí|Creme|Gelato|Iogurte)') | list %}
+  {% set acais    = data.sabores | selectattr('nome', 'startswith', 'Açaí')    | list %}
+  {% set cremes   = data.sabores | selectattr('nome', 'startswith', 'Creme')   | list %}
+  {% set gelatos  = data.sabores | selectattr('nome', 'startswith', 'Gelato')  | list %}
+  {% set iogurtes = data.sabores | selectattr('nome', 'startswith', 'Iogurte') | list %}
+  {% set outros   = data.sabores | rejectattr('nome', 'startswith', 'Açaí') | rejectattr('nome', 'startswith', 'Creme') | rejectattr('nome', 'startswith', 'Gelato') | rejectattr('nome', 'startswith', 'Iogurte') | list %}
 
   {% if acais %}
   <div class="sabores-grupo">
