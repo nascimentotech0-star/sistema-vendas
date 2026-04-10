@@ -1,35 +1,73 @@
 {
-  "loja_aberta": false,
+  "loja_aberta": true,
   "horario_abertura": "14:00",
   "horario_fechamento": "22:00",
   "whatsapp": "77998298970",
   "instagram": "@acaideira77",
   "especiais": [
-    {"id": "marmita",   "nome": "Marmita de Açaí",        "desc": "Serve 2 pessoas 💜",         "preco": 28.70, "emoji": "🥡", "ativo": true},
-    {"id": "garrafa",   "nome": "Açaí na Garrafa 500ml",  "desc": "Cremoso, para o caminho",    "preco": 25.99, "emoji": "🥤", "ativo": true},
-    {"id": "ovo250",    "nome": "Ovo de Páscoa 250g",      "desc": "Especial de Páscoa 🐣",      "preco": 28.70, "emoji": "🥚", "ativo": true},
-    {"id": "ovo350",    "nome": "Ovo de Páscoa 350g",      "desc": "Especial de Páscoa 🐣",      "preco": 31.90, "emoji": "🥚", "ativo": true}
+    {
+      "id": "marmita",
+      "nome": "Marmita de Açaí",
+      "desc": "Serve 2 pessoas 💜",
+      "preco": 28.7,
+      "emoji": "🥡",
+      "ativo": true
+    },
+    {
+      "id": "garrafa",
+      "nome": "Açaí na Garrafa 500ml",
+      "desc": "Cremoso, para o caminho",
+      "preco": 25.99,
+      "emoji": "🥤",
+      "ativo": true
+    },
+    {
+      "id": "ovo250",
+      "nome": "Ovo de Páscoa 250g",
+      "desc": "Especial de Páscoa 🐣",
+      "preco": 28.7,
+      "emoji": "🥚",
+      "ativo": true
+    },
+    {
+      "id": "ovo350",
+      "nome": "Ovo de Páscoa 350g",
+      "desc": "Especial de Páscoa 🐣",
+      "preco": 31.9,
+      "emoji": "🥚",
+      "ativo": true
+    }
   ],
   "videos": [],
   "custos_fixos": [
-    {"nome": "Aluguel",           "valor": 2000.00},
-    {"nome": "Energia Elétrica",  "valor": 700.00},
-    {"nome": "Água",              "valor": 80.00}
+    {
+      "nome": "Aluguel",
+      "valor": 2000.0
+    },
+    {
+      "nome": "Energia Elétrica",
+      "valor": 700.0
+    },
+    {
+      "nome": "Água",
+      "valor": 80.0
+    }
   ],
   "custos_variaveis": {
     "cmv_pct": 40,
-    "embalagem_por_pedido": 1.50,
-    "taxa_entrega_por_pedido": 0.00
+    "embalagem_por_pedido": 1.5,
+    "taxa_entrega_por_pedido": 0.0
   },
-  "ticket_medio": 30.00,
+  "ticket_medio": 30.0,
   "pedidos_dia_estimado": 20,
-  "meta_caixa": 10000.00,
-  "caixa_atual": 0.00,
+  "meta_caixa": 10000.0,
+  "caixa_atual": 0.0,
   "pedidos_fornecedor": [
     {
       "data": "2026-03-10",
       "descricao": "Pedido açaí + cremes (25 itens)",
-      "valor": 6005.00
+      "valor": 6005.0
     }
-  ]
+  ],
+  "fidelidade_pin": "1234"
 }

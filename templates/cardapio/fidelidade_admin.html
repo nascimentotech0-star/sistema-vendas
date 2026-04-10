@@ -4,9 +4,27 @@
 {% block content %}
 <div style="max-width:900px">
 
-  <div class="mb-4">
+  <div class="mb-3">
     <h4 class="mb-0 fw-bold" style="color:var(--texto)">🎁 Fidelidade — Clientes</h4>
     <small style="color:var(--texto2)">Gerencie os cartões dos clientes de delivery</small>
+  </div>
+
+  <!-- ═══ CARIMBAR RÁPIDO — use isso após confirmar o pagamento ═══ -->
+  <div class="card border-0 mb-4 p-3" style="background:linear-gradient(135deg,#3b0764,#5b21b6);border-radius:16px">
+    <div class="fw-bold mb-1" style="color:#fff;font-size:.95rem">⚡ Carimbar após pagamento confirmado</div>
+    <div style="font-size:.75rem;color:rgba(255,255,255,.7);margin-bottom:.9rem">
+      Digite o telefone que veio no pedido do WhatsApp → sistema encontra o cliente → 1 clique para carimbar
+    </div>
+    <div class="d-flex gap-2 align-items-center flex-wrap">
+      <input type="tel" id="q-tel" placeholder="Ex: 77 99999-0000"
+             class="form-control border-0 flex-grow-1"
+             style="background:rgba(255,255,255,.15);color:#fff;font-size:.88rem;border-radius:10px;max-width:260px"
+             oninput="buscarTel()" autocomplete="off">
+      <div id="q-result" style="flex:1;min-width:180px"></div>
+    </div>
+    <div style="font-size:.7rem;color:rgba(255,255,255,.5);margin-top:.6rem">
+      ⚠️ Só carimbe <strong style="color:#fde68a">após o cliente pagar</strong> — o carimbo é manual e definitivo.
+    </div>
   </div>
 
   <!-- Resumo rápido -->
@@ -197,4 +215,68 @@
   {% endfor %}
 
 </div>
+{% endblock %}
+{% block scripts %}
+<script>
+// Auto-preenche se veio link direto do WhatsApp
+window.addEventListener('DOMContentLoaded', () => {
+  const p = new URLSearchParams(window.location.search);
+  const autoTel = p.get('carimbar');
+  if (autoTel) {
+    const inp = document.getElementById('q-tel');
+    inp.value = autoTel;
+    inp.scrollIntoView({behavior:'smooth', block:'center'});
+    buscarTel();
+  }
+});
+
+const API_BASE = '{{ url_for("cardapio.api_cliente", telefone="__TEL__") }}';
+const STAMP_URL = '{{ url_for("cardapio.fidelidade_admin") }}';
+const CSRF = document.cookie.match(/csrf_token=([^;]+)/)?.[1] || '';
+
+let debounce;
+function buscarTel() {
+  clearTimeout(debounce);
+  const tel = document.getElementById('q-tel').value.trim().replace(/\D/g,'');
+  const res = document.getElementById('q-result');
+  if (tel.length < 8) { res.innerHTML = ''; return; }
+  debounce = setTimeout(async () => {
+    try {
+      const url = API_BASE.replace('__TEL__', tel);
+      const r = await fetch(url);
+      if (r.status === 404) {
+        res.innerHTML = `<div style="color:#fca5a5;font-size:.78rem;padding:.45rem .75rem;
+          background:rgba(248,113,113,.1);border-radius:10px">
+          ❌ Não cadastrado. <a href="{{ url_for('cardapio.fidelidade') }}" target="_blank"
+          style="color:#fca5a5">Cadastrar agora →</a></div>`;
+        return;
+      }
+      const d = await r.json();
+      const selos = d.selos || 0;
+      const blocos = Array.from({length:10}, (_,i) =>
+        `<span style="font-size:1rem">${i < selos ? '🫐' : '⬜'}</span>`
+      ).join('');
+      res.innerHTML = `
+        <div style="background:rgba(255,255,255,.12);border-radius:12px;padding:.6rem .9rem;color:#fff">
+          <div style="font-weight:800;font-size:.88rem">${d.nome}</div>
+          <div style="font-size:.7rem;color:rgba(255,255,255,.6);margin-bottom:.35rem">${blocos} ${selos}/10</div>
+          ${d.free ? '<div style="color:#fde68a;font-weight:700;font-size:.78rem;margin-bottom:.4rem">🎁 TEM AÇAÍ GRÁTIS PENDENTE!</div>' : ''}
+          <form method="POST" action="${STAMP_URL}" style="margin:0">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="action" value="add_pedido">
+            <input type="hidden" name="cliente_id" value="${d.id}">
+            <input type="text" name="obs" placeholder="Obs: ex. Açaí Médio + Nutella (opcional)"
+                   style="width:100%;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);
+                          color:#fff;border-radius:8px;padding:.35rem .6rem;font-size:.75rem;margin-bottom:.4rem">
+            <button type="submit"
+                    style="background:#22c55e;border:none;color:#fff;font-weight:800;font-size:.8rem;
+                           padding:.45rem 1rem;border-radius:8px;cursor:pointer;width:100%">
+              ✅ Confirmar pagamento + Carimbar
+            </button>
+          </form>
+        </div>`;
+    } catch(e) { res.innerHTML = ''; }
+  }, 400);
+}
+</script>
 {% endblock %}

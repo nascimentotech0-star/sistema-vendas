@@ -322,6 +322,28 @@
         </div>
       </div>
 
+      <!-- ═══ PIN DO CARIMBO ═══ -->
+      <div class="card border-secondary mb-3" style="background:#1a1a2e">
+        <div class="card-header border-secondary"><strong>🔑 PIN do Carimbo de Fidelidade</strong></div>
+        <div class="card-body">
+          <p class="text-muted" style="font-size:.78rem;margin-bottom:.75rem">
+            Esse PIN protege a página de carimbo (<code>/cardapio/carimbar</code>) que sua mãe usa pelo celular.
+            PIN padrão: <strong style="color:#f5c518">1234</strong> — altere agora!
+          </p>
+          <form method="POST" class="d-flex gap-2 align-items-center">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="action" value="update_pin_fidelidade">
+            <input type="text" name="fidelidade_pin" inputmode="numeric" maxlength="8"
+                   placeholder="Ex: 5544" value="{{ g.get('fidelidade_pin', '1234') }}"
+                   class="form-control form-control-sm bg-dark text-light border-secondary"
+                   style="max-width:120px;letter-spacing:.2rem;font-weight:700">
+            <button type="submit" class="btn btn-sm btn-outline-warning">💾 Salvar PIN</button>
+            <a href="{{ url_for('cardapio.carimbar') }}" target="_blank"
+               class="btn btn-sm btn-outline-info">🔗 Abrir página</a>
+          </form>
+        </div>
+      </div>
+
       <!-- ═══ CONFIGURAÇÕES ═══ -->
       <div class="card border-secondary" style="background:#1a1a2e">
         <div class="card-header border-secondary"><strong>⚙️ Parâmetros do Cálculo</strong></div>

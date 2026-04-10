@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+  <meta name="theme-color" content="#3b0764"/>
+  <title>🃏 Carimbar Fidelidade — Açaídeira 77</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800;900&display=swap" rel="stylesheet"/>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+    body{
+      font-family:'Poppins',sans-serif;
+      background:linear-gradient(160deg,#3b0764 0%,#5b21b6 60%,#7c3aed 100%);
+      min-height:100vh;display:flex;align-items:center;justify-content:center;
+      padding:1.5rem 1rem calc(1.5rem + env(safe-area-inset-bottom,0px));
+    }
+    .box{
+      background:#fff;border-radius:24px;
+      width:100%;max-width:420px;
+      padding:2rem 1.5rem;
+      box-shadow:0 24px 80px rgba(0,0,0,.35);
+    }
+    .logo{text-align:center;margin-bottom:1.5rem}
+    .logo-ico{
+      width:72px;height:72px;border-radius:22px;
+      background:linear-gradient(135deg,#5b21b6,#d946ef);
+      display:flex;align-items:center;justify-content:center;
+      font-size:2.2rem;margin:0 auto .65rem;
+      box-shadow:0 8px 24px rgba(91,33,182,.3);
+    }
+    .logo h1{font-size:1.25rem;font-weight:900;color:#1e1030;letter-spacing:-.02em}
+    .logo p{font-size:.78rem;color:#7c3aed;font-weight:600;margin-top:.15rem}
+
+    /* alertas */
+    .alerta{
+      border-radius:12px;padding:.75rem 1rem;margin-bottom:1rem;
+      font-size:.8rem;font-weight:600;
+    }
+    .alerta.ok{background:#f0fdf4;border:1.5px solid #86efac;color:#15803d}
+    .alerta.err{background:#fef2f2;border:1.5px solid #fca5a5;color:#dc2626}
+    .alerta.warn{background:#fffbeb;border:1.5px solid #fde68a;color:#92400e}
+
+    /* PIN */
+    .pin-label{font-size:.8rem;font-weight:700;color:#4c1d95;margin-bottom:.4rem;display:block}
+    .pin-inp{
+      width:100%;border:2px solid #e9d5ff;border-radius:14px;
+      padding:.85rem 1rem;font-family:'Poppins',sans-serif;font-size:1.5rem;
+      font-weight:800;text-align:center;letter-spacing:.5rem;
+      color:#3b0764;outline:none;transition:border-color .2s;
+    }
+    .pin-inp:focus{border-color:#7c3aed}
+    .btn{
+      width:100%;border:none;border-radius:14px;padding:.9rem;
+      font-family:'Poppins',sans-serif;font-size:.95rem;font-weight:800;
+      cursor:pointer;margin-top:.75rem;transition:all .18s;
+    }
+    .btn-roxo{background:#5b21b6;color:#fff;box-shadow:0 6px 20px rgba(91,33,182,.3)}
+    .btn-roxo:hover{background:#4c1d95}
+    .btn-verde{background:#16a34a;color:#fff;box-shadow:0 6px 20px rgba(22,163,74,.25)}
+    .btn-verde:hover{background:#15803d}
+    .btn-ouro{background:#d97706;color:#fff;box-shadow:0 6px 20px rgba(217,119,6,.25)}
+    .btn-cinza{background:#f3f4f6;color:#6b7280;font-size:.8rem;margin-top:.4rem}
+
+    /* cartão do cliente */
+    .cliente-card{background:#faf5ff;border:2px solid #e9d5ff;border-radius:16px;padding:1.1rem;margin-bottom:1rem}
+    .c-nome{font-size:1.05rem;font-weight:800;color:#3b0764;margin-bottom:.15rem}
+    .c-tel{font-size:.75rem;color:#7c3aed;font-weight:600;margin-bottom:.75rem}
+    .selos{display:flex;flex-wrap:wrap;gap:.3rem;margin-bottom:.5rem}
+    .selo{font-size:1.4rem}
+    .selos-info{font-size:.72rem;color:#7c3aed;font-weight:600;margin-bottom:.85rem}
+    .free-badge{
+      background:#fef3c7;border:2px solid #fbbf24;border-radius:12px;
+      padding:.6rem .9rem;text-align:center;margin-bottom:.75rem;
+      font-size:.85rem;font-weight:800;color:#92400e;
+    }
+
+    /* obs */
+    .obs-inp{
+      width:100%;border:1.5px solid #e9d5ff;border-radius:10px;
+      padding:.6rem .9rem;font-family:'Poppins',sans-serif;font-size:.82rem;
+      color:#3b0764;outline:none;margin-top:.5rem;resize:none;
+    }
+    .obs-inp:focus{border-color:#7c3aed}
+
+    .nao-cadastrado{text-align:center;padding:1rem;color:#7c3aed}
+    .nao-cadastrado span{font-size:2.5rem;display:block;margin-bottom:.5rem}
+
+    .sair-link{display:block;text-align:center;font-size:.72rem;color:#9ca3af;margin-top:1rem;cursor:pointer;text-decoration:none}
+  </style>
+</head>
+<body>
+<div class="box">
+
+  <div class="logo">
+    <div class="logo-ico">🫐</div>
+    <h1>Açaídeira 77</h1>
+    <p>Cartão Fidelidade — Carimbar</p>
+  </div>
+
+  <!-- Alertas flash -->
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for cat, msg in messages %}
+    <div class="alerta {{ 'ok' if cat == 'success' else ('err' if cat == 'danger' else 'warn') }}">
+      {{ msg }}
+    </div>
+    {% endfor %}
+  {% endwith %}
+
+  {% if not pin_validado %}
+  <!-- ═══ TELA DE PIN ═══ -->
+  <form method="POST">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="action" value="verificar_pin">
+    <label class="pin-label">🔑 Digite o PIN da loja</label>
+    <input type="password" name="pin" class="pin-inp" inputmode="numeric"
+           maxlength="8" autofocus placeholder="• • • •" required/>
+    <button type="submit" class="btn btn-roxo">Entrar →</button>
+  </form>
+
+  {% else %}
+  <!-- ═══ TELA DE CARIMBO ═══ -->
+
+  {% if cliente %}
+    <div class="cliente-card">
+      <div class="c-nome">{{ cliente.nome }}</div>
+      <div class="c-tel">📱 {{ cliente.telefone }}</div>
+
+      <!-- Selos visuais -->
+      <div class="selos">
+        {% for i in range(10) %}
+          <span class="selo">{{ '🫐' if i < cliente.selos_atuais else '⬜' }}</span>
+        {% endfor %}
+      </div>
+      <div class="selos-info">{{ cliente.selos_atuais }}/10 selos — {{ 10 - cliente.selos_atuais }} para o próximo grátis</div>
+
+      {% if cliente.tem_free_pendente %}
+      <div class="free-badge">🎁 AÇAÍ GRÁTIS DISPONÍVEL!</div>
+      <form method="POST">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="action" value="resgatar">
+        <input type="hidden" name="tel" value="{{ tel }}">
+        <button type="submit" class="btn btn-ouro"
+                onclick="return confirm('Confirmar resgate do açaí grátis?')">
+          🎁 Registrar açaí grátis
+        </button>
+      </form>
+      {% endif %}
+    </div>
+
+    <!-- Formulário de carimbo -->
+    <form method="POST">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="action" value="carimbar">
+      <input type="hidden" name="tel" value="{{ tel }}">
+      <textarea name="obs" class="obs-inp" rows="2"
+                placeholder="Observação opcional: ex. Açaí Médio + Nutella"></textarea>
+      <button type="submit" class="btn btn-verde"
+              onclick="return confirm('Confirmar pagamento e carimbar {{ cliente.nome }}?')">
+        ✅ Confirmar pagamento + Carimbar
+      </button>
+    </form>
+
+  {% elif tel %}
+    <div class="nao-cadastrado">
+      <span>🔍</span>
+      <strong style="color:#3b0764;display:block;margin-bottom:.3rem">Telefone {{ tel }} não cadastrado</strong>
+      <p style="font-size:.75rem;color:#7c3aed">O cliente pode se cadastrar em:<br>
+        <a href="{{ url_for('cardapio.fidelidade') }}" target="_blank" style="color:#5b21b6;font-weight:700">
+          Cartão Fidelidade →
+        </a>
+      </p>
+    </div>
+  {% else %}
+    <div class="nao-cadastrado">
+      <span>🃏</span>
+      <p style="font-size:.82rem;color:#5b21b6">Abra o link que veio no pedido do WhatsApp para ver o cliente direto.</p>
+    </div>
+  {% endif %}
+
+  <form method="POST" style="margin-top:.5rem">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="action" value="sair">
+    <button type="submit" class="btn btn-cinza">🔒 Sair / Bloquear</button>
+  </form>
+
+  {% endif %}
+
+</div>
+</body>
+</html>

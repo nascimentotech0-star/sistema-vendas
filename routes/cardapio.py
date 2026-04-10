@@ -1,7 +1,7 @@
 import json
 import os
 import uuid
-from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app
+from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app, session
 from flask_login import login_required, current_user
 from werkzeug.utils import secure_filename
 
@@ -40,14 +40,22 @@ def _default_data():
             {"nome": "Paçoca",      "ativo": True, "preco": 0},
             {"nome": "Banana",      "ativo": True, "preco": 0},
         ],
+        "frutas": [
+            {"nome": "Morango", "ativo": True, "preco": 3.00},
+            {"nome": "Kiwi",    "ativo": True, "preco": 3.00},
+            {"nome": "Abacaxi", "ativo": True, "preco": 2.50},
+            {"nome": "Manga",   "ativo": True, "preco": 2.50},
+            {"nome": "Uva",     "ativo": True, "preco": 2.50},
+        ],
         "adicionais": [
             {"nome": "Fini",     "ativo": True, "preco": 2.00},
             {"nome": "Bombom",   "ativo": True, "preco": 2.00},
             {"nome": "M&M",      "ativo": True, "preco": 2.00},
         ],
         "caldas": [
-            {"nome": "Nutella",        "ativo": True, "preco": 3.50},
-            {"nome": "Doce de Leite",  "ativo": True, "preco": 2.00},
+            {"nome": "Leite Condensado", "ativo": True, "preco": 0.00},
+            {"nome": "Nutella",          "ativo": True, "preco": 3.50},
+            {"nome": "Doce de Leite",    "ativo": True, "preco": 2.00},
         ],
         "sabores": [],
     }
@@ -110,7 +118,16 @@ def gestao():
     if request.method == 'POST':
         action = request.form.get('action')
 
-        if action == 'update_config':
+        if action == 'update_pin_fidelidade':
+            novo_pin = request.form.get('fidelidade_pin', '').strip()
+            if novo_pin.isdigit() and 4 <= len(novo_pin) <= 8:
+                g['fidelidade_pin'] = novo_pin
+                _save_gestao(g)
+                flash('PIN do carimbo atualizado!', 'success')
+            else:
+                flash('PIN deve ter entre 4 e 8 dígitos numéricos.', 'danger')
+
+        elif action == 'update_config':
             g['ticket_medio']          = float(request.form.get('ticket_medio', 30).replace(',', '.'))
             g['pedidos_dia_estimado']  = int(request.form.get('pedidos_dia', 20))
             g['meta_caixa']            = float(request.form.get('meta_caixa', 10000).replace(',', '.'))
@@ -211,6 +228,114 @@ def gestao():
                 if c['id'] == cid:
                     c['preco'] = novo_preco
                     flash(f'Preço do combo "{c["nome"]}" atualizado!', 'success')
+                    break
+            _save_gestao(g)
+
+        # ── Posição imagem de combo ──────────────────────────────────────────
+        elif action == 'update_combo_pos':
+            cid     = request.form.get('combo_id', '')
+            img_pos = request.form.get('img_pos', '50% 50%').strip() or '50% 50%'
+            for c in g.get('combos', []):
+                if c['id'] == cid:
+                    c['img_pos'] = img_pos
+                    flash(f'Posição do combo "{c["nome"]}" salva!', 'success')
+                    break
+            _save_gestao(g)
+
+        # ── Upload imagem de combo ───────────────────────────────────────────
+        elif action == 'upload_combo_img':
+            cid  = request.form.get('combo_id', '')
+            file = request.files.get('imagem')
+            if file and _allowed_img(file.filename):
+                path = _save_item_img(file, 'combos')
+                for c in g.get('combos', []):
+                    if c['id'] == cid:
+                        c['img'] = path
+                        flash(f'Imagem do combo "{c["nome"]}" atualizada!', 'success')
+                        break
+                _save_gestao(g)
+            else:
+                flash('Arquivo inválido. Use JPG, PNG ou WebP.', 'danger')
+
+        # ── Posição imagem de especial ───────────────────────────────────────
+        elif action == 'update_especial_pos':
+            eid     = request.form.get('especial_id', '')
+            img_pos = request.form.get('img_pos', '50% 50%').strip() or '50% 50%'
+            especiais_default = [
+                {"id": "marmita",  "nome": "Marmita de Açaí",       "desc": "Serve 2 pessoas 💜",       "preco": 28.70, "emoji": "🥡", "ativo": True},
+                {"id": "garrafa",  "nome": "Açaí na Garrafa 500ml", "desc": "Cremoso, para o caminho",  "preco": 25.99, "emoji": "🥤", "ativo": True},
+                {"id": "ovo250",   "nome": "Ovo de Páscoa 250g",     "desc": "Especial de Páscoa 🐣",   "preco": 28.70, "emoji": "🥚", "ativo": True},
+                {"id": "ovo350",   "nome": "Ovo de Páscoa 350g",     "desc": "Especial de Páscoa 🐣",   "preco": 31.90, "emoji": "🥚", "ativo": True},
+            ]
+            if 'especiais' not in g:
+                g['especiais'] = especiais_default
+            for e in g['especiais']:
+                if e['id'] == eid:
+                    e['img_pos'] = img_pos
+                    flash(f'Posição de "{e["nome"]}" salva!', 'success')
+                    break
+            _save_gestao(g)
+
+        # ── Upload imagem de especial ────────────────────────────────────────
+        elif action == 'upload_especial_img':
+            eid  = request.form.get('especial_id', '')
+            file = request.files.get('imagem')
+            especiais_default = [
+                {"id": "marmita",  "nome": "Marmita de Açaí",       "desc": "Serve 2 pessoas 💜",       "preco": 28.70, "emoji": "🥡", "ativo": True},
+                {"id": "garrafa",  "nome": "Açaí na Garrafa 500ml", "desc": "Cremoso, para o caminho",  "preco": 25.99, "emoji": "🥤", "ativo": True},
+                {"id": "ovo250",   "nome": "Ovo de Páscoa 250g",     "desc": "Especial de Páscoa 🐣",   "preco": 28.70, "emoji": "🥚", "ativo": True},
+                {"id": "ovo350",   "nome": "Ovo de Páscoa 350g",     "desc": "Especial de Páscoa 🐣",   "preco": 31.90, "emoji": "🥚", "ativo": True},
+            ]
+            if 'especiais' not in g:
+                g['especiais'] = especiais_default
+            if file and _allowed_img(file.filename):
+                path = _save_item_img(file, 'especiais')
+                for e in g['especiais']:
+                    if e['id'] == eid:
+                        e['img'] = path
+                        flash(f'Imagem de "{e["nome"]}" atualizada!', 'success')
+                        break
+                _save_gestao(g)
+            else:
+                flash('Arquivo inválido. Use JPG, PNG ou WebP.', 'danger')
+
+        # ── Toggle especial ──────────────────────────────────────────────────
+        elif action == 'toggle_especial':
+            eid = request.form.get('especial_id', '')
+            especiais_default = [
+                {"id": "marmita",  "nome": "Marmita de Açaí",       "desc": "Serve 2 pessoas 💜",       "preco": 28.70, "emoji": "🥡", "ativo": True},
+                {"id": "garrafa",  "nome": "Açaí na Garrafa 500ml", "desc": "Cremoso, para o caminho",  "preco": 25.99, "emoji": "🥤", "ativo": True},
+                {"id": "ovo250",   "nome": "Ovo de Páscoa 250g",     "desc": "Especial de Páscoa 🐣",   "preco": 28.70, "emoji": "🥚", "ativo": True},
+                {"id": "ovo350",   "nome": "Ovo de Páscoa 350g",     "desc": "Especial de Páscoa 🐣",   "preco": 31.90, "emoji": "🥚", "ativo": True},
+            ]
+            if 'especiais' not in g:
+                g['especiais'] = especiais_default
+            for e in g['especiais']:
+                if e['id'] == eid:
+                    e['ativo'] = not e.get('ativo', True)
+                    flash(f'"{e["nome"]}" {"ativado" if e["ativo"] else "desativado"}.', 'info')
+                    break
+            _save_gestao(g)
+
+        # ── Atualizar preço especial ─────────────────────────────────────────
+        elif action == 'update_especial_preco':
+            eid = request.form.get('especial_id', '')
+            try:
+                novo_preco = float(request.form.get('preco', '0').replace(',', '.'))
+            except ValueError:
+                novo_preco = 0.0
+            especiais_default = [
+                {"id": "marmita",  "nome": "Marmita de Açaí",       "desc": "Serve 2 pessoas 💜",       "preco": 28.70, "emoji": "🥡", "ativo": True},
+                {"id": "garrafa",  "nome": "Açaí na Garrafa 500ml", "desc": "Cremoso, para o caminho",  "preco": 25.99, "emoji": "🥤", "ativo": True},
+                {"id": "ovo250",   "nome": "Ovo de Páscoa 250g",     "desc": "Especial de Páscoa 🐣",   "preco": 28.70, "emoji": "🥚", "ativo": True},
+                {"id": "ovo350",   "nome": "Ovo de Páscoa 350g",     "desc": "Especial de Páscoa 🐣",   "preco": 31.90, "emoji": "🥚", "ativo": True},
+            ]
+            if 'especiais' not in g:
+                g['especiais'] = especiais_default
+            for e in g['especiais']:
+                if e['id'] == eid:
+                    e['preco'] = novo_preco
+                    flash(f'Preço de "{e["nome"]}" atualizado!', 'success')
                     break
             _save_gestao(g)
 
@@ -339,6 +464,7 @@ def index():
         'copos':           public.get('copos', []),
         'caldas':          public.get('caldas', []),
         'acompanhamentos': public.get('acompanhamentos', []),
+        'frutas':          public.get('frutas', []),
         'adicionais':      public.get('adicionais', []),
         'sabores':         public.get('sabores', []),
         'especiais':       especiais,
@@ -384,6 +510,34 @@ def gerenciar():
                     break
             _save(data)
             flash(f'Preço do copo {tamanho} atualizado!', 'success')
+            return redirect(url_for('cardapio.gerenciar'))
+
+        # ── Salvar posição da imagem do copo ────────────────────────────────
+        if action == 'update_copo_pos':
+            tamanho = request.form.get('tamanho', '')
+            img_pos = request.form.get('img_pos', '50% 50%').strip() or '50% 50%'
+            for copo in data.get('copos', []):
+                if copo['tamanho'] == tamanho:
+                    copo['img_pos'] = img_pos
+                    break
+            _save(data)
+            flash(f'Posição do copo {tamanho} salva!', 'success')
+            return redirect(url_for('cardapio.gerenciar'))
+
+        # ── Upload imagem do copo (sem category) ────────────────────────────
+        if action == 'upload_copo_img':
+            tamanho = request.form.get('tamanho', '')
+            file = request.files.get('imagem')
+            if file and _allowed_img(file.filename):
+                path = _save_item_img(file)
+                for copo in data.get('copos', []):
+                    if copo['tamanho'] == tamanho:
+                        copo['img'] = path
+                        _save(data)
+                        flash(f'Imagem do copo {tamanho} atualizada!', 'success')
+                        break
+            else:
+                flash('Arquivo inválido. Use JPG, PNG ou WebP.', 'danger')
             return redirect(url_for('cardapio.gerenciar'))
 
         if category not in data:
@@ -447,27 +601,69 @@ def gerenciar():
             else:
                 flash('Arquivo inválido. Use JPG, PNG ou WebP.', 'danger')
 
-        # ── Upload imagem do copo ────────────────────────────────────────────
-        elif action == 'upload_copo_img':
-            tamanho = request.form.get('tamanho', '')
-            file = request.files.get('imagem')
-            if file and _allowed_img(file.filename):
-                path = _save_item_img(file)
-                for copo in data.get('copos', []):
-                    if copo['tamanho'] == tamanho:
-                        copo['img'] = path
-                        _save(data)
-                        flash(f'Imagem do copo {tamanho} atualizada!', 'success')
-                        break
-            else:
-                flash('Arquivo inválido. Use JPG, PNG ou WebP.', 'danger')
-
         return redirect(url_for('cardapio.gerenciar'))
 
     g = _load_gestao()
     return render_template('cardapio/gerenciar.html', data=data,
                            g_gestao=g,
                            loja_aberta=g.get('loja_aberta', False))
+
+
+# ── Carimbar — página isolada para a loja (sem login do sistema) ─────────────
+
+@cardapio_bp.route('/cardapio/carimbar', methods=['GET', 'POST'])
+def carimbar():
+    """Página de carimbo isolada — protegida por PIN, sem conexão com o sistema de funcionários."""
+    g   = _load_gestao()
+    pin = str(g.get('fidelidade_pin', '1234'))
+
+    tel = request.args.get('tel', '').replace(' ', '').replace('-', '').replace('(', '').replace(')', '')
+
+    if request.method == 'POST':
+        action = request.form.get('action', '')
+
+        # Verificar PIN
+        if action == 'verificar_pin':
+            if request.form.get('pin', '') == pin:
+                session['fid_autenticado'] = True
+                return redirect(url_for('cardapio.carimbar', tel=tel))
+            flash('PIN incorreto.', 'danger')
+            return render_template('cardapio/carimbar.html', tel=tel, pin_validado=False, cliente=None)
+
+        # Carimbar — só se PIN já validado na session
+        if action == 'carimbar' and session.get('fid_autenticado'):
+            tel_form = request.form.get('tel', '').replace(' ', '').replace('-', '').replace('(', '').replace(')', '')
+            obs      = request.form.get('obs', '').strip() or None
+            cliente  = FidelidadeCliente.query.filter_by(telefone=tel_form).first()
+            if cliente:
+                db.session.add(FidelidadePedido(cliente_id=cliente.id, is_free=False, obs=obs))
+                db.session.commit()
+                flash(f'✅ {cliente.nome} carimbado! {cliente.selos_atuais}/10 selos.', 'success')
+            else:
+                flash('Cliente não encontrado nesse telefone.', 'warning')
+            return redirect(url_for('cardapio.carimbar', tel=tel_form))
+
+        # Resgatar free — só se PIN validado
+        if action == 'resgatar' and session.get('fid_autenticado'):
+            tel_form = request.form.get('tel', '').replace(' ', '').replace('-', '').replace('(', '').replace(')', '')
+            cliente  = FidelidadeCliente.query.filter_by(telefone=tel_form).first()
+            if cliente and cliente.tem_free_pendente:
+                db.session.add(FidelidadePedido(cliente_id=cliente.id, is_free=True, obs='Açaí grátis resgatado'))
+                db.session.commit()
+                flash(f'🎁 Açaí grátis de {cliente.nome} resgatado!', 'success')
+            return redirect(url_for('cardapio.carimbar', tel=tel_form))
+
+        # Sair (limpar PIN da session)
+        if action == 'sair':
+            session.pop('fid_autenticado', None)
+            return redirect(url_for('cardapio.carimbar'))
+
+    pin_validado = session.get('fid_autenticado', False)
+    cliente = None
+    if pin_validado and tel:
+        cliente = FidelidadeCliente.query.filter_by(telefone=tel).first()
+
+    return render_template('cardapio/carimbar.html', tel=tel, cliente=cliente, pin_validado=pin_validado)
 
 
 # ── Fidelidade — API (remember-me via localStorage) ─────────────────────────

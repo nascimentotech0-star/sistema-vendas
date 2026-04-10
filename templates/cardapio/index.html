@@ -56,7 +56,7 @@
     html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
     body{
       font-family:'Poppins',sans-serif;
-      background:var(--bg);color:var(--txt);
+      background:#f4f4f8;color:var(--txt);
       min-height:100vh;overflow-x:hidden;
       padding-bottom:calc(80px + var(--safe-bottom));
     }
@@ -123,66 +123,80 @@
     }
 
     /* ════════════════════════════════════════
-       HERO — clean e impactante
+       HERO — clean & profissional (tema claro)
     ════════════════════════════════════════ */
     .hero{
       position:relative;overflow:hidden;
-      padding:2.25rem 1.1rem 2rem;text-align:center;
-      background:linear-gradient(160deg,var(--p1) 0%,var(--p2) 50%,#9333ea 100%);
+      padding:1.75rem 1.1rem 1.75rem;text-align:center;
+      background:#fff;
+      border-bottom:1px solid var(--borda);
     }
-    /* pattern diagonal sutil */
+    /* faixa roxa no topo */
     .hero::before{
-      content:'';position:absolute;inset:0;
-      background-image:
-        repeating-linear-gradient(
-          45deg,
-          rgba(255,255,255,.03) 0px,
-          rgba(255,255,255,.03) 1px,
-          transparent 1px,
-          transparent 20px
-        );
+      content:'';position:absolute;top:0;left:0;right:0;height:4px;
+      background:linear-gradient(90deg,var(--p1),var(--rosa),var(--p2));
+      pointer-events:none;
+    }
+    /* círculo decorativo sutil */
+    .hero::after{
+      content:'';position:absolute;
+      right:-80px;top:-80px;
+      width:280px;height:280px;border-radius:50%;
+      background:radial-gradient(circle,rgba(168,85,247,.07) 0%,transparent 70%);
       pointer-events:none;
     }
     .hero-inner{position:relative;z-index:1}
     .hero-logo{
       display:inline-flex;align-items:center;justify-content:center;
-      width:70px;height:70px;border-radius:22px;margin-bottom:.9rem;
-      background:rgba(255,255,255,.15);
-      border:2px solid rgba(255,255,255,.25);
-      backdrop-filter:blur(8px);
-      font-size:2.2rem;
-      box-shadow:0 8px 32px rgba(0,0,0,.2);
+      width:64px;height:64px;border-radius:20px;margin-bottom:.75rem;
+      background:linear-gradient(135deg,var(--p1),var(--rosa));
+      font-size:2rem;
+      box-shadow:0 6px 20px rgba(91,33,182,.25);
       animation:float 4s ease-in-out infinite;
     }
-    @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+    @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
     .hero h1{
-      font-size:clamp(1.75rem,6vw,2.5rem);
-      font-weight:900;color:#fff;
-      letter-spacing:-.03em;line-height:1.05;margin-bottom:.3rem;
+      font-size:clamp(1.5rem,5vw,2.2rem);
+      font-weight:900;color:var(--p1);
+      letter-spacing:-.03em;line-height:1.05;margin-bottom:.25rem;
     }
     .hero-sub{
-      font-size:.88rem;color:rgba(255,255,255,.8);font-weight:500;margin-bottom:1.1rem;
+      font-size:.85rem;color:var(--txt4);font-weight:500;margin-bottom:1rem;
     }
-    .hero-sub span{color:#fde68a;font-weight:700}
-    .hero-pills{display:flex;gap:.4rem;justify-content:center;flex-wrap:wrap;margin-bottom:1.25rem}
+    .hero-sub span{color:var(--p2);font-weight:700}
+    .hero-pills{display:flex;gap:.35rem;justify-content:center;flex-wrap:wrap;margin-bottom:1.1rem}
     .hp{
-      display:inline-flex;align-items:center;gap:.25rem;
-      background:rgba(255,255,255,.15);
-      border:1px solid rgba(255,255,255,.25);
-      color:rgba(255,255,255,.9);font-size:.7rem;font-weight:600;
-      padding:.28rem .7rem;border-radius:99px;backdrop-filter:blur(4px);
+      display:inline-flex;align-items:center;gap:.22rem;
+      background:#fff;border:1.5px solid var(--borda2);
+      color:var(--txt3);font-size:.68rem;font-weight:700;
+      padding:.25rem .65rem;border-radius:99px;
     }
-    .hp.gold{background:rgba(251,191,36,.2);border-color:rgba(251,191,36,.4);color:#fde68a}
-    .hp.green{background:rgba(74,222,128,.15);border-color:rgba(74,222,128,.3);color:#bbf7d0}
+    .hp.gold{background:#fffbeb;border-color:#fde68a;color:#92400e}
+    .hp.green{background:#f0fdf4;border-color:#bbf7d0;color:#15803d}
     .hero-cta{
-      display:inline-flex;align-items:center;gap:.5rem;
-      background:#fff;color:var(--p1);font-weight:800;font-size:.9rem;
-      padding:.78rem 1.75rem;border-radius:99px;cursor:pointer;
+      display:inline-flex;align-items:center;gap:.45rem;
+      background:var(--p1);color:#fff;font-weight:800;font-size:.88rem;
+      padding:.75rem 1.6rem;border-radius:99px;cursor:pointer;
       border:none;font-family:'Poppins',sans-serif;
-      box-shadow:0 6px 24px rgba(0,0,0,.2);transition:all .2s;
+      box-shadow:0 6px 20px rgba(91,33,182,.3);transition:all .2s;
       min-height:var(--touch);
     }
-    .hero-cta:hover{transform:scale(1.04);box-shadow:0 8px 32px rgba(0,0,0,.3)}
+    .hero-cta:hover{transform:scale(1.03);box-shadow:0 8px 28px rgba(91,33,182,.4)}
+
+    /* fidelidade mini card no hero */
+    .hero-fid{
+      display:inline-flex;align-items:center;gap:.7rem;
+      background:linear-gradient(135deg,var(--p1),#7c3aed);
+      border-radius:14px;padding:.75rem 1.1rem;
+      text-decoration:none;
+      box-shadow:0 6px 20px rgba(91,33,182,.25);
+      transition:all .2s;max-width:340px;width:100%;
+    }
+    .hero-fid:hover{transform:translateY(-2px);box-shadow:0 8px 28px rgba(91,33,182,.35)}
+    .hero-fid-ico{font-size:1.6rem;flex-shrink:0}
+    .hero-fid-txt{text-align:left}
+    .hero-fid-txt strong{display:block;font-size:.82rem;font-weight:800;color:#fff;line-height:1.2}
+    .hero-fid-txt span{font-size:.7rem;color:rgba(255,255,255,.8);font-weight:500}
 
     /* ════════════════════════════════════════
        CATEGORIA NAV
@@ -264,7 +278,7 @@
     /* imagem do produto */
     .sc-img{
       height:140px;display:flex;align-items:center;justify-content:center;
-      background:linear-gradient(180deg,var(--bg2) 0%,var(--card) 100%);
+      background:linear-gradient(170deg,#f5f0ff 0%,#ede9fe 100%);
       position:relative;overflow:hidden;
     }
     .sc-img img{
@@ -273,26 +287,27 @@
     }
     .size-card:hover .sc-img img{transform:scale(1.06)}
 
-    /* copo CSS (quando não tem imagem) */
+    /* copo CSS (quando não tem imagem) — versão clara */
     .cup-wrap{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center}
     .cup-lid{
       width:calc(var(--cw) + 12px);height:7px;
-      background:var(--p1);border-radius:3px 3px 0 0;opacity:.6;
+      background:var(--p2);border-radius:3px 3px 0 0;opacity:.8;
     }
     .cup-body{
       width:var(--cw);height:var(--ch);
       clip-path:polygon(10% 0%,90% 0%,100% 100%,0% 100%);
-      background:linear-gradient(180deg,var(--p2) 0%,var(--p1) 60%,#3b0764 100%);
+      background:linear-gradient(180deg,#c4b5fd 0%,#a78bfa 40%,var(--p2) 100%);
       position:relative;overflow:hidden;
+      box-shadow:inset 2px 0 6px rgba(0,0,0,.1);
     }
     .cup-fill{
-      position:absolute;bottom:0;left:0;right:0;height:65%;
-      background:linear-gradient(180deg,rgba(168,85,247,.5),rgba(59,7,100,.9));
-      border-top:1.5px solid rgba(255,255,255,.2);
+      position:absolute;bottom:0;left:0;right:0;height:60%;
+      background:linear-gradient(180deg,rgba(139,92,246,.4),rgba(109,40,217,.8));
+      border-top:1.5px solid rgba(255,255,255,.3);
     }
     .cup-shine{
-      position:absolute;top:6px;left:10%;width:20%;height:55%;
-      background:linear-gradient(180deg,rgba(255,255,255,.18),transparent);
+      position:absolute;top:6px;left:8%;width:18%;height:50%;
+      background:linear-gradient(180deg,rgba(255,255,255,.35),transparent);
       border-radius:99px;
     }
     .cup-tops{
@@ -337,11 +352,13 @@
     .combo-card.fechada-card{opacity:.5;pointer-events:none}
 
     .combo-ico{
-      width:48px;height:48px;border-radius:12px;flex-shrink:0;
+      width:72px;height:72px;border-radius:12px;flex-shrink:0;
       background:linear-gradient(135deg,#fffbeb,#fef3c7);
       border:1.5px solid #fde68a;
       display:flex;align-items:center;justify-content:center;font-size:1.5rem;
+      overflow:hidden;
     }
+    .combo-ico img{width:100%;height:100%;object-fit:cover}
     .combo-info{flex:1;min-width:0}
     .combo-nome{font-size:.9rem;font-weight:800;color:var(--txt);line-height:1.1;margin-bottom:.2rem}
     .combo-desc{font-size:.7rem;color:var(--txt4);margin-bottom:.4rem}
@@ -399,11 +416,12 @@
     /* ════════════════════════════════════════
        SABORES
     ════════════════════════════════════════ */
-    .sabores-wrap{display:flex;flex-wrap:wrap;gap:.4rem}
+    .sabores-wrap{display:flex;flex-wrap:wrap;gap:.5rem}
     .sabor-pill{
-      background:var(--bg2);border:1px solid var(--borda2);
-      color:var(--txt3);font-size:.7rem;font-weight:600;
-      padding:.3rem .7rem;border-radius:99px;
+      background:#fff;border:1.5px solid var(--borda2);
+      color:var(--p1);font-size:.78rem;font-weight:700;
+      padding:.4rem .9rem;border-radius:99px;
+      box-shadow:0 1px 4px rgba(91,33,182,.08);
     }
 
     /* ════════════════════════════════════════
@@ -702,7 +720,10 @@
     .ae.vis{opacity:1;transform:translateY(0)}
 
     /* divider */
-    .divider{height:8px;background:var(--bg2);border-top:1px solid var(--borda);border-bottom:1px solid var(--borda);margin:0}
+    .divider{height:1px;background:var(--borda);margin:.25rem 0}
+
+    /* seção container */
+    .secao{background:#fff;border-radius:0;padding:1.4rem .9rem;margin-bottom:.5rem}
   </style>
 </head>
 <body>
@@ -744,9 +765,13 @@
       <span class="hp">📍 Barreiras–BA</span>
       <span class="hp">🕐 {{ horario_abertura }}h–{{ horario_fechamento }}h</span>
     </div>
-    <button class="hero-cta" onclick="document.getElementById('sec-copos').scrollIntoView({behavior:'smooth'})">
-      🛒 Monte seu açaí agora
-    </button>
+    <a class="hero-fid" href="{{ url_for('cardapio.fidelidade') }}">
+      <span class="hero-fid-ico">🃏</span>
+      <div class="hero-fid-txt">
+        <strong>Cartão Fidelidade Grátis</strong>
+        <span>10 pedidos = 1 açaí grátis. Cadastre-se agora →</span>
+      </div>
+    </a>
   </div>
 </div>
 
@@ -769,13 +794,13 @@
     {% for copo in data.copos %}
     <div class="size-card ae {{ 'fechada-card' if not loja_aberta }}"
          onclick="abrirModalCopo({{ loop.index0 }})">
-      {% if loop.index == 2 %}<span class="sc-tag pop">⭐ Mais pedido</span>
-      {% elif loop.index == 3 %}<span class="sc-tag fam">💜 Família</span>{% endif %}
+      {% if loop.index == 2 %}<span class="sc-tag pop">⭐ Mais pedido</span>{% endif %}
       {% if not loja_aberta %}<span class="sc-tag fech">Fechado</span>{% endif %}
 
       <div class="sc-img" style="--cw:{{ 50 + loop.index * 9 }}px;--ch:{{ 64 + loop.index * 9 }}px">
         {% if copo.img is defined and copo.img %}
-          <img src="{{ url_for('static', filename=copo.img) }}" alt="{{ copo.nome }}" loading="lazy"/>
+          <img src="{{ url_for('static', filename=copo.img) }}" alt="{{ copo.nome }}" loading="lazy"
+               style="object-position:{{ copo.img_pos if copo.img_pos is defined and copo.img_pos else '50% 50%' }}"/>
         {% else %}
           <div class="cup-wrap">
             <div class="cup-lid"></div>
@@ -819,7 +844,12 @@
     {% set pct = ((economia / combo.preco_original) * 100)|round|int %}
     <div class="combo-card ae {{ 'fechada-card' if not loja_aberta }}"
          onclick="abrirModalCombo('{{ combo.id }}')">
-      <div class="combo-ico">{{ combo.emoji }}</div>
+      <div class="combo-ico">
+        {% if combo.img is defined and combo.img %}
+          <img src="{{ url_for('static', filename=combo.img) }}" alt="{{ combo.nome }}" loading="lazy"
+               style="object-position:{{ combo.img_pos if combo.img_pos is defined and combo.img_pos else '50% 50%' }}"/>
+        {% else %}{{ combo.emoji }}{% endif %}
+      </div>
       <div class="combo-info">
         <div class="combo-nome">{{ combo.nome }}</div>
         <div class="combo-desc">{{ combo.desc }}</div>
@@ -860,7 +890,8 @@
          onclick="abrirModalEspecial('{{ item.id }}')">
       <div class="esp-img">
         {% if item.img is defined and item.img %}
-          <img src="{{ url_for('static', filename=item.img) }}" alt="{{ item.nome }}" loading="lazy"/>
+          <img src="{{ url_for('static', filename=item.img) }}" alt="{{ item.nome }}" loading="lazy"
+               style="object-position:{{ item.img_pos if item.img_pos is defined and item.img_pos else '50% 50%' }}"/>
         {% else %}
           <span class="esp-emoji">{{ item.emoji }}</span>
         {% endif %}
@@ -893,17 +924,8 @@
 <div class="divider"></div>
 {% endif %}
 
-<!-- ═══ FIDELIDADE ═══ -->
-<div id="sec-fid" style="padding:.5rem 0">
-  <a class="fid-banner" href="{{ url_for('cardapio.fidelidade') }}">
-    <div class="fid-ico">🃏</div>
-    <div class="fid-txt">
-      <h4>Cartão Fidelidade</h4>
-      <p>A cada 10 pedidos, ganhe 1 açaí grátis! Cadastre-se agora.</p>
-    </div>
-    <span class="fid-arrow">›</span>
-  </a>
-</div>
+<!-- ═══ FIDELIDADE (âncora para nav) ═══ -->
+<div id="sec-fid"></div>
 
 <!-- ═══ INSTAGRAM ═══ -->
 <div class="ig-banner" id="sec-ig">
@@ -990,6 +1012,14 @@
                placeholder="Ex: Maria Silva" autocomplete="name" inputmode="text"/>
       </div>
       <div class="form-g">
+        <label class="form-lbl">WhatsApp / Telefone
+          <span style="font-size:.65rem;color:var(--txt4);font-weight:400"> — para o Cartão Fidelidade 🃏</span>
+        </label>
+        <input type="tel" class="form-inp" id="co-tel"
+               placeholder="Ex: 77 99999-0000"
+               autocomplete="tel" inputmode="tel"/>
+      </div>
+      <div class="form-g">
         <label class="form-lbl">Endereço / Bairro</label>
         <input type="text" class="form-inp" id="co-end"
                placeholder="Ex: Rua das Flores, 123 — Centro"
@@ -1022,7 +1052,7 @@
 const CAT = {{ data_json|safe }};
 const WPP = '{{ whatsapp }}';
 const LOJA_ABERTA = {{ 'true' if loja_aberta else 'false' }};
-const SLABELS = {sabor:'🍇 Sabor',calda:'🍫 Calda',acomp:'✅ Acomp.',adicional:'🍬 Extras',qty:'📦 Qtd'};
+const SLABELS = {sabor:'🍇 Sabor',calda:'🍫 Calda',acomp:'✅ Acomp.',fruta:'🍓 Frutas',adicional:'🍬 Extras',qty:'📦 Qtd'};
 
 let cart=[], pgto='PIX';
 let mTipo=null, mProd=null, mStep=0, mSteps=[], mSel={};
@@ -1032,8 +1062,9 @@ const fmt = v => 'R$ '+v.toFixed(2).replace('.',',');
 function calcSub(){
   if(!mProd) return 0;
   let t=(mProd.preco||0)*(mSel.qty||1);
-  if(mSel.calda) t+=(mSel.calda.preco||0)*(mSel.qty||1);
+  (mSel.caldas||[]).forEach(c=>t+=(c.preco||0)*(mSel.qty||1));
   (mSel.acomps||[]).forEach(a=>t+=(a.preco||0)*(mSel.qty||1));
+  (mSel.frutas||[]).forEach(f=>t+=(f.preco||0)*(mSel.qty||1));
   (mSel.adics||[]).forEach(a=>t+=(a.preco||0)*(mSel.qty||1));
   return t;
 }
@@ -1057,11 +1088,12 @@ function toast(msg){
 function abrirModalCopo(idx){
   if(!LOJA_ABERTA){toast('🔒 Loja fechada');return;}
   mTipo='copo'; mProd=CAT.copos[idx];
-  mSel={sabor:null,calda:null,acomps:[],adics:[],qty:1};
+  mSel={sabor:null,caldas:[],acomps:[],frutas:[],adics:[],qty:1};
   mSteps=[];
   if(CAT.sabores?.length) mSteps.push('sabor');
   if(CAT.caldas?.length)  mSteps.push('calda');
   if(CAT.acompanhamentos?.length) mSteps.push('acomp');
+  if(CAT.frutas?.length)          mSteps.push('fruta');
   if(CAT.adicionais?.length)      mSteps.push('adicional');
   mSteps.push('qty');
   mStep=0;
@@ -1127,18 +1159,14 @@ function renderStep(){
     h+=`</div>`;
   }
   else if(step==='calda'){
-    h=`<div class="stt">Escolha a calda</div>
-       <div class="sti">Selecione 1 calda — extras cobrados à parte</div>
-       <div class="opt-list">
-         <div class="opt-item ${!mSel.calda?'selected':''}" onclick="selCalda(null)">
-           <div class="opt-left"><div class="opt-ck"></div><span class="opt-nome">Sem calda</span></div>
-           <span class="opt-gratis">grátis</span>
-         </div>`;
+    h=`<div class="stt">Caldas</div>
+       <div class="sti">Selecione quantas quiser — cada uma com seu preço</div>
+       <div class="opt-list">`;
     CAT.caldas.forEach(c=>{
-      const sel=mSel.calda?.nome===c.nome?'selected':'';
+      const sel=(mSel.caldas||[]).some(x=>x.nome===c.nome)?'selected':'';
       const px=c.preco>0?`<span class="opt-preco">+${fmt(c.preco)}</span>`:`<span class="opt-gratis">grátis</span>`;
-      h+=`<div class="opt-item ${sel}" onclick='selCalda(${JSON.stringify(c)})'>
-           <div class="opt-left"><div class="opt-ck"></div><span class="opt-nome">${c.nome}</span></div>
+      h+=`<div class="opt-item ${sel}" onclick='togCalda(${JSON.stringify(c)})'>
+           <div class="opt-left"><div class="opt-ck sq"></div><span class="opt-nome">${c.nome}</span></div>
            ${px}
           </div>`;
     });
@@ -1159,6 +1187,19 @@ function renderStep(){
       h+=`<div class="opt-item ${sel} ${lim?'disabled-opt':''}" onclick='togAcomp(${JSON.stringify(a)})'>
            <div class="opt-left"><div class="opt-ck sq"></div><span class="opt-nome">${a.nome}</span></div>
            ${px}
+          </div>`;
+    });
+    h+=`</div>`;
+  }
+  else if(step==='fruta'){
+    h=`<div class="stt">Frutas</div>
+       <div class="sti">Frutas frescas — selecione quantas quiser</div>
+       <div class="opt-list">`;
+    CAT.frutas.forEach(f=>{
+      const sel=(mSel.frutas||[]).some(x=>x.nome===f.nome)?'selected':'';
+      h+=`<div class="opt-item ${sel}" onclick='togFruta(${JSON.stringify(f)})'>
+           <div class="opt-left"><div class="opt-ck sq"></div><span class="opt-nome">🍓 ${f.nome}</span></div>
+           <span class="opt-preco">+${fmt(f.preco)}</span>
           </div>`;
     });
     h+=`</div>`;
@@ -1196,8 +1237,9 @@ function renderStep(){
 function buildDet(){
   let p=[`<strong style="color:var(--txt)">${mProd.nome}${mProd.tamanho?' — '+mProd.tamanho:''}</strong>`];
   if(mSel.sabor) p.push('🍇 Sabor: '+mSel.sabor.nome);
-  if(mSel.calda) p.push('🍫 Calda: '+mSel.calda.nome+(mSel.calda.preco>0?' (+'+fmt(mSel.calda.preco)+')':' (grátis)'));
+  if((mSel.caldas||[]).length) p.push('🍫 Calda: '+mSel.caldas.map(c=>c.nome+(c.preco>0?' (+'+fmt(c.preco)+')':' (grátis)')).join(', '));
   if((mSel.acomps||[]).length) p.push('✅ Acomp: '+mSel.acomps.map(a=>a.nome).join(', '));
+  if((mSel.frutas||[]).length) p.push('🍓 Frutas: '+mSel.frutas.map(f=>f.nome+' (+'+fmt(f.preco)+')').join(', '));
   if((mSel.adics||[]).length)  p.push('🍬 Extras: '+mSel.adics.map(a=>a.nome+' (+'+fmt(a.preco)+')').join(', '));
   if(mProd.itens) p.push('📋 Inclui: '+mProd.itens.join(', '));
   return p.join('<br>');
@@ -1205,12 +1247,21 @@ function buildDet(){
 
 // ── SELEÇÕES ──
 function selSabor(s){mSel.sabor=s;renderStep();}
-function selCalda(c){mSel.calda=c;renderStep();}
+function togCalda(c){
+  const arr=mSel.caldas||[]; const i=arr.findIndex(x=>x.nome===c.nome);
+  if(i>=0)arr.splice(i,1);else arr.push(c);
+  mSel.caldas=arr; renderStep();
+}
 function togAcomp(a){
   const arr=mSel.acomps||[]; const i=arr.findIndex(x=>x.nome===a.nome);
   if(i>=0){arr.splice(i,1);}
   else{if(a.preco===0&&arr.filter(x=>x.preco===0).length>=3)return;arr.push(a);}
   mSel.acomps=arr; renderStep();
+}
+function togFruta(f){
+  const arr=mSel.frutas||[]; const i=arr.findIndex(x=>x.nome===f.nome);
+  if(i>=0)arr.splice(i,1);else arr.push(f);
+  mSel.frutas=arr; renderStep();
 }
 function togAdic(a){
   const arr=mSel.adics||[]; const i=arr.findIndex(x=>x.nome===a.nome);
@@ -1230,8 +1281,8 @@ function modalProximo(){
   else{
     cart.push({
       tipo:mTipo, produto:{...mProd},
-      sabor:mSel.sabor, calda:mSel.calda,
-      acomps:[...(mSel.acomps||[])], adics:[...(mSel.adics||[])],
+      sabor:mSel.sabor, caldas:[...(mSel.caldas||[])],
+      acomps:[...(mSel.acomps||[])], frutas:[...(mSel.frutas||[])], adics:[...(mSel.adics||[])],
       qty:mSel.qty||1, subtotal:calcSub()
     });
     updCartUI(); fecharOverlay('overlay-produto'); toast('✅ Adicionado ao carrinho!');
@@ -1264,17 +1315,18 @@ function renderCart(){
   let h='';
   cart.forEach((item,i)=>{
     let det=[];
-    if(item.sabor)          det.push('Sabor: '+item.sabor.nome);
-    if(item.calda)          det.push('Calda: '+item.calda.nome);
-    if(item.acomps?.length) det.push('Acomp: '+item.acomps.map(a=>a.nome).join(', '));
-    if(item.adics?.length)  det.push('Extras: '+item.adics.map(a=>a.nome).join(', '));
-    if(item.produto.itens)  det.push('Inclui: '+item.produto.itens.join(', '));
-    if(item.qty>1)          det.push('Qtd: '+item.qty+'x');
+    if(item.sabor)           det.push('Sabor: '+item.sabor.nome);
+    if(item.caldas?.length)  det.push('Calda: '+item.caldas.map(c=>c.nome).join(', '));
+    if(item.acomps?.length)  det.push('Acomp: '+item.acomps.map(a=>a.nome).join(', '));
+    if(item.frutas?.length)  det.push('Frutas: '+item.frutas.map(f=>f.nome).join(', '));
+    if(item.adics?.length)   det.push('Extras: '+item.adics.map(a=>a.nome).join(', '));
+    if(item.produto.itens)   det.push('Inclui: '+item.produto.itens.join(', '));
+    const nomeItem=`${item.produto.nome}${item.produto.tamanho?' ('+item.produto.tamanho+')':''}`;
     h+=`<div class="ci">
       <span class="ci-em">${item.produto.emoji||'🥤'}</span>
       <div class="ci-info">
-        <div class="ci-nome">${item.qty}x ${item.produto.nome}${item.produto.tamanho?' — '+item.produto.tamanho:''}</div>
-        ${det.length?`<div class="ci-det">${det.join(' · ')}</div>`:''}
+        <div class="ci-nome">${item.qty > 1 ? item.qty+'x ' : ''}${nomeItem}</div>
+        ${det.length?`<div class="ci-det">${det.join('<br>')}</div>`:''}
         <div class="ci-preco">${fmt(item.subtotal)}</div>
       </div>
       <button class="ci-rm" onclick="rmCart(${i})">✕</button>
@@ -1294,12 +1346,16 @@ function abrirCheckout(){
   if(!cart.length)return;
   let r='';
   cart.forEach((item,i)=>{
-    r+=`<strong>${i+1}. ${item.qty}x ${item.produto.nome}${item.produto.tamanho?' ('+item.produto.tamanho+')':''}</strong><br>`;
-    if(item.sabor)          r+=`&nbsp;&nbsp;• Sabor: ${item.sabor.nome}<br>`;
-    if(item.calda)          r+=`&nbsp;&nbsp;• Calda: ${item.calda.nome}<br>`;
-    if(item.acomps?.length) r+=`&nbsp;&nbsp;• Acomp: ${item.acomps.map(a=>a.nome).join(', ')}<br>`;
-    if(item.adics?.length)  r+=`&nbsp;&nbsp;• Extras: ${item.adics.map(a=>a.nome).join(', ')}<br>`;
-    if(item.produto.itens)  r+=`&nbsp;&nbsp;• Inclui: ${item.produto.itens.join(', ')}<br>`;
+    const nomeItem=`${item.produto.nome}${item.produto.tamanho?' ('+item.produto.tamanho+')':''}`;
+    r+=`<strong>Item ${i+1}: ${nomeItem}</strong>`;
+    if(item.qty>1) r+=` <span style="color:var(--p2)">× ${item.qty} unidades</span>`;
+    r+=`<br>`;
+    if(item.sabor)           r+=`&nbsp;&nbsp;• Sabor: ${item.sabor.nome}<br>`;
+    if(item.caldas?.length)  r+=`&nbsp;&nbsp;• Calda: ${item.caldas.map(c=>c.nome).join(', ')}<br>`;
+    if(item.acomps?.length)  r+=`&nbsp;&nbsp;• Acomp: ${item.acomps.map(a=>a.nome).join(', ')}<br>`;
+    if(item.frutas?.length)  r+=`&nbsp;&nbsp;• Frutas: ${item.frutas.map(f=>f.nome).join(', ')}<br>`;
+    if(item.adics?.length)   r+=`&nbsp;&nbsp;• Extras: ${item.adics.map(a=>a.nome).join(', ')}<br>`;
+    if(item.produto.itens)   r+=`&nbsp;&nbsp;• Inclui: ${item.produto.itens.join(', ')}<br>`;
     r+=`&nbsp;&nbsp;<span style="color:var(--p1);font-weight:700">${fmt(item.subtotal)}</span><br><br>`;
   });
   const tot=cart.reduce((s,i)=>s+i.subtotal,0);
@@ -1317,24 +1373,38 @@ function selPgto(btn,p){
 
 function enviarWhatsApp(){
   const nome=document.getElementById('co-nome').value.trim();
+  const tel=document.getElementById('co-tel').value.trim();
   const end=document.getElementById('co-end').value.trim();
   if(!nome){toast('⚠️ Preencha seu nome');document.getElementById('co-nome').focus();return;}
-  let msg=`Olá, Açaídeira 77! 🫐 Gostaria de fazer um pedido:\n\n`;
-  msg+=`━━━━━━━━━━━━━━━━━━\n🛒 *MEU PEDIDO*\n━━━━━━━━━━━━━━━━━━\n\n`;
-  cart.forEach((item,i)=>{
-    msg+=`${i+1}️⃣ *${item.qty}x ${item.produto.nome}${item.produto.tamanho?' — '+item.produto.tamanho:''}*\n`;
-    if(item.sabor)          msg+=`   🍇 Sabor: ${item.sabor.nome}\n`;
-    if(item.calda)          msg+=`   🍫 Calda: ${item.calda.nome}\n`;
-    if(item.acomps?.length) msg+=`   ✅ Acomp: ${item.acomps.map(a=>a.nome).join(', ')}\n`;
-    if(item.adics?.length)  msg+=`   🍬 Extras: ${item.adics.map(a=>a.nome).join(', ')}\n`;
-    if(item.produto.itens)  msg+=`   📋 Inclui: ${item.produto.itens.join(', ')}\n`;
-    msg+=`   💰 ${fmt(item.subtotal)}\n\n`;
-  });
   const tot=cart.reduce((s,i)=>s+i.subtotal,0);
-  msg+=`━━━━━━━━━━━━━━━━━━\n💰 *TOTAL: ${fmt(tot)}*\n━━━━━━━━━━━━━━━━━━\n\n`;
-  msg+=`👤 *Nome:* ${nome}\n`;
-  if(end) msg+=`📍 *Endereço:* ${end}\n`;
-  msg+=`💳 *Pagamento:* ${pgto}`;
+  let msg=`🫐 *Açaídeira 77 — Novo Pedido*\n\n`;
+
+  cart.forEach((item,i)=>{
+    const nomeItem=item.produto.nome+(item.produto.tamanho?' ('+item.produto.tamanho+')':'');
+    msg+=`*${i+1}. ${nomeItem}*`;
+    if(item.qty>1) msg+=` — ${item.qty} unidades`;
+    msg+=`\n`;
+    if(item.sabor)           msg+=`   Sabor: ${item.sabor.nome}\n`;
+    if(item.caldas?.length)  msg+=`   Calda: ${item.caldas.map(c=>c.nome).join(' + ')}\n`;
+    if(item.acomps?.length)  msg+=`   Acomp: ${item.acomps.map(a=>a.nome).join(', ')}\n`;
+    if(item.frutas?.length)  msg+=`   Frutas: ${item.frutas.map(f=>f.nome).join(', ')}\n`;
+    if(item.adics?.length)   msg+=`   Extras: ${item.adics.map(a=>a.nome).join(', ')}\n`;
+    if(item.produto.itens)   msg+=`   Inclui: ${item.produto.itens.join(', ')}\n`;
+    msg+=`   Subtotal: *${fmt(item.subtotal)}*\n\n`;
+  });
+
+  msg+=`━━━━━━━━━━━━━\n`;
+  msg+=`💰 *TOTAL: ${fmt(tot)}*\n`;
+  msg+=`━━━━━━━━━━━━━\n\n`;
+  msg+=`👤 Nome: *${nome}*\n`;
+  if(tel) msg+=`📱 Telefone: *${tel}*\n`;
+  if(end) msg+=`📍 Endereço: *${end}*\n`;
+  msg+=`💳 Pagamento: *${pgto}*`;
+  if(tel){
+    const telLimpo=tel.replace(/\D/g,'');
+    const linkCarimbo=`${window.location.origin}/cardapio/carimbar?tel=${telLimpo}`;
+    msg+=`\n\n🃏 *Carimbar fidelidade após confirmar pagamento:*\n${linkCarimbo}`;
+  }
   window.open(`https://wa.me/55${WPP}?text=${encodeURIComponent(msg)}`,'_blank');
   cart=[]; updCartUI(); fecharOverlay('overlay-checkout'); toast('✅ Pedido enviado! Obrigado 💜');
 }

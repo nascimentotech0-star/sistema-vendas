@@ -65,20 +65,46 @@
   <div class="card border-secondary mb-4" style="background:#1a1a2e">
     <div class="card-header border-secondary d-flex align-items-center gap-2">
       <strong>📸 Fotos dos Copos</strong>
-      <small class="text-muted ms-2">Fotos de qualidade aumentam muito as vendas!</small>
+      <small class="text-muted ms-2">Arraste a foto para posicionar o açaí no enquadramento ideal</small>
     </div>
     <div class="card-body">
       <div class="row g-3">
         {% for copo in data.copos %}
         <div class="col-md-4">
           <div class="p-2 rounded" style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08)">
-            <div class="fw-bold text-light mb-1" style="font-size:.82rem">{{ copo.nome }} ({{ copo.tamanho }})</div>
+            <div class="fw-bold text-light mb-2" style="font-size:.82rem">{{ copo.nome }} ({{ copo.tamanho }})</div>
+
             {% if copo.img is defined and copo.img %}
-              <img src="{{ url_for('static', filename=copo.img) }}"
-                   style="width:100%;height:100px;object-fit:cover;border-radius:8px;margin-bottom:.5rem" alt="">
+              <!-- Editor de posição -->
+              <div class="pos-editor" data-type="copo" data-id="{{ copo.tamanho }}"
+                   data-action="{{ url_for('cardapio.gerenciar') }}"
+                   data-pos="{{ copo.img_pos if copo.img_pos is defined and copo.img_pos else '50% 50%' }}">
+                <div class="pos-frame" style="height:130px;border-radius:8px;overflow:hidden;position:relative;cursor:grab;user-select:none;border:2px dashed rgba(139,92,246,.4);margin-bottom:.4rem">
+                  <img src="{{ url_for('static', filename=copo.img) }}"
+                       style="width:100%;height:100%;object-fit:cover;pointer-events:none;
+                              object-position:{{ copo.img_pos if copo.img_pos is defined and copo.img_pos else '50% 50%' }}"
+                       alt="">
+                  <div style="position:absolute;top:4px;left:50%;transform:translateX(-50%);
+                              background:rgba(0,0,0,.5);color:#fff;font-size:.6rem;font-weight:700;
+                              padding:.15rem .5rem;border-radius:99px;pointer-events:none">
+                    ↔ arraste para reposicionar
+                  </div>
+                </div>
+                <form method="POST" class="d-flex gap-2">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <input type="hidden" name="action" value="update_copo_pos">
+                  <input type="hidden" name="tamanho" value="{{ copo.tamanho }}">
+                  <input type="hidden" name="img_pos" class="pos-input"
+                         value="{{ copo.img_pos if copo.img_pos is defined and copo.img_pos else '50% 50%' }}">
+                  <button type="submit" class="btn btn-sm btn-outline-primary w-100">💾 Salvar posição</button>
+                </form>
+              </div>
+              <hr style="border-color:rgba(255,255,255,.06);margin:.6rem 0">
             {% else %}
               <div class="text-muted mb-2" style="font-size:.72rem">Sem foto — usando ilustração padrão</div>
             {% endif %}
+
+            <!-- Upload -->
             <form method="POST" enctype="multipart/form-data" class="d-flex gap-2 align-items-center">
               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
               <input type="hidden" name="action"  value="upload_copo_img">
@@ -86,7 +112,7 @@
               <input type="file" name="imagem" accept=".jpg,.jpeg,.png,.webp"
                      class="form-control form-control-sm bg-dark text-light border-secondary"
                      style="font-size:.72rem">
-              <button type="submit" class="btn btn-sm btn-outline-success">📤</button>
+              <button type="submit" class="btn btn-sm btn-outline-success" title="Enviar foto">📤</button>
             </form>
           </div>
         </div>
@@ -201,6 +227,161 @@
     </div>
   </div>
 
+  <!-- ═══ FOTOS DOS COMBOS ═══ -->
+  {% set combos_lista = g_gestao.get('combos', []) if g_gestao is defined else [] %}
+  {% if combos_lista %}
+  <div class="card border-secondary mb-4" style="background:#1a1a2e">
+    <div class="card-header border-secondary">
+      <strong>🖼️ Fotos dos Combos</strong>
+      <small class="text-muted ms-2">Foto real no lugar do emoji aumenta as conversões</small>
+    </div>
+    <div class="card-body">
+      <div class="row g-3">
+        {% for combo in combos_lista %}
+        <div class="col-md-4">
+          <div class="p-2 rounded" style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08)">
+            <div class="fw-bold text-light mb-1" style="font-size:.82rem">{{ combo.emoji }} {{ combo.nome }}</div>
+            {% if combo.img is defined and combo.img %}
+              <div class="pos-editor" data-type="combo" data-id="{{ combo.id }}"
+                   data-action="{{ url_for('cardapio.gestao') }}"
+                   data-pos="{{ combo.img_pos if combo.img_pos is defined and combo.img_pos else '50% 50%' }}">
+                <div class="pos-frame" style="height:90px;border-radius:8px;overflow:hidden;position:relative;cursor:grab;user-select:none;border:2px dashed rgba(139,92,246,.4);margin-bottom:.4rem">
+                  <img src="{{ url_for('static', filename=combo.img) }}"
+                       style="width:100%;height:100%;object-fit:cover;pointer-events:none;
+                              object-position:{{ combo.img_pos if combo.img_pos is defined and combo.img_pos else '50% 50%' }}"
+                       alt="">
+                  <div style="position:absolute;top:4px;left:50%;transform:translateX(-50%);
+                              background:rgba(0,0,0,.5);color:#fff;font-size:.6rem;font-weight:700;
+                              padding:.15rem .5rem;border-radius:99px;pointer-events:none">
+                    ↔ arraste
+                  </div>
+                </div>
+                <form method="POST" action="{{ url_for('cardapio.gestao') }}" class="d-flex gap-2 mb-2">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <input type="hidden" name="action" value="update_combo_pos">
+                  <input type="hidden" name="combo_id" value="{{ combo.id }}">
+                  <input type="hidden" name="img_pos" class="pos-input"
+                         value="{{ combo.img_pos if combo.img_pos is defined and combo.img_pos else '50% 50%' }}">
+                  <button type="submit" class="btn btn-sm btn-outline-primary w-100">💾 Salvar posição</button>
+                </form>
+              </div>
+            {% else %}
+              <div class="text-center mb-2" style="font-size:2rem;background:rgba(255,255,255,.04);border-radius:8px;padding:.5rem">{{ combo.emoji }}</div>
+            {% endif %}
+            <form method="POST" action="{{ url_for('cardapio.gestao') }}" enctype="multipart/form-data"
+                  class="d-flex gap-2 align-items-center">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <input type="hidden" name="action" value="upload_combo_img">
+              <input type="hidden" name="combo_id" value="{{ combo.id }}">
+              <input type="file" name="imagem" accept=".jpg,.jpeg,.png,.webp"
+                     class="form-control form-control-sm bg-dark text-light border-secondary"
+                     style="font-size:.72rem">
+              <button type="submit" class="btn btn-sm btn-outline-success">📤</button>
+            </form>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- ═══ ITENS ESPECIAIS ═══ -->
+  {% set especiais_default = [
+    {"id": "marmita",  "nome": "Marmita de Açaí",       "emoji": "🥡", "preco": 28.70, "ativo": True},
+    {"id": "garrafa",  "nome": "Açaí na Garrafa 500ml", "emoji": "🥤", "preco": 25.99, "ativo": True},
+    {"id": "ovo250",   "nome": "Ovo de Páscoa 250g",     "emoji": "🥚", "preco": 28.70, "ativo": True},
+    {"id": "ovo350",   "nome": "Ovo de Páscoa 350g",     "emoji": "🥚", "preco": 31.90, "ativo": True},
+  ] %}
+  {% set especiais_lista = (g_gestao.get('especiais', especiais_default) if g_gestao is defined else especiais_default) %}
+  <div class="card border-secondary mb-4" style="background:#1a1a2e">
+    <div class="card-header border-secondary">
+      <strong>⭐ Itens Especiais — Fotos e Preços</strong>
+      <small class="text-muted ms-2">Aparecem na seção Especiais do cardápio público</small>
+    </div>
+    <div class="card-body">
+      <div class="row g-3">
+        {% for item in especiais_lista %}
+        <div class="col-md-6">
+          <div class="p-2 rounded" style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08)">
+            <!-- header -->
+            <div class="d-flex align-items-center gap-2 mb-2">
+              <span style="font-size:1.2rem">{{ item.emoji }}</span>
+              <div class="fw-bold text-light" style="font-size:.82rem;flex:1">{{ item.nome }}</div>
+              <!-- toggle ativo/inativo -->
+              <form method="POST" action="{{ url_for('cardapio.gestao') }}" class="d-inline">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="action" value="toggle_especial">
+                <input type="hidden" name="especial_id" value="{{ item.id }}">
+                <button type="submit"
+                        class="btn btn-sm {{ 'btn-outline-danger' if item.ativo else 'btn-outline-success' }}"
+                        style="font-size:.7rem;padding:.2rem .5rem"
+                        title="{{ 'Desativar' if item.ativo else 'Ativar' }}">
+                  {{ '✓ Ativo' if item.ativo else '✗ Oculto' }}
+                </button>
+              </form>
+            </div>
+            <!-- foto atual -->
+            {% if item.img is defined and item.img %}
+              <div class="pos-editor" data-type="especial" data-id="{{ item.id }}"
+                   data-action="{{ url_for('cardapio.gestao') }}"
+                   data-pos="{{ item.img_pos if item.img_pos is defined and item.img_pos else '50% 50%' }}">
+                <div class="pos-frame" style="height:110px;border-radius:8px;overflow:hidden;position:relative;cursor:grab;user-select:none;border:2px dashed rgba(139,92,246,.4);margin-bottom:.4rem">
+                  <img src="{{ url_for('static', filename=item.img) }}"
+                       style="width:100%;height:100%;object-fit:cover;pointer-events:none;
+                              object-position:{{ item.img_pos if item.img_pos is defined and item.img_pos else '50% 50%' }}"
+                       alt="">
+                  <div style="position:absolute;top:4px;left:50%;transform:translateX(-50%);
+                              background:rgba(0,0,0,.5);color:#fff;font-size:.6rem;font-weight:700;
+                              padding:.15rem .5rem;border-radius:99px;pointer-events:none">
+                    ↔ arraste para reposicionar
+                  </div>
+                </div>
+                <form method="POST" action="{{ url_for('cardapio.gestao') }}" class="d-flex gap-2 mb-2">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <input type="hidden" name="action" value="update_especial_pos">
+                  <input type="hidden" name="especial_id" value="{{ item.id }}">
+                  <input type="hidden" name="img_pos" class="pos-input"
+                         value="{{ item.img_pos if item.img_pos is defined and item.img_pos else '50% 50%' }}">
+                  <button type="submit" class="btn btn-sm btn-outline-primary w-100">💾 Salvar posição</button>
+                </form>
+              </div>
+            {% else %}
+              <div class="text-center mb-2" style="font-size:2.5rem;background:rgba(255,255,255,.04);border-radius:8px;padding:.75rem">{{ item.emoji }}</div>
+            {% endif %}
+            <!-- upload foto -->
+            <form method="POST" action="{{ url_for('cardapio.gestao') }}" enctype="multipart/form-data"
+                  class="d-flex gap-2 align-items-center mb-2">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <input type="hidden" name="action" value="upload_especial_img">
+              <input type="hidden" name="especial_id" value="{{ item.id }}">
+              <input type="file" name="imagem" accept=".jpg,.jpeg,.png,.webp"
+                     class="form-control form-control-sm bg-dark text-light border-secondary"
+                     style="font-size:.72rem">
+              <button type="submit" class="btn btn-sm btn-outline-success" title="Enviar foto">📤</button>
+            </form>
+            <!-- editar preço -->
+            <form method="POST" action="{{ url_for('cardapio.gestao') }}"
+                  class="d-flex gap-2 align-items-center">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <input type="hidden" name="action" value="update_especial_preco">
+              <input type="hidden" name="especial_id" value="{{ item.id }}">
+              <div class="input-group input-group-sm">
+                <span class="input-group-text bg-dark border-secondary text-muted">R$</span>
+                <input type="text" name="preco"
+                       value="{{ '%.2f'|format(item.preco)|replace('.', ',') }}"
+                       class="form-control bg-dark text-light border-secondary"
+                       style="max-width:80px">
+                <button type="submit" class="btn btn-sm btn-outline-success">✓ Salvar</button>
+              </div>
+            </form>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
   <!-- ═══ CALCULADORA DE CALDA ═══ -->
   <div class="card border-secondary mb-4" style="background:#1a1a2e">
     <div class="card-header border-secondary d-flex align-items-center gap-2">
@@ -244,10 +425,11 @@
 
   <!-- ═══ CATEGORIAS DE COMPLEMENTOS ═══ -->
   {% set categorias = [
-    ('acompanhamentos', '✅ Acompanhamentos', 'Até 3 grátis (preco = 0) ou cobrado',  'success'),
-    ('caldas',          '🍫 Caldas',          'Preço por porção',                       'info'),
-    ('adicionais',      '🍬 Adicionais',      'Preço por unidade',                      'warning'),
-    ('sabores',         '🍇 Sabores',         'Flavors do copo — ativar/desativar',     'purple')
+    ('acompanhamentos', '✅ Acompanhamentos', 'Até 3 grátis (preco = 0) — resto cobrado', 'success'),
+    ('caldas',          '🍫 Caldas',          'Preço por porção',                          'info'),
+    ('frutas',          '🍓 Frutas',          'Frutas frescas — sempre pagas',             'danger'),
+    ('adicionais',      '🍬 Adicionais',      'Preço por unidade',                         'warning'),
+    ('sabores',         '🍇 Sabores',         'Flavors do copo — ativar/desativar',        'purple')
   ] %}
 
   {% for key, titulo, subtitulo, cor in categorias %}
@@ -422,6 +604,70 @@ async function toggleLoja() {
   } catch(e) { alert('Erro ao alterar status.'); }
   btn.disabled = false;
 }
+
+/* ── Editor de posição por arrastar ─────────────────────────────── */
+document.querySelectorAll('.pos-editor').forEach(editor => {
+  const frame    = editor.querySelector('.pos-frame');
+  const img      = frame.querySelector('img');
+  const input    = editor.querySelector('.pos-input');
+  let dragging   = false;
+  let startX, startY, startPosX, startPosY;
+
+  function parsePos(str) {
+    const parts = (str || '50% 50%').split(' ');
+    return {
+      x: parseFloat(parts[0]) || 50,
+      y: parseFloat(parts[1]) || 50
+    };
+  }
+
+  function applyPos(x, y) {
+    x = Math.max(0, Math.min(100, x));
+    y = Math.max(0, Math.min(100, y));
+    const pos = `${x.toFixed(1)}% ${y.toFixed(1)}%`;
+    img.style.objectPosition = pos;
+    input.value = pos;
+  }
+
+  function onStart(clientX, clientY) {
+    dragging = true;
+    startX = clientX;
+    startY = clientY;
+    const cur = parsePos(input.value);
+    startPosX = cur.x;
+    startPosY = cur.y;
+    frame.style.cursor = 'grabbing';
+  }
+
+  function onMove(clientX, clientY) {
+    if (!dragging) return;
+    const rect = frame.getBoundingClientRect();
+    const dx = ((clientX - startX) / rect.width)  * 100;
+    const dy = ((clientY - startY) / rect.height) * 100;
+    applyPos(startPosX - dx, startPosY - dy);
+  }
+
+  function onEnd() {
+    dragging = false;
+    frame.style.cursor = 'grab';
+  }
+
+  // Mouse
+  frame.addEventListener('mousedown',  e => { e.preventDefault(); onStart(e.clientX, e.clientY); });
+  window.addEventListener('mousemove', e => onMove(e.clientX, e.clientY));
+  window.addEventListener('mouseup',   onEnd);
+
+  // Touch
+  frame.addEventListener('touchstart', e => {
+    e.preventDefault();
+    onStart(e.touches[0].clientX, e.touches[0].clientY);
+  }, {passive: false});
+  frame.addEventListener('touchmove', e => {
+    e.preventDefault();
+    onMove(e.touches[0].clientX, e.touches[0].clientY);
+  }, {passive: false});
+  frame.addEventListener('touchend', onEnd);
+});
 
 function calcPreco() {
   const custo   = parseFloat(document.getElementById('c_custo').value)   || 0;
