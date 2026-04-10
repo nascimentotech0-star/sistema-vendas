@@ -14,7 +14,8 @@ def index():
         if current_user.is_financial():
             return redirect(url_for('financial.index'))
         return redirect(url_for('attendant.dashboard'))
-    return redirect(url_for('auth.login'))
+    # Visitantes não logados vão direto para o cardápio da açaídeira
+    return redirect(url_for('cardapio.index'))
 
 
 @auth_bp.route('/login', methods=['GET', 'POST'])
