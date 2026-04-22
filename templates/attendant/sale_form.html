@@ -25,6 +25,7 @@
       <div class="card-body p-4">
         <form method="POST" enctype="multipart/form-data" data-nt-validate>
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input type="hidden" name="price_item_id" id="priceItemIdSale" value="">
 
           <div class="mb-3">
             <label class="form-label fw-semibold">Cliente Cadastrado</label>
@@ -198,8 +199,18 @@
           document.getElementById('amountInput').value = item.price.toFixed(2);
           document.getElementById('adjustmentInput').value = '0';
           document.getElementById('screensInput').value = item.screens || 1;
+          document.getElementById('priceItemIdSale').value = item.id;
           const desc = document.querySelector('[name=description]');
-          if (desc && !desc.value) desc.value = item.name;
+          if (desc) desc.value = item.name;
+          // Destaca botão selecionado
+          document.querySelectorAll('#priceButtons button').forEach(b => {
+            b.style.background = 'rgba(124,58,237,.15)';
+            b.style.border = '1px solid rgba(124,58,237,.3)';
+            b.style.color = '#a78bfa';
+          });
+          btn.style.background = 'rgba(16,185,129,.25)';
+          btn.style.border = '1px solid rgba(16,185,129,.5)';
+          btn.style.color = '#6ee7b7';
           calcComissao();
         };
         box.appendChild(btn);

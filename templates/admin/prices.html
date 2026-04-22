@@ -70,7 +70,16 @@
         <div class="table-responsive">
           <table class="table table-hover mb-0">
             <thead>
-              <tr><th>Nome</th><th>Período</th><th>Telas</th><th>Valor</th><th>Status</th><th></th></tr>
+              <tr>
+                <th>Nome</th><th>Período</th><th>Telas</th><th>Valor</th>
+                <th title="Comissão fixa para este plano. Se vazio, usa taxa progressiva do atendente.">
+                  Comissão <i class="bi bi-info-circle text-muted small"></i>
+                </th>
+                <th title="Peso na progressão: quanto esta venda contribui para a meta de 10%. 1.0 = normal, 0.3 = pouco, 2.0 = mais.">
+                  Peso Prog. <i class="bi bi-info-circle text-muted small"></i>
+                </th>
+                <th>Status</th><th></th>
+              </tr>
             </thead>
             <tbody>
               {% for item in items %}
@@ -84,6 +93,55 @@
                 </td>
                 <td style="color:#6ee7b7;font-weight:600;">R$ {{ "%.2f"|format(item.price) }}</td>
                 <td>
+                  {% if current_user.is_admin() %}
+                  <form method="POST" action="{{ url_for('admin.set_price_commission', id=item.id) }}"
+                        class="d-flex gap-1 align-items-center" style="min-width:130px;">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="number" name="commission_override" step="0.5" min="0" max="20"
+                           class="form-control form-control-sm py-0"
+                           style="width:70px;font-size:.8rem;"
+                           placeholder="Prog."
+                           value="{{ item.commission_override if item.commission_override is not none else '' }}"
+                           title="Deixe em branco para usar taxa progressiva">
+                    <span class="text-muted small">%</span>
+                    <button type="submit" class="btn btn-sm py-0 px-2"
+                            style="background:rgba(16,185,129,.15);color:#6ee7b7;border:1px solid rgba(16,185,129,.3);font-size:.75rem;">
+                      <i class="bi bi-check2"></i>
+                    </button>
+                  </form>
+                  {% else %}
+                    {% if item.commission_override is not none %}
+                      <span class="badge" style="background:rgba(245,158,11,.15);color:#fcd34d;">{{ item.commission_override|int }}%</span>
+                    {% else %}
+                      <span class="badge" style="background:rgba(255,255,255,.06);color:var(--text-muted);">Progressiva</span>
+                    {% endif %}
+                  {% endif %}
+                </td>
+                <td>
+                  {% if current_user.is_admin() %}
+                  <form method="POST" action="{{ url_for('admin.set_price_commission', id=item.id) }}"
+                        class="d-flex gap-1 align-items-center" style="min-width:110px;">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    {# reutiliza mesma rota, envia campo separado #}
+                    <input type="hidden" name="commission_override"
+                           value="{{ item.commission_override if item.commission_override is not none else '' }}">
+                    <input type="number" name="progress_weight" step="0.1" min="0" max="10"
+                           class="form-control form-control-sm py-0"
+                           style="width:65px;font-size:.8rem;"
+                           value="{{ item.commission_progress_weight if item.commission_progress_weight is not none else 1.0 }}"
+                           title="1.0 = normal | 0.3 = avança pouco | 2.0 = avança mais">
+                    <button type="submit" class="btn btn-sm py-0 px-2"
+                            style="background:rgba(16,185,129,.15);color:#6ee7b7;border:1px solid rgba(16,185,129,.3);font-size:.75rem;">
+                      <i class="bi bi-check2"></i>
+                    </button>
+                  </form>
+                  {% else %}
+                    <span class="badge" style="background:rgba(255,255,255,.06);color:var(--text-muted);">
+                      {{ item.commission_progress_weight or 1.0 }}x
+                    </span>
+                  {% endif %}
+                </td>
+                <td>
                   {% if item.is_active %}
                     <span class="badge" style="background:rgba(16,185,129,.2);color:#6ee7b7;">Ativo</span>
                   {% else %}
@@ -93,7 +151,7 @@
                 <td>
                   <div class="d-flex gap-1">
                     <form method="POST" action="{{ url_for('admin.toggle_price_item', id=item.id) }}">
-          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                       <button class="btn btn-sm py-0 px-2"
                               style="background:rgba(245,158,11,.15);color:#fcd34d;border:1px solid rgba(245,158,11,.3);font-size:.75rem;"
                               title="{% if item.is_active %}Desativar{% else %}Ativar{% endif %}">
@@ -102,7 +160,7 @@
                     </form>
                     <form method="POST" action="{{ url_for('admin.delete_price_item', id=item.id) }}"
                           onsubmit="return confirm('Excluir item?')">
-          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                       <button class="btn btn-sm py-0 px-2"
                               style="background:rgba(239,68,68,.15);color:#fca5a5;border:1px solid rgba(239,68,68,.3);font-size:.75rem;"
                               title="Excluir">

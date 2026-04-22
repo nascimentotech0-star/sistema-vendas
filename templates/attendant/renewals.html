@@ -30,6 +30,26 @@
   </div>
 </div>
 
+<!-- Banner pessoal do dia -->
+<div class="row g-3 mb-3">
+  <div class="col-6 col-md-4">
+    <div class="card stat-card stat-card-green h-100">
+      <div class="card-body text-center py-3">
+        <p class="mb-1" style="font-size:.68rem;color:var(--text-muted);text-transform:uppercase;">Minhas Renovações Hoje</p>
+        <h3 class="fw-bold mb-0" style="color:#6ee7b7;">{{ my_today_count }}</h3>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-4">
+    <div class="card stat-card stat-card-purple h-100">
+      <div class="card-body text-center py-3">
+        <p class="mb-1" style="font-size:.68rem;color:var(--text-muted);text-transform:uppercase;">Valor Renovado Hoje</p>
+        <h3 class="fw-bold mb-0" style="color:#a78bfa;">R$ {{ "%.2f"|format(my_today_value) }}</h3>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- Stat cards -->
 <div class="row g-3 mb-4">
   <div class="col-6 col-md-2">
@@ -236,6 +256,7 @@
       </div>
       <form method="POST" action="{{ url_for('attendant.att_new_renewal') }}" enctype="multipart/form-data">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input type="hidden" name="price_item_id" id="newPriceItemId" value="">
         <div class="modal-body">
 
           <!-- Busca de cliente -->
@@ -265,7 +286,7 @@
               {% for p in price_items %}
               <button type="button" class="btn btn-sm plan-btn-new"
                       style="background:rgba(124,58,237,.15);color:#c4b5fd;border:1px solid rgba(124,58,237,.35);font-size:.75rem;"
-                      data-plan="{{ p.name }}" data-price="{{ p.price }}">
+                      data-id="{{ p.id }}" data-plan="{{ p.name }}" data-price="{{ p.price }}">
                 {{ p.name }}<br><span style="color:#6ee7b7;font-size:.8rem;">R$ {{ "%.2f"|format(p.price) }}</span>
               </button>
               {% endfor %}
@@ -329,6 +350,8 @@
     <div class="modal-content" style="background:#1a1a35;border:1px solid rgba(124,58,237,.3);">
       <form method="POST" id="formRenovar" enctype="multipart/form-data">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input type="hidden" name="price_item_id" id="renewPriceItemId" value="">
+          <input type="hidden" name="plan_name_override" id="renewPlanNameOverride" value="">
         <div class="modal-header" style="border-color:var(--border);">
           <h5 class="modal-title" style="font-size:.95rem;font-weight:700;">
             <i class="bi bi-check-circle-fill me-2" style="color:#6ee7b7;"></i>Confirmar Renovação
@@ -347,7 +370,7 @@
               {% for p in price_items %}
               <button type="button" class="btn btn-sm plan-btn-renew"
                       style="background:rgba(124,58,237,.15);color:#c4b5fd;border:1px solid rgba(124,58,237,.35);font-size:.75rem;"
-                      data-price="{{ p.price }}">
+                      data-id="{{ p.id }}" data-plan="{{ p.name }}" data-price="{{ p.price }}">
                 {{ p.name }}<br><span style="color:#6ee7b7;font-size:.8rem;">R$ {{ "%.2f"|format(p.price) }}</span>
               </button>
               {% endfor %}
@@ -426,20 +449,54 @@
   // Botões de plano — modal Nova Renovação
   document.querySelectorAll('.plan-btn-new').forEach(btn => {
     btn.addEventListener('click', function(){
-      document.getElementById('newPlanName').value   = this.dataset.plan;
-      document.getElementById('newPlanAmount').value = parseFloat(this.dataset.price).toFixed(2);
-      document.querySelectorAll('.plan-btn-new').forEach(b => b.style.background = 'rgba(124,58,237,.15)');
-      this.style.background = 'rgba(124,58,237,.45)';
+      document.getElementById('newPlanName').value    = this.dataset.plan;
+      document.getElementById('newPlanAmount').value  = parseFloat(this.dataset.price).toFixed(2);
+      document.getElementById('newPriceItemId').value = this.dataset.id;
+      document.querySelectorAll('.plan-btn-new').forEach(b => {
+        b.style.background = 'rgba(124,58,237,.15)';
+        b.style.border = '1px solid rgba(124,58,237,.35)';
+        b.style.color = '#c4b5fd';
+      });
+      this.style.background = 'rgba(16,185,129,.25)';
+      this.style.border = '1px solid rgba(16,185,129,.5)';
+      this.style.color = '#6ee7b7';
     });
   });
 
   // Botões de plano — modal Confirmar Renovação
   document.querySelectorAll('.plan-btn-renew').forEach(btn => {
     btn.addEventListener('click', function(){
-      document.getElementById('renewAmount').value = parseFloat(this.dataset.price).toFixed(2);
-      document.querySelectorAll('.plan-btn-renew').forEach(b => b.style.background = 'rgba(124,58,237,.15)');
-      this.style.background = 'rgba(124,58,237,.45)';
+      document.getElementById('renewAmount').value           = parseFloat(this.dataset.price).toFixed(2);
+      document.getElementById('renewPriceItemId').value      = this.dataset.id;
+      document.getElementById('renewPlanNameOverride').value = this.dataset.plan;
+      document.querySelectorAll('.plan-btn-renew').forEach(b => {
+        b.style.background = 'rgba(124,58,237,.15)';
+        b.style.border = '1px solid rgba(124,58,237,.35)';
+        b.style.color = '#c4b5fd';
+      });
+      this.style.background = 'rgba(16,185,129,.25)';
+      this.style.border = '1px solid rgba(16,185,129,.5)';
+      this.style.color = '#6ee7b7';
     });
+  });
+
+  // Resetar seleção de plano ao fechar modais
+  document.getElementById('modalNovaRenovacao').addEventListener('hidden.bs.modal', function(){
+    document.querySelectorAll('.plan-btn-new').forEach(b => {
+      b.style.background = 'rgba(124,58,237,.15)';
+      b.style.border = '1px solid rgba(124,58,237,.35)';
+      b.style.color = '#c4b5fd';
+    });
+    document.getElementById('newPriceItemId').value = '';
+  });
+  document.getElementById('modalRenovar').addEventListener('hidden.bs.modal', function(){
+    document.querySelectorAll('.plan-btn-renew').forEach(b => {
+      b.style.background = 'rgba(124,58,237,.15)';
+      b.style.border = '1px solid rgba(124,58,237,.35)';
+      b.style.color = '#c4b5fd';
+    });
+    document.getElementById('renewPriceItemId').value = '';
+    document.getElementById('renewPlanNameOverride').value = '';
   });
 
   // Busca de cliente no modal

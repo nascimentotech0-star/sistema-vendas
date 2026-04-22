@@ -471,28 +471,34 @@ _MOTIVATIONAL = [
 ]
 
 
-def progressive_rate(sales_count, target):
-    """Comissão verdadeiramente progressiva: cada venda avança a taxa de forma suave.
+def progressive_rate(sales_count, target, floor=None):
+    """Comissão progressiva com curva QUADRÁTICA.
 
-    - sales_count : vendas já feitas este mês ANTES da venda atual
-    - target      : meta mensal de vendas configurada para o atendente
+    A curva usa ratio² — começa lenta e acelera só perto da meta.
+    Isso exige muito mais esforço para chegar nos 10%.
 
-    Taxa cresce linearmente: venda 0 → 5.00%, venda target → 10.00%.
     Exemplo com meta 700:
-      venda #1   → 5.00%   (0 anteriores)
-      venda #2   → 5.01%   (1 anterior  → 5 + 1/700*5 = 5.007 ≈ 5.01)
-      venda #350 → 7.49%
-      venda #700 → 9.99%
-      venda #701+→ 10.00%
+      100 vendas → 5.10%   (linear seria 5.71%)
+      293 vendas → 5.87%   (linear seria 7.09%)
+      500 vendas → 7.55%   (linear seria 8.57%)
+      630 vendas → 9.05%   (linear seria 9.50%)
+      700 vendas → 10.00%
+
+    O parâmetro `floor` garante que a taxa nunca caia abaixo do maior valor
+    já registrado no mês — protege a transição para atendentes que já acumularam
+    uma taxa mais alta com a fórmula anterior.
     """
     if target <= 0:
-        return COMMISSION_MIN
+        return floor if floor else COMMISSION_MIN
     ratio = min(sales_count / float(target), 1.0)
-    return round(COMMISSION_MIN + ratio * (COMMISSION_MAX - COMMISSION_MIN), 2)
+    quadratic = round(COMMISSION_MIN + (ratio ** 2) * (COMMISSION_MAX - COMMISSION_MIN), 2)
+    if floor and floor > quadratic:
+        return floor
+    return quadratic
 
 
 def get_month_sales_count(user_id):
-    """Número de vendas realizadas pelo atendente no mês corrente."""
+    """Número de vendas realizadas pelo atendente no mês corrente (para exibição)."""
     today = today_br()
     month_start = datetime(today.year, today.month, 1)
     month_end   = datetime(today.year, today.month,
@@ -504,20 +510,70 @@ def get_month_sales_count(user_id):
     ).count()
 
 
+def get_month_progress_score(user_id):
+    """Score ponderado de progressão do mês.
+
+    Cada venda contribui com um peso baseado no plano vendido:
+      - Planos baratos (15 dias): peso < 1 → avança pouco para 10%
+      - Planos normais (mensais):  peso = 1 → progressão normal
+      - Planos premium (anual+):   peso > 1 → avança um pouco mais
+
+    Venda sem plano vinculado usa peso 1.0 (neutro).
+    """
+    today = today_br()
+    month_start = datetime(today.year, today.month, 1)
+    month_end   = datetime(today.year, today.month,
+                           cal.monthrange(today.year, today.month)[1]) + timedelta(days=1)
+    sales = Sale.query.filter(
+        Sale.attendant_id == user_id,
+        Sale.created_at  >= month_start,
+        Sale.created_at  <  month_end,
+    ).all()
+    score = 0.0
+    for s in sales:
+        if s.price_item and s.price_item.commission_progress_weight is not None:
+            score += s.price_item.commission_progress_weight
+        else:
+            score += 1.0
+    return score
+
+
+def _month_commission_floor(user_id):
+    """Maior taxa de comissão normal registrada no mês corrente para este atendente.
+
+    Serve como piso na transição para a curva quadrática: impede que a taxa
+    visível no dashboard caia abaixo do que o atendente já conquistou este mês.
+    No próximo mês (contador zerado) o piso volta a 5% naturalmente.
+    """
+    today = today_br()
+    month_start = datetime(today.year, today.month, 1)
+    try:
+        from sqlalchemy import func as _func
+        result = db.session.query(_func.max(Sale.commission_rate)).filter(
+            Sale.attendant_id   == user_id,
+            Sale.created_at     >= month_start,
+            Sale.is_overtime    == False,
+            Sale.commission_rate <= COMMISSION_MAX,
+        ).scalar()
+        return float(result) if result else COMMISSION_MIN
+    except Exception:
+        return COMMISSION_MIN
+
+
 def get_commission_rate(sales_count=None):
     """Retorna a taxa de comissão para a PRÓXIMA venda a ser registrada.
 
     Fora do horário comercial → 20% (hora extra).
-    Dentro do horário        → progressiva 5%–10% baseada em qtd de vendas no mês.
-
-    Parâmetro sales_count opcional: passa o count já calculado para evitar re-consulta.
+    Dentro do horário        → progressiva quadrática 5%–10% baseada no score
+                               ponderado do mês (planos baratos contribuem menos).
     """
     if not (8 <= now_br().hour < _shift_end()):
         return 20.0
-    if sales_count is None:
-        sales_count = get_month_sales_count(current_user.id)
+    # Usa score ponderado (não contagem simples)
+    progress_score = get_month_progress_score(current_user.id)
     target = current_user.monthly_sales_target or 700
-    return progressive_rate(sales_count, target)
+    floor  = _month_commission_floor(current_user.id)
+    return progressive_rate(progress_score, target, floor=floor)
 
 
 def is_overtime_now():
@@ -650,12 +706,13 @@ def dashboard():
     month_total      = sum(s.amount for s in month_sales)
     month_commission = sum(s.commission_amount for s in month_sales)
 
-    # Comissão progressiva: baseada em número de vendas (não em R$)
+    # Comissão progressiva: baseada em score ponderado (planos baratos valem menos)
     sales_target        = current_user.monthly_sales_target or 700
-    month_sales_count   = len(month_sales)   # vendas já feitas no mês
-    current_rate        = get_commission_rate(month_sales_count)
-    commission_progress = min(int(month_sales_count / sales_target * 100), 100)
-    sales_remaining     = max(sales_target - month_sales_count, 0)
+    month_sales_count   = len(month_sales)              # contagem real (exibição)
+    progress_score      = get_month_progress_score(current_user.id)  # score ponderado
+    current_rate        = get_commission_rate()
+    commission_progress = min(int(progress_score / sales_target * 100), 100)
+    sales_remaining     = max(sales_target - progress_score, 0)
 
     # ── Metas do mês (AttendantGoal) ─────────────────────────────────────────
     goal = AttendantGoal.query.filter_by(
@@ -861,6 +918,7 @@ def dashboard():
         current_rate=current_rate,
         commission_progress=commission_progress,
         month_sales_count=month_sales_count,
+        progress_score=progress_score,
         sales_target=sales_target,
         sales_remaining=sales_remaining,
         motivational_msg=motivational_msg,
@@ -930,17 +988,24 @@ def renewals():
     first_day = date(year, mon, 1)
     last_day  = date(year, mon, cal.monthrange(year, mon)[1])
 
-    my_client_ids = [c.id for c in Client.query.filter_by(registered_by=current_user.id).all()]
-
-    # Mostra renovações dos clientes do atendente OU renovações que ele atendeu
+    # Todos os atendentes veem TODAS as renovações do mês (visibilidade compartilhada)
     query = Renewal.query.filter(
         Renewal.due_date >= first_day,
         Renewal.due_date <= last_day,
-        db.or_(
-            Renewal.client_id.in_(my_client_ids) if my_client_ids else db.false(),
-            Renewal.attendant_id == current_user.id
-        )
     )
+
+    # Stats pessoais do atendente logado no dia atual
+    _today = today_br()
+    _day_start = datetime(_today.year, _today.month, _today.day)
+    _day_end   = _day_start + timedelta(days=1)
+    my_today_renewals = Renewal.query.filter(
+        Renewal.status == 'renewed',
+        Renewal.attendant_id == current_user.id,
+        Renewal.renewed_at >= _day_start,
+        Renewal.renewed_at < _day_end,
+    ).all()
+    my_today_count = len(my_today_renewals)
+    my_today_value = round(sum(r.amount for r in my_today_renewals), 2)
 
     if status_filter:
         query = query.filter_by(status=status_filter)
@@ -954,13 +1019,10 @@ def renewals():
     overdue   = sum(1 for r in all_renewals if r.is_overdue)
     rate      = round((renewed / total * 100) if total > 0 else 0, 1)
 
-    # ── Gráficos ──────────────────────────────────────────────────────────────
+    # ── Gráficos (todas as renovações) ────────────────────────────────────────
     day_names = ['Seg','Ter','Qua','Qui','Sex','Sáb','Dom']
     w4_start = today - timedelta(days=27)
-    all_4w = Renewal.query.filter(
-        Renewal.client_id.in_(my_client_ids),
-        Renewal.due_date >= w4_start
-    ).all() if my_client_ids else []
+    all_4w = Renewal.query.filter(Renewal.due_date >= w4_start).all()
     day_renewed   = [0]*7
     day_cancelled = [0]*7
     day_pending   = [0]*7
@@ -973,10 +1035,7 @@ def renewals():
                      'cancelled': day_cancelled, 'pending': day_pending}
 
     m6_start = today.replace(day=1) - timedelta(days=180)
-    all_6m = Renewal.query.filter(
-        Renewal.client_id.in_(my_client_ids),
-        Renewal.due_date >= m6_start
-    ).all() if my_client_ids else []
+    all_6m = Renewal.query.filter(Renewal.due_date >= m6_start).all()
     month_labels_pt = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez']
     month_renewed  = {}
     month_cancelled = {}
@@ -1007,6 +1066,8 @@ def renewals():
         chart_monthly=chart_monthly,
         my_clients=my_clients,
         price_items=price_items,
+        my_today_count=my_today_count,
+        my_today_value=my_today_value,
     )
 
 
@@ -1045,6 +1106,11 @@ def att_renew(id):
             renewal.amount = float(amount_str)
         except ValueError:
             pass
+
+    # Atualiza nome do plano se atendente selecionou plano diferente
+    plan_override = request.form.get('plan_name_override', '').strip()
+    if plan_override:
+        renewal.plan_name = plan_override
 
     renewal.status = 'renewed'
     renewal.renewed_at = now_br()
@@ -1510,7 +1576,8 @@ def new_client():
                 commission_rate = 20.0
             else:
                 target = current_user.monthly_sales_target or 700
-                commission_rate = progressive_rate(get_month_sales_count(current_user.id), target)
+                commission_rate = progressive_rate(get_month_progress_score(current_user.id), target,
+                                                   floor=_month_commission_floor(current_user.id))
             commission_amount = round(amount * commission_rate / 100, 2)
             ocr_str = f"{ocr_time[0]:02d}:{ocr_time[1]:02d}" if ocr_time else None
             sale = Sale(
@@ -1646,8 +1713,12 @@ def new_sale():
         screens    = int(request.form.get('screens', 1) or 1)
         adjustment = float(request.form.get('adjustment', 0) or 0)
         amount = round(amount + adjustment, 2)
-        commission_rate = get_commission_rate(get_month_sales_count(current_user.id))
-        commission_amount = round(amount * (commission_rate / 100), 2)
+        price_item_id = request.form.get('price_item_id') or None
+        if price_item_id:
+            try:
+                price_item_id = int(price_item_id)
+            except (ValueError, TypeError):
+                price_item_id = None
 
         try:
             comprovante_filename, comprovante_hash, comp_dt, ocr_time, ai_result = \
@@ -1660,7 +1731,6 @@ def new_sale():
                                    commission_rate=cur_rate, shift_end=_shift_end(), now=now_br())
 
         form_time = request.form.get('comprovante_time', '').strip()
-        # IA tem prioridade sobre Tesseract para hora
         ai_time_str = ai_result.get('time')
         ai_ocr_tuple = None
         if ai_time_str and ':' in ai_time_str:
@@ -1672,10 +1742,20 @@ def new_sale():
         effective_ocr = ai_ocr_tuple or ocr_time
         sale_overtime = _is_overtime_for_sale(comp_dt, form_time, effective_ocr)
         if sale_overtime:
-            commission_rate   = 20.0
+            commission_rate = 20.0
         else:
-            target = current_user.monthly_sales_target or 700
-            commission_rate = progressive_rate(get_month_sales_count(current_user.id), target)
+            # Comissão do plano tem prioridade sobre a taxa progressiva
+            plan_override = None
+            if price_item_id:
+                pi = PriceItem.query.get(price_item_id)
+                if pi and pi.commission_override is not None:
+                    plan_override = pi.commission_override
+            if plan_override is not None:
+                commission_rate = plan_override
+            else:
+                target = current_user.monthly_sales_target or 700
+                commission_rate = progressive_rate(get_month_progress_score(current_user.id), target,
+                                                   floor=_month_commission_floor(current_user.id))
         commission_amount = round(amount * commission_rate / 100, 2)
 
         ocr_str = f"{ocr_time[0]:02d}:{ocr_time[1]:02d}" if ocr_time else None
@@ -1694,6 +1774,7 @@ def new_sale():
             is_overtime=sale_overtime,
             screens=screens,
             adjustment=adjustment,
+            price_item_id=price_item_id,
             ocr_detected_time=ocr_str,
             registered_payment_time=form_time or None,
             ai_detected_time=ai_time_str,

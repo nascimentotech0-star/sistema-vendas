@@ -151,6 +151,26 @@ def dashboard():
     renewals_pending = sum(1 for r in month_renewals if r.status == 'pending')
     renewals_overdue = [r for r in month_renewals if r.is_overdue]
 
+    # Renovações confirmadas HOJE (renewed_at no dia de hoje)
+    today_renewals = Renewal.query.filter(
+        Renewal.status == 'renewed',
+        Renewal.renewed_at >= day_start,
+        Renewal.renewed_at < day_end,
+    ).all()
+    today_renewals_count = len(today_renewals)
+    today_renewals_value = round(sum(r.amount for r in today_renewals), 2)
+    # Breakdown por atendente (para o admin ver quem renovou mais hoje)
+    from collections import defaultdict as _dd
+    today_renewals_by_att = _dd(lambda: {'name': '', 'count': 0, 'value': 0.0})
+    for r in today_renewals:
+        aid = r.attendant_id or 0
+        today_renewals_by_att[aid]['name']  = r.attendant.name if r.attendant else '(sem atendente)'
+        today_renewals_by_att[aid]['count'] += 1
+        today_renewals_by_att[aid]['value'] += r.amount
+    today_renewals_ranking = sorted(
+        today_renewals_by_att.values(), key=lambda x: x['value'], reverse=True
+    )
+
     # Renovações vencendo nos próximos 3 dias (pendentes, não vencidas)
     in_3_days = today + timedelta(days=3)
     renewals_expiring_soon = Renewal.query.filter(
@@ -253,6 +273,9 @@ def dashboard():
         renewals_expiring_soon=renewals_expiring_soon,
         manager_attendance=current_user.active_attendance if current_user.is_manager() else None,
         plan_champions=plan_champions,
+        today_renewals_count=today_renewals_count,
+        today_renewals_value=today_renewals_value,
+        today_renewals_ranking=today_renewals_ranking,
     )
 
 
@@ -608,10 +631,26 @@ def admin_new_sale():
 @manager_or_admin
 def admin_edit_sale(sale_id):
     sale = Sale.query.get_or_404(sale_id)
-    amount_str  = request.form.get('amount', '0').replace(',', '.')
-    adj_str     = request.form.get('adjustment', '0').replace(',', '.')
-    payment_method  = request.form.get('payment_method', sale.payment_method)
-    description     = request.form.get('description', '').strip() or None
+
+    # Gerentes só podem corrigir descrição e forma de pagamento (erros simples).
+    # Valor, comissão e data são exclusivos do administrador.
+    is_admin = current_user.role == 'admin'
+
+    payment_method = request.form.get('payment_method', sale.payment_method)
+    description    = request.form.get('description', '').strip() or None
+
+    if not is_admin:
+        # Apenas campos simples — ignora todos os demais
+        sale.payment_method = payment_method
+        sale.description    = description
+        log_action('sale_edit', f'Venda #{sale_id} descrição/pagamento ajustados pelo gerente', 'Sale', sale_id)
+        db.session.commit()
+        flash(f'Venda #{sale_id} atualizada (apenas descrição/pagamento).', 'success')
+        return redirect(url_for('admin.sales'))
+
+    # Admin pode editar tudo
+    amount_str      = request.form.get('amount', '0').replace(',', '.')
+    adj_str         = request.form.get('adjustment', '0').replace(',', '.')
     commission_rate = float(request.form.get('commission_rate', sale.commission_rate) or sale.commission_rate)
     date_str        = request.form.get('sale_date', '')
     screens         = int(request.form.get('screens', sale.screens or 1) or 1)
@@ -626,13 +665,13 @@ def admin_edit_sale(sale_id):
         flash('Valor inválido.', 'danger')
         return redirect(url_for('admin.sales'))
 
-    sale.amount          = amount
-    sale.adjustment      = adj
-    sale.payment_method  = payment_method
-    sale.description     = description
-    sale.commission_rate = commission_rate
+    sale.amount            = amount
+    sale.adjustment        = adj
+    sale.payment_method    = payment_method
+    sale.description       = description
+    sale.commission_rate   = commission_rate
     sale.commission_amount = round(amount * commission_rate / 100, 2)
-    sale.screens         = screens
+    sale.screens           = screens
     if date_str:
         try:
             sale.created_at = datetime.strptime(date_str, '%Y-%m-%dT%H:%M')
@@ -1179,6 +1218,41 @@ def price_items():
 
     items = PriceItem.query.order_by(PriceItem.price).all()
     return render_template('admin/prices.html', items=items)
+
+
+@admin_bp.route('/tabela-precos/<int:id>/comissao', methods=['POST'])
+@login_required
+@login_required
+def set_price_commission(id):
+    """Define a comissão fixa de um plano (somente admin)."""
+    if not current_user.is_admin():
+        flash('Apenas o administrador pode configurar comissão por plano.', 'danger')
+        return redirect(url_for('admin.price_items'))
+    item = PriceItem.query.get_or_404(id)
+
+    # Comissão fixa (override)
+    val = request.form.get('commission_override', '').strip()
+    if val == '' or val.lower() == 'progressiva':
+        item.commission_override = None
+    else:
+        try:
+            item.commission_override = float(val.replace(',', '.'))
+        except ValueError:
+            flash('Valor de comissão inválido.', 'danger')
+            return redirect(url_for('admin.price_items'))
+
+    # Peso de progressão
+    weight_val = request.form.get('progress_weight', '').strip()
+    if weight_val:
+        try:
+            item.commission_progress_weight = max(0.0, float(weight_val.replace(',', '.')))
+        except ValueError:
+            flash('Peso de progressão inválido.', 'danger')
+            return redirect(url_for('admin.price_items'))
+
+    db.session.commit()
+    flash(f'Configuração do plano "{item.name}" salva.', 'success')
+    return redirect(url_for('admin.price_items'))
 
 
 @admin_bp.route('/tabela-precos/<int:id>/toggle', methods=['POST'])

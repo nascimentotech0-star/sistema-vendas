@@ -485,6 +485,11 @@ class PriceItem(db.Model):
     screens      = db.Column(db.Integer, nullable=True, default=1)   # quantidade de telas
     period_label = db.Column(db.String(30), nullable=True)           # ex: "15 dias", "1 mês"
     is_active    = db.Column(db.Boolean, default=True)
+    # Comissão fixa por plano (opcional). Se preenchida, substitui a taxa progressiva.
+    commission_override = db.Column(db.Float, nullable=True)
+    # Peso de progressão: quanto esta venda contribui para chegar nos 10%.
+    # 1.0 = normal | 0.3 = avança pouco (plano barato) | 2.0 = avança mais (plano premium)
+    commission_progress_weight = db.Column(db.Float, nullable=True, default=1.0)
     created_at   = db.Column(db.DateTime, default=now_br)
 
 
@@ -515,6 +520,8 @@ class Sale(db.Model):
     is_overtime = db.Column(db.Boolean, default=False)
     screens     = db.Column(db.Integer, nullable=True, default=1)    # telas vendidas
     adjustment  = db.Column(db.Float, nullable=True, default=0.0)    # desconto (neg) / acréscimo (pos)
+    price_item_id = db.Column(db.Integer, db.ForeignKey('price_items.id'), nullable=True)
+    price_item    = db.relationship('PriceItem', foreign_keys=[price_item_id])
     ocr_detected_time    = db.Column(db.String(5), nullable=True)   # hora lida via OCR do comprovante (HH:MM)
     registered_payment_time = db.Column(db.String(5), nullable=True) # hora enviada no formulário pelo atendente
     # ── Análise de IA ──────────────────────────────────────────────────────────

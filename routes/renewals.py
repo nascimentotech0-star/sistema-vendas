@@ -155,13 +155,20 @@ def new_renewal():
             flash('Dados inválidos.', 'danger')
             return render_template('admin/renewal_form.html', renewal=None, clients=clients, attendants=attendants)
 
+        # Se não escolheu atendente manualmente, herda o atendente que cadastrou o cliente
+        resolved_attendant_id = int(attendant_id) if attendant_id else None
+        if not resolved_attendant_id and client_id:
+            client_obj = Client.query.get(int(client_id))
+            if client_obj and client_obj.registered_by:
+                resolved_attendant_id = client_obj.registered_by
+
         renewal = Renewal(
             client_id=int(client_id) if client_id else None,
             client_name_manual=client_name_manual,
             plan_name=plan_name,
             amount=amount,
             due_date=due_date,
-            attendant_id=int(attendant_id) if attendant_id else None,
+            attendant_id=resolved_attendant_id,
             notes=notes,
         )
         db.session.add(renewal)
@@ -183,11 +190,18 @@ def edit_renewal(id):
     attendants = User.query.filter_by(role='attendant', is_active=True).order_by(User.name).all()
 
     if request.method == 'POST':
-        renewal.client_id = request.form.get('client_id') or None
+        new_client_id  = request.form.get('client_id') or None
+        new_attendant_id = request.form.get('attendant_id') or None
+        # Herda atendente do cliente se não informado
+        if not new_attendant_id and new_client_id:
+            client_obj = Client.query.get(int(new_client_id))
+            if client_obj and client_obj.registered_by:
+                new_attendant_id = client_obj.registered_by
+        renewal.client_id = int(new_client_id) if new_client_id else None
         renewal.client_name_manual = request.form.get('client_name_manual', '').strip() or None
         renewal.plan_name = request.form.get('plan_name', '').strip()
         renewal.notes = request.form.get('notes', '').strip() or None
-        renewal.attendant_id = request.form.get('attendant_id') or None
+        renewal.attendant_id = int(new_attendant_id) if new_attendant_id else None
         try:
             renewal.amount = float(request.form.get('amount', '0').replace(',', '.'))
             renewal.due_date = datetime.strptime(request.form.get('due_date'), '%Y-%m-%d').date()

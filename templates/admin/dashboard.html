@@ -161,6 +161,19 @@
   </div>
 
   <div class="col-6 col-xl">
+    <a href="{{ url_for('renewals.index') }}" class="text-decoration-none">
+      <div class="kpi-card kpi-card-hover">
+        <div class="kpi-icon kpi-icon-green"><i class="bi bi-arrow-repeat"></i></div>
+        <div>
+          <div class="kpi-label">Renovações Hoje</div>
+          <div class="kpi-value" style="color:#6ee7b7;">{{ today_renewals_count }}</div>
+          <div class="kpi-sub">R$ {{ "%.2f"|format(today_renewals_value) }}</div>
+        </div>
+      </div>
+    </a>
+  </div>
+
+  <div class="col-6 col-xl">
     <a href="{{ url_for('contacts.at_risk') }}" class="text-decoration-none">
       <div class="kpi-card kpi-card-hover">
         <div class="kpi-icon {% if at_risk_count %}kpi-icon-danger{% else %}kpi-icon-green{% endif %}">
@@ -236,6 +249,40 @@
           <div class="empty-state">
             <i class="bi bi-inbox"></i>
             <span>Nenhuma venda hoje</span>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  {# Renovações Hoje por Atendente #}
+  <div class="col-12 col-lg-4">
+    <div class="card h-100">
+      <div class="card-header d-flex align-items-center gap-2">
+        <i class="bi bi-arrow-repeat" style="color:#6ee7b7;"></i>
+        <span class="fw-semibold">Renovações Hoje</span>
+        <span class="badge ms-1" style="background:rgba(16,185,129,.2);color:#6ee7b7;">{{ today_renewals_count }}</span>
+        <a href="{{ url_for('renewals.index') }}" class="btn-link-subtle ms-auto">Ver todas <i class="bi bi-arrow-right"></i></a>
+      </div>
+      <div class="card-body">
+        {% if today_renewals_ranking %}
+          {% for att in today_renewals_ranking %}
+          <div class="d-flex justify-content-between align-items-center py-2 row-divider">
+            <div>
+              <span class="fw-semibold" style="font-size:.88rem;">{{ att.name.split()[0] }}</span>
+              <span class="badge ms-1" style="background:rgba(255,255,255,.06);color:var(--text-muted);font-size:.7rem;">{{ att.count }}x</span>
+            </div>
+            <span style="color:#6ee7b7;font-weight:600;font-size:.9rem;">R$ {{ "%.2f"|format(att.value) }}</span>
+          </div>
+          {% endfor %}
+          <div class="d-flex justify-content-between align-items-center pt-3">
+            <span class="fw-bold">Total</span>
+            <span class="fw-bold" style="color:#6ee7b7;font-size:1.05rem;">R$ {{ "%.2f"|format(today_renewals_value) }}</span>
+          </div>
+        {% else %}
+          <div class="empty-state">
+            <i class="bi bi-arrow-repeat"></i>
+            <span>Nenhuma renovação confirmada hoje</span>
           </div>
         {% endif %}
       </div>

@@ -183,6 +183,9 @@ def _upgrade_db():
         ('sales',          'ai_amount_match',           'BOOLEAN'),
         ('sales',          'ai_suspicious',             'BOOLEAN DEFAULT FALSE'),
         ('sales',          'ai_notes',                  'TEXT'),
+        ('sales',          'price_item_id',             'INTEGER REFERENCES price_items(id)'),
+        ('price_items',    'commission_override',       'REAL'),
+        ('price_items',    'commission_progress_weight', 'REAL DEFAULT 1.0'),
         ('fidelidade_clientes', 'seguidor_ig',       'BOOLEAN DEFAULT FALSE'),
         ('fidelidade_clientes', 'seguidor_validado', 'BOOLEAN DEFAULT FALSE'),
         ('fidelidade_clientes', 'codigo_origem',     'VARCHAR(30)'),
@@ -239,24 +242,71 @@ def _upgrade_db():
 
 
 def _seed_default_plans():
-    """Insere os 6 planos padrão se ainda não existirem."""
+    """Insere os 6 planos padrão e garante que os pesos de progressão estejam corretos.
+
+    Pesos de progressão (commission_progress_weight):
+    ─────────────────────────────────────────────────────────────────────────────
+    Plano 15 Dias  → 0.3  │ 3 vendas = 1 ponto. Barato, não deve inflar comissão.
+    Plano Mensal   → 1.0  │ Progressão padrão — base do negócio.
+    Plano Trimestral → 2.0│ Vale o dobro: cliente fica 3× mais tempo.
+    Plano Semestral  → 3.5│ Excelente retenção, merece progressão maior.
+    Plano Anual      → 6.0│ Melhor venda possível — avança 6× na régua.
+
+    Lógica de negócio: o atendente precisa vender planos de VALOR para progredir
+    rápido até 10%. Encher de plano de R$15 rende pouco na régua — protege o caixa
+    nos meses de anúncio agressivo com ticket baixo.
+    """
     from models import PriceItem
     default_plans = [
-        {'name': 'Plano 15 Dias — 1 Tela',    'price': 15.00,   'period_label': '15 dias', 'screens': 1, 'description': 'Acesso por 15 dias, 1 tela'},
-        {'name': 'Plano Mensal — 1 Tela',      'price': 24.99,   'period_label': '1 mês',   'screens': 1, 'description': 'Acesso por 1 mês, 1 tela'},
-        {'name': 'Plano Mensal — 2 Telas',     'price': 29.99,   'period_label': '1 mês',   'screens': 2, 'description': 'Acesso por 1 mês, 2 telas'},
-        {'name': 'Plano Trimestral',           'price': 64.99,   'period_label': '3 meses', 'screens': 1, 'description': 'Acesso por 3 meses + 1 tela de brinde'},
-        {'name': 'Plano Semestral',            'price': 124.99,  'period_label': '6 meses', 'screens': 1, 'description': 'Acesso por 6 meses + 1 tela de brinde'},
-        {'name': 'Plano Anual',                'price': 244.99,  'period_label': '12 meses','screens': 1, 'description': 'Acesso por 12 meses + 1 tela de brinde + 1 mês extra'},
+        {
+            'name': 'Plano 15 Dias — 1 Tela',  'price': 15.00,
+            'period_label': '15 dias', 'screens': 1,
+            'description': 'Acesso por 15 dias, 1 tela',
+            'weight': 0.3,   # 3 vendas = 1 ponto de progressão
+        },
+        {
+            'name': 'Plano Mensal — 1 Tela',   'price': 24.99,
+            'period_label': '1 mês', 'screens': 1,
+            'description': 'Acesso por 1 mês, 1 tela',
+            'weight': 1.0,   # padrão
+        },
+        {
+            'name': 'Plano Mensal — 2 Telas',  'price': 29.99,
+            'period_label': '1 mês', 'screens': 2,
+            'description': 'Acesso por 1 mês, 2 telas',
+            'weight': 1.2,   # ligeiramente melhor que 1 tela
+        },
+        {
+            'name': 'Plano Trimestral',         'price': 64.99,
+            'period_label': '3 meses', 'screens': 1,
+            'description': 'Acesso por 3 meses + 1 tela de brinde',
+            'weight': 2.0,   # vale o dobro
+        },
+        {
+            'name': 'Plano Semestral',          'price': 124.99,
+            'period_label': '6 meses', 'screens': 1,
+            'description': 'Acesso por 6 meses + 1 tela de brinde',
+            'weight': 3.5,   # ótima retenção
+        },
+        {
+            'name': 'Plano Anual',              'price': 244.99,
+            'period_label': '12 meses', 'screens': 1,
+            'description': 'Acesso por 12 meses + 1 tela de brinde + 1 mês extra',
+            'weight': 6.0,   # melhor venda — avança 6× na régua
+        },
     ]
     for p in default_plans:
-        exists = PriceItem.query.filter_by(name=p['name']).first()
-        if not exists:
+        item = PriceItem.query.filter_by(name=p['name']).first()
+        if not item:
             db.session.add(PriceItem(
                 name=p['name'], price=p['price'],
                 period_label=p['period_label'], screens=p['screens'],
-                description=p['description'], is_active=True
+                description=p['description'], is_active=True,
+                commission_progress_weight=p['weight'],
             ))
+        else:
+            # Garante que o peso esteja correto mesmo em planos já existentes
+            item.commission_progress_weight = p['weight']
     db.session.commit()
 
 
