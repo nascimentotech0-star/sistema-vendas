@@ -994,15 +994,14 @@ def renewals():
         Renewal.due_date <= last_day,
     )
 
-    # Stats pessoais do atendente logado no dia atual
+    # Stats pessoais do atendente logado no dia atual (cadastradas hoje, qualquer status)
     _today = today_br()
     _day_start = datetime(_today.year, _today.month, _today.day)
     _day_end   = _day_start + timedelta(days=1)
     my_today_renewals = Renewal.query.filter(
-        Renewal.status == 'renewed',
         Renewal.attendant_id == current_user.id,
-        Renewal.renewed_at >= _day_start,
-        Renewal.renewed_at < _day_end,
+        Renewal.created_at >= _day_start,
+        Renewal.created_at < _day_end,
     ).all()
     my_today_count = len(my_today_renewals)
     my_today_value = round(sum(r.amount for r in my_today_renewals), 2)

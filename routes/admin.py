@@ -151,11 +151,10 @@ def dashboard():
     renewals_pending = sum(1 for r in month_renewals if r.status == 'pending')
     renewals_overdue = [r for r in month_renewals if r.is_overdue]
 
-    # Renovações confirmadas HOJE (renewed_at no dia de hoje)
+    # Renovações cadastradas HOJE (created_at no dia de hoje, qualquer status)
     today_renewals = Renewal.query.filter(
-        Renewal.status == 'renewed',
-        Renewal.renewed_at >= day_start,
-        Renewal.renewed_at < day_end,
+        Renewal.created_at >= day_start,
+        Renewal.created_at < day_end,
     ).all()
     today_renewals_count = len(today_renewals)
     today_renewals_value = round(sum(r.amount for r in today_renewals), 2)
