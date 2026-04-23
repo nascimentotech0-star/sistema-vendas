@@ -36,7 +36,10 @@ from models import db, FidelidadeCliente, FidelidadePedido, Promocao
 from datetime import date as _date
 
 _STATIC_DIR = os.path.join(os.path.dirname(__file__), '..', 'static')
-_VOLUME_DIR = os.path.join(_STATIC_DIR, 'uploads')
+# No Railway, UPLOAD_FOLDER aponta para o volume persistente (/data/uploads).
+# Localmente, usa static/uploads/. Isso garante que os JSONs sobrevivem entre deploys.
+_upload_env = os.environ.get('UPLOAD_FOLDER', '')
+_VOLUME_DIR = _upload_env if (_upload_env and os.path.isabs(_upload_env)) else os.path.join(_STATIC_DIR, 'uploads')
 
 # Em produção os JSONs ficam no volume (persistem entre deploys)
 # Em local ficam na pasta static (comportamento original)
