@@ -166,7 +166,7 @@ def _upgrade_db():
         ('users',          'work_hours_per_day',   'INTEGER DEFAULT 8'),
         ('users',          'work_days_per_month',  'INTEGER DEFAULT 22'),
         ('users',          'shift_end_hour',        'INTEGER DEFAULT 22'),
-        ('users',          'monthly_sales_target',  'INTEGER DEFAULT 700'),
+        ('users',          'monthly_sales_target',  'INTEGER DEFAULT 1700'),
         ('sales',          'comprovante_hash',       'VARCHAR(64)'),
         ('absence_records','notes',                'TEXT'),
         ('salary_payments','notes',                'TEXT'),
@@ -239,6 +239,7 @@ def _upgrade_db():
         except Exception:
             pass  # Coluna já existe — ignorar
     _seed_default_plans()
+    _apply_may_targets()
 
 
 def _seed_default_plans():
@@ -308,6 +309,19 @@ def _seed_default_plans():
             # Garante que o peso esteja correto mesmo em planos já existentes
             item.commission_progress_weight = p['weight']
     db.session.commit()
+
+
+def _apply_may_targets():
+    """Atualiza meta de vendas para 1700 em todos os atendentes/gerentes ativos."""
+    try:
+        User.query.filter(
+            User.role.in_(['attendant', 'gerente']),
+            User.is_active == True,
+            User.monthly_sales_target < 1700,
+        ).update({'monthly_sales_target': 1700}, synchronize_session=False)
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
 
 
 def _seed_admin():

@@ -571,7 +571,7 @@ def get_commission_rate(sales_count=None):
         return 20.0
     # Usa score ponderado (não contagem simples)
     progress_score = get_month_progress_score(current_user.id)
-    target = current_user.monthly_sales_target or 700
+    target = current_user.monthly_sales_target or 1700
     floor  = _month_commission_floor(current_user.id)
     return progressive_rate(progress_score, target, floor=floor)
 
@@ -707,7 +707,7 @@ def dashboard():
     month_commission = sum(s.commission_amount for s in month_sales)
 
     # Comissão progressiva: baseada em score ponderado (planos baratos valem menos)
-    sales_target        = current_user.monthly_sales_target or 700
+    sales_target        = current_user.monthly_sales_target or 1700
     month_sales_count   = len(month_sales)              # contagem real (exibição)
     progress_score      = get_month_progress_score(current_user.id)  # score ponderado
     current_rate        = get_commission_rate()
@@ -1574,7 +1574,7 @@ def new_client():
             if sale_overtime:
                 commission_rate = 20.0
             else:
-                target = current_user.monthly_sales_target or 700
+                target = current_user.monthly_sales_target or 1700
                 commission_rate = progressive_rate(get_month_progress_score(current_user.id), target,
                                                    floor=_month_commission_floor(current_user.id))
             commission_amount = round(amount * commission_rate / 100, 2)
@@ -1752,7 +1752,7 @@ def new_sale():
             if plan_override is not None:
                 commission_rate = plan_override
             else:
-                target = current_user.monthly_sales_target or 700
+                target = current_user.monthly_sales_target or 1700
                 commission_rate = progressive_rate(get_month_progress_score(current_user.id), target,
                                                    floor=_month_commission_floor(current_user.id))
         commission_amount = round(amount * commission_rate / 100, 2)
