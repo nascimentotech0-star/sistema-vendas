@@ -994,17 +994,27 @@ def renewals():
         Renewal.due_date <= last_day,
     )
 
-    # Stats pessoais do atendente logado no dia atual (cadastradas hoje, qualquer status)
+    # Stats pessoais do atendente logado no dia atual
+    # Conta: criadas hoje OU confirmadas hoje (renewed_at) pelo atendente
     _today = today_br()
     _day_start = datetime(_today.year, _today.month, _today.day)
     _day_end   = _day_start + timedelta(days=1)
     my_today_renewals = Renewal.query.filter(
         Renewal.attendant_id == current_user.id,
-        Renewal.created_at >= _day_start,
-        Renewal.created_at < _day_end,
+        db.or_(
+            db.and_(Renewal.created_at  >= _day_start, Renewal.created_at  < _day_end),
+            db.and_(Renewal.renewed_at  >= _day_start, Renewal.renewed_at  < _day_end),
+        )
     ).all()
-    my_today_count = len(my_today_renewals)
-    my_today_value = round(sum(r.amount for r in my_today_renewals), 2)
+    # Remove duplicatas (criada E confirmada no mesmo dia conta só uma vez)
+    seen = set()
+    unique_today = []
+    for r in my_today_renewals:
+        if r.id not in seen:
+            seen.add(r.id)
+            unique_today.append(r)
+    my_today_count = len(unique_today)
+    my_today_value = round(sum(r.amount for r in unique_today), 2)
 
     if status_filter:
         query = query.filter_by(status=status_filter)

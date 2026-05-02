@@ -151,11 +151,20 @@ def dashboard():
     renewals_pending = sum(1 for r in month_renewals if r.status == 'pending')
     renewals_overdue = [r for r in month_renewals if r.is_overdue]
 
-    # Renovações cadastradas HOJE (created_at no dia de hoje, qualquer status)
-    today_renewals = Renewal.query.filter(
-        Renewal.created_at >= day_start,
-        Renewal.created_at < day_end,
+    # Renovações do dia: criadas hoje OU confirmadas hoje
+    _all_today_r = Renewal.query.filter(
+        db.or_(
+            db.and_(Renewal.created_at >= day_start, Renewal.created_at < day_end),
+            db.and_(Renewal.renewed_at >= day_start, Renewal.renewed_at < day_end),
+        )
     ).all()
+    # Remove duplicatas
+    _seen_r = set()
+    today_renewals = []
+    for r in _all_today_r:
+        if r.id not in _seen_r:
+            _seen_r.add(r.id)
+            today_renewals.append(r)
     today_renewals_count = len(today_renewals)
     today_renewals_value = round(sum(r.amount for r in today_renewals), 2)
     # Breakdown por atendente (para o admin ver quem renovou mais hoje)
