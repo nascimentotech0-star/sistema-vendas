@@ -38,6 +38,29 @@ def create_app():
         if _req.headers.get('X-Forwarded-Proto') == 'http':
             return _redir(_req.url.replace('http://', 'https://', 1), 301)
 
+    from flask_wtf.csrf import CSRFError
+    @app.errorhandler(CSRFError)
+    def handle_csrf_error(e):
+        from flask import render_template_string, request as _r
+        return render_template_string("""
+            <!doctype html><html><head><title>Sessão expirada</title>
+            <meta charset="utf-8">
+            <style>
+              body{font-family:sans-serif;text-align:center;padding:4rem;background:#0d0d1a;color:#e2e8f0;}
+              .card{background:#1a1a35;border:1px solid rgba(124,58,237,.3);border-radius:12px;padding:2.5rem;display:inline-block;max-width:420px;}
+              h2{color:#fcd34d;margin-bottom:.5rem;}
+              p{color:#94a3b8;margin:.5rem 0;}
+              a{display:inline-block;margin-top:1.5rem;padding:.6rem 2rem;background:linear-gradient(135deg,#7c3aed,#6d28d9);color:#fff;border-radius:8px;text-decoration:none;font-weight:600;}
+              a:hover{opacity:.85;}
+            </style></head><body>
+            <div class="card">
+              <h2>⏱ Sessão expirada</h2>
+              <p>A página ficou aberta por muito tempo.</p>
+              <p>Recarregue e tente novamente — seus dados não foram perdidos.</p>
+              <a href="{{ back }}">← Voltar e tentar novamente</a>
+            </div></body></html>
+        """, back=_r.referrer or '/'), 400
+
     login_manager = LoginManager()
     login_manager.init_app(app)
     login_manager.login_view = 'auth.login'

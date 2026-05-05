@@ -33,7 +33,7 @@ class Config:
     MAX_CONTENT_LENGTH = 200 * 1024 * 1024  # 200MB (suporta vídeos)
     PERMANENT_SESSION_LIFETIME = timedelta(hours=12)
     WTF_CSRF_ENABLED = True
-    WTF_CSRF_TIME_LIMIT = 3600  # token válido por 1 hora
+    WTF_CSRF_TIME_LIMIT = 43200  # token válido por 12 horas
     WTF_CSRF_SSL_STRICT = False  # Railway usa proxy, não força HTTPS no CSRF
     SESSION_COOKIE_SECURE = os.environ.get('RAILWAY_ENVIRONMENT') is not None
     SESSION_COOKIE_SAMESITE = 'Lax'
