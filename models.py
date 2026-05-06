@@ -231,8 +231,12 @@ class OvertimeRequest(db.Model):
     approved_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
     approved_at = db.Column(db.DateTime, nullable=True)
     notes = db.Column(db.Text, nullable=True)
+    revoked_at   = db.Column(db.DateTime, nullable=True)
+    revoked_by   = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
+    revoked_from = db.Column(db.DateTime, nullable=True)
 
     approver = db.relationship('User', foreign_keys=[approved_by])
+    revoker  = db.relationship('User', foreign_keys=[revoked_by])
 
 
 DAYS_AT_RISK = 10  # dias sem contato para considerar cliente em risco

@@ -3,6 +3,63 @@
 {% block content %}
 <h4 class="fw-bold mb-4"><i class="bi bi-clock-history me-2 text-warning"></i>Solicitações de Hora Extra</h4>
 
+<!-- Ativas agora -->
+{% if active %}
+<div class="card mb-4" style="border-left:4px solid #fca5a5 !important;">
+  <div class="card-header d-flex align-items-center gap-2" style="background:rgba(239,68,68,.08);">
+    <i class="bi bi-lightning-charge-fill" style="color:#fca5a5;"></i>
+    <span class="fw-semibold">Ativas Agora</span>
+    <span class="badge ms-1" style="background:rgba(239,68,68,.2);color:#fca5a5;">{{ active|length }}</span>
+  </div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead>
+          <tr>
+            <th>Atendente</th>
+            <th>Aprovada às</th>
+            <th>Revogar a partir de</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in active %}
+          <tr>
+            <td class="fw-semibold">
+              <i class="bi bi-person-fill me-1" style="color:#a78bfa;"></i>
+              {{ r.user.name }}
+            </td>
+            <td style="color:var(--text-muted);font-size:.88rem;">
+              {{ r.approved_at.strftime('%H:%M') if r.approved_at else '—' }}
+            </td>
+            <td>
+              <form method="POST" action="{{ url_for('admin.revoke_overtime', id=r.id) }}"
+                    class="d-flex gap-2 align-items-center"
+                    onsubmit="return confirm('Revogar hora extra de {{ r.user.name.split()[0] }} a partir do horário informado? As vendas 20% após esse horário serão recalculadas para 5%.')">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="time" name="revoke_from"
+                       class="form-control form-control-sm"
+                       style="width:110px;"
+                       value="{{ now_time }}"
+                       title="Horário de corte — vendas após esse horário perdem o 20%">
+                <button class="btn btn-sm px-3"
+                        style="background:rgba(239,68,68,.2);color:#fca5a5;border:1px solid rgba(239,68,68,.4);white-space:nowrap;">
+                  <i class="bi bi-slash-circle me-1"></i> Revogar
+                </button>
+              </form>
+            </td>
+            <td style="color:var(--text-muted);font-size:.78rem;">
+              aprovado por {{ r.approver.name.split()[0] if r.approver else '—' }}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endif %}
+
 <!-- Pendentes -->
 <div class="card border-0 shadow-sm mb-4">
   <div class="card-header bg-warning bg-opacity-10 border-0 fw-semibold pt-3">
@@ -66,12 +123,23 @@
             <td>
               {% if r.status == 'approved' %}
                 <span class="badge bg-success">Aprovado</span>
+              {% elif r.status == 'revoked' %}
+                <span class="badge" style="background:rgba(239,68,68,.2);color:#fca5a5;border:1px solid rgba(239,68,68,.4);">Revogado</span>
               {% else %}
                 <span class="badge bg-danger">Negado</span>
               {% endif %}
             </td>
             <td>{{ r.approver.name if r.approver else '—' }}</td>
-            <td class="text-muted small">{{ r.approved_at.strftime('%d/%m %H:%M') if r.approved_at else '—' }}</td>
+            <td class="text-muted small">
+              {% if r.status == 'revoked' and r.revoked_at %}
+                {{ r.revoked_at.strftime('%d/%m %H:%M') }}
+                {% if r.revoked_from %}
+                  <br><span style="font-size:.75rem;">corte: {{ r.revoked_from.strftime('%H:%M') }}</span>
+                {% endif %}
+              {% else %}
+                {{ r.approved_at.strftime('%d/%m %H:%M') if r.approved_at else '—' }}
+              {% endif %}
+            </td>
           </tr>
           {% endfor %}
         </tbody>

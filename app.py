@@ -213,6 +213,9 @@ def _upgrade_db():
         ('fidelidade_clientes', 'seguidor_validado', 'BOOLEAN DEFAULT FALSE'),
         ('fidelidade_clientes', 'codigo_origem',     'VARCHAR(30)'),
         ('acai_promocoes',      'usos',              'INTEGER DEFAULT 0'),
+        ('overtime_requests',   'revoked_at',        'TIMESTAMP'),
+        ('overtime_requests',   'revoked_by',        'INTEGER REFERENCES users(id)'),
+        ('overtime_requests',   'revoked_from',      'TIMESTAMP'),
     ]
     # Cria tabela notifications se não existir (PostgreSQL)
     try:

@@ -490,10 +490,19 @@ def attendant_sales(id):
 @manager_or_admin
 def overtime_requests():
     pending = OvertimeRequest.query.filter_by(status='pending').order_by(OvertimeRequest.requested_at.desc()).all()
+    # Hora extra aprovada hoje (ativas agora)
+    _today = today_br()
+    _day_start = datetime(_today.year, _today.month, _today.day)
+    active = OvertimeRequest.query.filter(
+        OvertimeRequest.status == 'approved',
+        OvertimeRequest.approved_at >= _day_start,
+    ).order_by(OvertimeRequest.approved_at.desc()).all()
     history = OvertimeRequest.query.filter(
-        OvertimeRequest.status != 'pending'
+        OvertimeRequest.status.notin_(['pending', 'approved'])
     ).order_by(OvertimeRequest.requested_at.desc()).limit(50).all()
-    return render_template('admin/overtime_requests.html', pending=pending, history=history)
+    return render_template('admin/overtime_requests.html',
+                           pending=pending, active=active, history=history,
+                           now_time=now_br().strftime('%H:%M'))
 
 
 @admin_bp.route('/hora-extra/<int:id>/aprovar', methods=['POST'])
@@ -529,6 +538,72 @@ def deny_overtime(id):
            icon='bi-x-circle-fill', color='#fca5a5')
     db.session.commit()
     flash(f'Solicitação de {req.user.name} negada.', 'warning')
+    return redirect(url_for('admin.overtime_requests'))
+
+
+@admin_bp.route('/hora-extra/<int:id>/revogar', methods=['POST'])
+@login_required
+@manager_or_admin
+def revoke_overtime(id):
+    req = OvertimeRequest.query.get_or_404(id)
+    if req.status != 'approved':
+        flash('Só é possível revogar hora extra já aprovada.', 'warning')
+        return redirect(url_for('admin.overtime_requests'))
+
+    # Horário de corte: admin informa a partir de que hora as vendas são inválidas
+    cutoff_str = request.form.get('revoke_from', '').strip()
+    now = now_br()
+    today = today_br()
+
+    if cutoff_str:
+        try:
+            h, m = map(int, cutoff_str.split(':'))
+            cutoff_dt = datetime(today.year, today.month, today.day, h, m, 0)
+        except Exception:
+            flash('Horário de corte inválido.', 'danger')
+            return redirect(url_for('admin.overtime_requests'))
+    else:
+        cutoff_dt = now  # sem horário informado: corta a partir de agora
+
+    # Marca a solicitação como revogada
+    req.status      = 'revoked'
+    req.revoked_at  = now
+    req.revoked_by  = current_user.id
+    req.revoked_from = cutoff_dt
+
+    # Recalcula comissão das vendas de hora extra registradas após o horário de corte
+    affected_sales = Sale.query.filter(
+        Sale.attendant_id  == req.user_id,
+        Sale.is_overtime   == True,
+        Sale.created_at    >= cutoff_dt,
+        Sale.created_at    < datetime(today.year, today.month, today.day) + timedelta(days=1),
+    ).all()
+
+    recalc_count = 0
+    for s in affected_sales:
+        old_rate = s.commission_rate
+        s.is_overtime      = False
+        s.commission_rate  = 5.0   # mínimo garantido — hora extra inválida não gera progressão
+        s.commission_amount = round(s.amount * 5.0 / 100, 2)
+        log_action('overtime_revoke_sale',
+                   f'Venda #{s.id} recalculada: {old_rate}% → 5% (hora extra revogada)',
+                   'Sale', s.id)
+        recalc_count += 1
+
+    db.session.commit()
+
+    log_action('overtime_revoke',
+               f'Hora extra de {req.user.name} revogada — corte às {cutoff_dt.strftime("%H:%M")} — {recalc_count} venda(s) recalculada(s)',
+               'OvertimeRequest', req.id)
+
+    notify(req.user_id, '⚠️ Hora extra revogada',
+           f'Sua hora extra foi revogada por {current_user.name} a partir das {cutoff_dt.strftime("%H:%M")}. '
+           f'{recalc_count} venda(s) tiveram a comissão recalculada para 5%.',
+           link=url_for('attendant.dashboard'),
+           icon='bi-slash-circle-fill', color='#fca5a5')
+
+    flash(f'Hora extra de {req.user.name} revogada a partir das {cutoff_dt.strftime("%H:%M")}. '
+          f'{recalc_count} venda(s) recalculada(s) de 20% → 5%.', 'warning')
     return redirect(url_for('admin.overtime_requests'))
 
 
