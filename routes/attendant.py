@@ -1493,16 +1493,9 @@ def new_client():
         phone_norm    = _norm_phone(phone_raw)
         whatsapp_norm = _norm_phone(whatsapp_raw)
 
-        # ── Detectar cliente duplicado (nome similar OU telefone igual) ──────────
+        # ── Detectar cliente duplicado por telefone/WhatsApp (nome pode repetir) ──
         dup_client = None
-        # por nome (case-insensitive, ignora espaços extras)
-        name_lower = name.lower()
-        for c in Client.query.all():
-            if c.name.lower() == name_lower:
-                dup_client = c
-                break
-        # por telefone/whatsapp (se encontrar número igual)
-        if not dup_client and (phone_norm or whatsapp_norm):
+        if phone_norm or whatsapp_norm:
             for c in Client.query.all():
                 c_phone = _norm_phone(c.phone)
                 c_wa    = _norm_phone(c.whatsapp)
@@ -1512,10 +1505,10 @@ def new_client():
                     dup_client = c; break
 
         if dup_client:
+            dup_owner = dup_client.registered_by_user.name.split()[0] if dup_client.registered_by_user else 'outro atendente'
             flash(
-                f'Cliente duplicado! "{dup_client.name}" já está cadastrado '
-                f'(ID #{dup_client.id}, registrado por '
-                f'{dup_client.registered_by_user.name.split()[0] if dup_client.registered_by_user else "outro atendente"}).',
+                f'Número já cadastrado! "{dup_client.name}" (ID #{dup_client.id}) já usa esse telefone/WhatsApp '
+                f'— registrado por {dup_owner}. Verifique antes de prosseguir.',
                 'danger'
             )
             return _render_form()
