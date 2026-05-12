@@ -1076,6 +1076,7 @@ def renewals():
         my_clients=my_clients,
         price_items=price_items,
         panel_options=PANEL_OPTIONS,
+        support_options=SUPPORT_OPTIONS,
         my_today_count=my_today_count,
         my_today_value=my_today_value,
     )
@@ -1152,7 +1153,8 @@ def att_new_renewal():
     amount_str   = request.form.get('amount', '0').replace(',', '.')
     due_date_str = request.form.get('due_date', '')
     notes        = request.form.get('notes', '').strip() or None
-    client_panel = request.form.get('client_panel', '').strip() or None
+    client_panel   = request.form.get('client_panel', '').strip() or None
+    client_support = request.form.get('client_support', '').strip() or None
 
     if not client_id or not plan_name or not due_date_str:
         flash('Cliente, plano e data de vencimento são obrigatórios.', 'danger')
@@ -1163,9 +1165,11 @@ def att_new_renewal():
         flash('Cliente não encontrado.', 'danger')
         return redirect(url_for('attendant.renewals'))
 
-    # Atualiza painel do cliente se informado
+    # Atualiza painel e suporte do cliente se informado
     if client_panel:
         client_obj.panel_name = client_panel
+    if client_support:
+        client_obj.support_type = client_support
 
     try:
         due_date = datetime.strptime(due_date_str, '%Y-%m-%d').date()

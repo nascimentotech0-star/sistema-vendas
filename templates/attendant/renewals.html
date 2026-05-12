@@ -167,7 +167,7 @@
       <table class="table table-hover mb-0">
         <thead>
           <tr>
-            <th>Cliente</th><th>WhatsApp</th><th>Painel</th><th>Plano</th><th>Vencimento</th>
+            <th>Cliente</th><th>WhatsApp</th><th>Painel</th><th>Suporte</th><th>Plano</th><th>Vencimento</th>
             <th>Valor</th><th>Status</th><th>Ações</th>
           </tr>
         </thead>
@@ -196,6 +196,11 @@
             <td style="color:var(--text-muted);font-size:.82rem;">
               {% if r.client and r.client.panel_name %}
                 <span class="badge" style="background:rgba(6,182,212,.15);color:#67e8f9;font-size:.7rem;">{{ r.client.panel_name }}</span>
+              {% else %}—{% endif %}
+            </td>
+            <td style="color:var(--text-muted);font-size:.82rem;">
+              {% if r.client and r.client.support_type %}
+                <span class="badge" style="background:rgba(124,58,237,.15);color:#c4b5fd;font-size:.7rem;">{{ r.client.support_type }}</span>
               {% else %}—{% endif %}
             </td>
             <td style="color:var(--text-muted);">{{ r.plan_name }}</td>
@@ -294,7 +299,8 @@
                 <option value="{{ c.id }}"
                         data-name="{{ c.name|lower }}"
                         data-phone="{{ (c.whatsapp or c.phone or '')|lower }}"
-                        data-panel="{{ c.panel_name or '' }}">
+                        data-panel="{{ c.panel_name or '' }}"
+                        data-support="{{ c.support_type or '' }}">
                   {{ c.name }}{% if c.whatsapp or c.phone %} · {{ c.whatsapp or c.phone }}{% endif %}{% if c.panel_name %} [{{ c.panel_name }}]{% endif %}
                 </option>
               {% endfor %}
@@ -327,6 +333,19 @@
               {% endfor %}
             </select>
             <small style="color:var(--text-muted);">Atualiza o painel cadastrado do cliente ao salvar.</small>
+          </div>
+          {% endif %}
+
+          {% if support_options %}
+          <div class="mb-3">
+            <label class="form-label">Suporte do Cliente</label>
+            <select name="client_support" id="newClientSupport" class="form-select">
+              <option value="">— Não alterar / Sem suporte —</option>
+              {% for s in support_options %}
+                <option value="{{ s }}">{{ s }}</option>
+              {% endfor %}
+            </select>
+            <small style="color:var(--text-muted);">Atualiza o suporte cadastrado do cliente ao salvar.</small>
           </div>
           {% endif %}
 
@@ -546,14 +565,15 @@
     });
   });
 
-  // Pré-preenche painel ao selecionar cliente
-  const clientSelectEl = document.getElementById('clientSelect');
-  const panelSelectEl  = document.getElementById('newClientPanel');
-  if (clientSelectEl && panelSelectEl) {
+  // Pré-preenche painel e suporte ao selecionar cliente
+  const clientSelectEl  = document.getElementById('clientSelect');
+  const panelSelectEl   = document.getElementById('newClientPanel');
+  const supportSelectEl = document.getElementById('newClientSupport');
+  if (clientSelectEl) {
     clientSelectEl.addEventListener('change', function(){
       const opt = this.options[this.selectedIndex];
-      const panel = opt ? (opt.dataset.panel || '') : '';
-      panelSelectEl.value = panel;
+      if (panelSelectEl)   panelSelectEl.value   = opt ? (opt.dataset.panel   || '') : '';
+      if (supportSelectEl) supportSelectEl.value = opt ? (opt.dataset.support || '') : '';
     });
   }
 </script>
