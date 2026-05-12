@@ -167,7 +167,7 @@
       <table class="table table-hover mb-0">
         <thead>
           <tr>
-            <th>Cliente</th><th>Painel</th><th>Plano</th><th>Vencimento</th>
+            <th>Cliente</th><th>WhatsApp</th><th>Painel</th><th>Plano</th><th>Vencimento</th>
             <th>Valor</th><th>Status</th><th>Ações</th>
           </tr>
         </thead>
@@ -179,6 +179,19 @@
                  style="color:var(--text);text-decoration:none;">
                 {{ r.client_display }}
               </a>
+            </td>
+            <td style="font-size:.82rem;">
+              {% if r.client and (r.client.whatsapp or r.client.phone) %}
+                {% set wa = r.client.whatsapp or r.client.phone %}
+                {% set wa_digits = wa | replace('(', '') | replace(')', '') | replace(' ', '') | replace('-', '') %}
+                <a href="https://wa.me/55{{ wa_digits }}" target="_blank" rel="noopener"
+                   style="color:#25d366;text-decoration:none;white-space:nowrap;"
+                   title="Abrir WhatsApp">
+                  <i class="bi bi-whatsapp me-1"></i>{{ wa }}
+                </a>
+              {% else %}
+                <span style="color:var(--text-muted);">—</span>
+              {% endif %}
             </td>
             <td style="color:var(--text-muted);font-size:.82rem;">
               {% if r.client and r.client.panel_name %}
