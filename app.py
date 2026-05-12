@@ -189,7 +189,7 @@ def _upgrade_db():
         ('users',          'work_hours_per_day',   'INTEGER DEFAULT 8'),
         ('users',          'work_days_per_month',  'INTEGER DEFAULT 22'),
         ('users',          'shift_end_hour',        'INTEGER DEFAULT 22'),
-        ('users',          'monthly_sales_target',  'INTEGER DEFAULT 1700'),
+        ('users',          'monthly_sales_target',  'INTEGER DEFAULT 1200'),
         ('sales',          'comprovante_hash',       'VARCHAR(64)'),
         ('absence_records','notes',                'TEXT'),
         ('salary_payments','notes',                'TEXT'),
@@ -338,13 +338,12 @@ def _seed_default_plans():
 
 
 def _apply_may_targets():
-    """Atualiza meta de vendas para 1700 em todos os atendentes/gerentes ativos."""
+    """Atualiza meta de vendas para 1200 em todos os atendentes/gerentes ativos."""
     try:
         User.query.filter(
             User.role.in_(['attendant', 'gerente']),
             User.is_active == True,
-            User.monthly_sales_target < 1700,
-        ).update({'monthly_sales_target': 1700}, synchronize_session=False)
+        ).update({'monthly_sales_target': 1200}, synchronize_session=False)
         db.session.commit()
     except Exception:
         db.session.rollback()

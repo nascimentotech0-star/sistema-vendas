@@ -21,6 +21,10 @@
         </select>
       </div>
       <button class="btn btn-sm btn-primary">Filtrar</button>
+      <a href="?status=pending&month={{ month }}" class="btn btn-sm"
+         style="background:rgba(245,158,11,.2);color:#fcd34d;border:1px solid rgba(245,158,11,.3);">
+        <i class="bi bi-hourglass-split me-1"></i> Só Pendentes
+      </a>
       <button type="button" class="btn btn-sm ms-auto"
               style="background:rgba(16,185,129,.2);color:#6ee7b7;border:1px solid rgba(16,185,129,.3);"
               data-bs-toggle="modal" data-bs-target="#modalNovaRenovacao">
@@ -163,7 +167,7 @@
       <table class="table table-hover mb-0">
         <thead>
           <tr>
-            <th>Cliente</th><th>Plano</th><th>Vencimento</th>
+            <th>Cliente</th><th>Painel</th><th>Plano</th><th>Vencimento</th>
             <th>Valor</th><th>Status</th><th>Ações</th>
           </tr>
         </thead>
@@ -175,6 +179,11 @@
                  style="color:var(--text);text-decoration:none;">
                 {{ r.client_display }}
               </a>
+            </td>
+            <td style="color:var(--text-muted);font-size:.82rem;">
+              {% if r.client and r.client.panel_name %}
+                <span class="badge" style="background:rgba(6,182,212,.15);color:#67e8f9;font-size:.7rem;">{{ r.client.panel_name }}</span>
+              {% else %}—{% endif %}
             </td>
             <td style="color:var(--text-muted);">{{ r.plan_name }}</td>
             <td style="font-size:.85rem;">
@@ -271,8 +280,9 @@
               {% for c in my_clients %}
                 <option value="{{ c.id }}"
                         data-name="{{ c.name|lower }}"
-                        data-phone="{{ (c.whatsapp or c.phone or '')|lower }}">
-                  {{ c.name }}{% if c.whatsapp or c.phone %} · {{ c.whatsapp or c.phone }}{% endif %}
+                        data-phone="{{ (c.whatsapp or c.phone or '')|lower }}"
+                        data-panel="{{ c.panel_name or '' }}">
+                  {{ c.name }}{% if c.whatsapp or c.phone %} · {{ c.whatsapp or c.phone }}{% endif %}{% if c.panel_name %} [{{ c.panel_name }}]{% endif %}
                 </option>
               {% endfor %}
             </select>
@@ -291,6 +301,19 @@
               </button>
               {% endfor %}
             </div>
+          </div>
+          {% endif %}
+
+          {% if panel_options %}
+          <div class="mb-3">
+            <label class="form-label">Painel do Cliente</label>
+            <select name="client_panel" id="newClientPanel" class="form-select">
+              <option value="">— Não alterar / Sem painel —</option>
+              {% for p in panel_options %}
+                <option value="{{ p }}">{{ p }}</option>
+              {% endfor %}
+            </select>
+            <small style="color:var(--text-muted);">Atualiza o painel cadastrado do cliente ao salvar.</small>
           </div>
           {% endif %}
 
@@ -442,7 +465,7 @@
   function openRenewModal(renewalId, clientName, amount) {
     document.getElementById('renewClientName').textContent = clientName;
     document.getElementById('renewAmount').value = amount ? amount.toFixed(2) : '';
-    document.getElementById('formRenovar').action = '/renovacoes/' + renewalId + '/renovar';
+    document.getElementById('formRenovar').action = "{{ url_for('attendant.att_renew', id=0) }}".replace('/0/', '/' + renewalId + '/');
     new bootstrap.Modal(document.getElementById('modalRenovar')).show();
   }
 
@@ -509,5 +532,16 @@
       opt.style.display = match ? '' : 'none';
     });
   });
+
+  // Pré-preenche painel ao selecionar cliente
+  const clientSelectEl = document.getElementById('clientSelect');
+  const panelSelectEl  = document.getElementById('newClientPanel');
+  if (clientSelectEl && panelSelectEl) {
+    clientSelectEl.addEventListener('change', function(){
+      const opt = this.options[this.selectedIndex];
+      const panel = opt ? (opt.dataset.panel || '') : '';
+      panelSelectEl.value = panel;
+    });
+  }
 </script>
 {% endblock %}

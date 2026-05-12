@@ -571,7 +571,7 @@ def get_commission_rate(sales_count=None):
         return 20.0
     # Usa score ponderado (não contagem simples)
     progress_score = get_month_progress_score(current_user.id)
-    target = current_user.monthly_sales_target or 1700
+    target = current_user.monthly_sales_target or 1200
     floor  = _month_commission_floor(current_user.id)
     return progressive_rate(progress_score, target, floor=floor)
 
@@ -707,7 +707,7 @@ def dashboard():
     month_commission = sum(s.commission_amount for s in month_sales)
 
     # Comissão progressiva: baseada em score ponderado (planos baratos valem menos)
-    sales_target        = current_user.monthly_sales_target or 1700
+    sales_target        = current_user.monthly_sales_target or 1200
     month_sales_count   = len(month_sales)              # contagem real (exibição)
     progress_score      = get_month_progress_score(current_user.id)  # score ponderado
     current_rate        = get_commission_rate()
@@ -1075,6 +1075,7 @@ def renewals():
         chart_monthly=chart_monthly,
         my_clients=my_clients,
         price_items=price_items,
+        panel_options=PANEL_OPTIONS,
         my_today_count=my_today_count,
         my_today_value=my_today_value,
     )
@@ -1146,19 +1147,25 @@ def att_cancel(id):
 @login_required
 @attendant_required
 def att_new_renewal():
-    client_id   = request.form.get('client_id') or None
-    plan_name   = request.form.get('plan_name', '').strip()
-    amount_str  = request.form.get('amount', '0').replace(',', '.')
+    client_id    = request.form.get('client_id') or None
+    plan_name    = request.form.get('plan_name', '').strip()
+    amount_str   = request.form.get('amount', '0').replace(',', '.')
     due_date_str = request.form.get('due_date', '')
-    notes       = request.form.get('notes', '').strip() or None
+    notes        = request.form.get('notes', '').strip() or None
+    client_panel = request.form.get('client_panel', '').strip() or None
 
     if not client_id or not plan_name or not due_date_str:
         flash('Cliente, plano e data de vencimento são obrigatórios.', 'danger')
         return redirect(url_for('attendant.renewals'))
 
-    if not Client.query.get(int(client_id)):
+    client_obj = Client.query.get(int(client_id))
+    if not client_obj:
         flash('Cliente não encontrado.', 'danger')
         return redirect(url_for('attendant.renewals'))
+
+    # Atualiza painel do cliente se informado
+    if client_panel:
+        client_obj.panel_name = client_panel
 
     try:
         due_date = datetime.strptime(due_date_str, '%Y-%m-%d').date()
@@ -1188,8 +1195,7 @@ def att_new_renewal():
     )
     db.session.add(renewal)
     db.session.commit()
-    client_name = Client.query.get(int(client_id)).name
-    flash(f'Renovação de {client_name} — {plan_name} cadastrada!', 'success')
+    flash(f'Renovação de {client_obj.name} — {plan_name} cadastrada!', 'success')
     return redirect(url_for('attendant.renewals'))
 
 
@@ -1577,7 +1583,7 @@ def new_client():
             if sale_overtime:
                 commission_rate = 20.0
             else:
-                target = current_user.monthly_sales_target or 1700
+                target = current_user.monthly_sales_target or 1200
                 commission_rate = progressive_rate(get_month_progress_score(current_user.id), target,
                                                    floor=_month_commission_floor(current_user.id))
             commission_amount = round(amount * commission_rate / 100, 2)
@@ -1755,7 +1761,7 @@ def new_sale():
             if plan_override is not None:
                 commission_rate = plan_override
             else:
-                target = current_user.monthly_sales_target or 1700
+                target = current_user.monthly_sales_target or 1200
                 commission_rate = progressive_rate(get_month_progress_score(current_user.id), target,
                                                    floor=_month_commission_floor(current_user.id))
         commission_amount = round(amount * commission_rate / 100, 2)
