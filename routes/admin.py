@@ -783,10 +783,12 @@ def admin_delete_sale(sale_id):
 @login_required
 @manager_or_admin
 def sales():
-    page = request.args.get('page', 1, type=int)
-    date_filter = request.args.get('date', '')
+    page             = request.args.get('page', 1, type=int)
+    date_filter      = request.args.get('date', '')
     attendant_filter = request.args.get('attendant', 0, type=int)
-    payment_filter = request.args.get('payment', '')
+    payment_filter   = request.args.get('payment', '')
+    time_from_filter = request.args.get('time_from', '')
+    time_to_filter   = request.args.get('time_to', '')
 
     query = Sale.query
 
@@ -803,6 +805,20 @@ def sales():
     if payment_filter:
         query = query.filter_by(payment_method=payment_filter)
 
+    if time_from_filter:
+        try:
+            h, m = map(int, time_from_filter.split(':'))
+            query = query.filter(func.extract('hour', Sale.created_at) * 60 + func.extract('minute', Sale.created_at) >= h * 60 + m)
+        except Exception:
+            pass
+
+    if time_to_filter:
+        try:
+            h, m = map(int, time_to_filter.split(':'))
+            query = query.filter(func.extract('hour', Sale.created_at) * 60 + func.extract('minute', Sale.created_at) <= h * 60 + m)
+        except Exception:
+            pass
+
     sales = query.order_by(Sale.created_at.desc()).paginate(page=page, per_page=25)
     attendants = User.query.filter(User.role.in_(['attendant','gerente'])).order_by(User.name).all()
     from models import Client
@@ -812,7 +828,8 @@ def sales():
         sales=sales, attendants=attendants,
         all_clients=all_clients,
         date_filter=date_filter, attendant_filter=attendant_filter,
-        payment_filter=payment_filter, payment_methods=PAYMENT_METHODS)
+        payment_filter=payment_filter, payment_methods=PAYMENT_METHODS,
+        time_from_filter=time_from_filter, time_to_filter=time_to_filter)
 
 
 # ── Auditoria ──────────────────────────────────────────────────────────────────

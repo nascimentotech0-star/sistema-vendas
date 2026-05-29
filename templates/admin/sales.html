@@ -34,9 +34,22 @@
           {% endfor %}
         </select>
       </div>
-      <div class="col-auto d-flex gap-2">
+      <div class="col-12 col-sm-4 col-md-2">
+        <label class="form-label small fw-semibold">Hora de</label>
+        <input type="time" name="time_from" class="form-control form-control-sm" value="{{ time_from_filter }}">
+      </div>
+      <div class="col-12 col-sm-4 col-md-2">
+        <label class="form-label small fw-semibold">Hora até</label>
+        <input type="time" name="time_to" class="form-control form-control-sm" value="{{ time_to_filter }}">
+      </div>
+      <div class="col-auto d-flex gap-2 flex-wrap">
         <button type="submit" class="btn btn-primary btn-sm">
           <i class="bi bi-funnel me-1"></i> Filtrar
+        </button>
+        <button type="button" class="btn btn-sm"
+                style="background:rgba(245,158,11,.2);color:#fcd34d;border:1px solid rgba(245,158,11,.3);"
+                onclick="document.querySelector('[name=time_from]').value='10:00';document.querySelector('[name=time_to]').value='';this.form.submit();">
+          <i class="bi bi-clock me-1"></i> A partir das 10h
         </button>
         <a href="{{ url_for('admin.sales') }}" class="btn btn-outline-secondary btn-sm">Limpar</a>
         <a href="{{ url_for('exports.sales', **request.args) }}" class="btn btn-sm"
@@ -167,13 +180,13 @@
         <ul class="pagination pagination-sm mb-0">
           {% if sales.has_prev %}
           <li class="page-item">
-            <a class="page-link" href="?page={{ sales.prev_num }}&date={{ date_filter }}&attendant={{ attendant_filter }}&payment={{ payment_filter }}">Anterior</a>
+            <a class="page-link" href="?page={{ sales.prev_num }}&date={{ date_filter }}&attendant={{ attendant_filter }}&payment={{ payment_filter }}&time_from={{ time_from_filter }}&time_to={{ time_to_filter }}">Anterior</a>
           </li>
           {% endif %}
           <li class="page-item active"><span class="page-link">{{ sales.page }} / {{ sales.pages }}</span></li>
           {% if sales.has_next %}
           <li class="page-item">
-            <a class="page-link" href="?page={{ sales.next_num }}&date={{ date_filter }}&attendant={{ attendant_filter }}&payment={{ payment_filter }}">Próxima</a>
+            <a class="page-link" href="?page={{ sales.next_num }}&date={{ date_filter }}&attendant={{ attendant_filter }}&payment={{ payment_filter }}&time_from={{ time_from_filter }}&time_to={{ time_to_filter }}">Próxima</a>
           </li>
           {% endif %}
         </ul>
