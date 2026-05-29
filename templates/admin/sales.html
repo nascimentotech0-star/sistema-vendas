@@ -48,8 +48,8 @@
         </button>
         <button type="button" class="btn btn-sm"
                 style="background:rgba(245,158,11,.2);color:#fcd34d;border:1px solid rgba(245,158,11,.3);"
-                onclick="document.querySelector('[name=time_from]').value='10:00';document.querySelector('[name=time_to]').value='';this.form.submit();">
-          <i class="bi bi-clock me-1"></i> A partir das 10h
+                onclick="document.querySelector('[name=time_from]').value='22:00';document.querySelector('[name=time_to]').value='';this.form.submit();">
+          <i class="bi bi-clock me-1"></i> A partir das 22h
         </button>
         <a href="{{ url_for('admin.sales') }}" class="btn btn-outline-secondary btn-sm">Limpar</a>
         <a href="{{ url_for('exports.sales', **request.args) }}" class="btn btn-sm"
